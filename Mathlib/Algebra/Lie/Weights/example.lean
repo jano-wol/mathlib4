@@ -209,8 +209,6 @@ lemma exists_root_index_of_in_index_set (q : Submodule K (Dual K H))
   use ⟨α.1, hα_in_root⟩
   rfl
 
-
-
 lemma zero_pairing_implies_zero_bracket
   (χ α : Weight K H L)
   (x : L) (hx : x ∈ genWeightSpace L χ.toLinear)
