@@ -90,7 +90,6 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
   ext x
   constructor
   · intro hx
-    simp only [sl2SubmoduleOfRoot] at hx
     obtain ⟨h', e, f, ht, heα, hfα⟩ :=
       LieAlgebra.IsKilling.exists_isSl2Triple_of_weight_isNonZero hα
     have hx_sl2 : x ∈ sl2SubalgebraOfRoot hα := hx
