@@ -79,14 +79,14 @@ noncomputable def sl2SubmoduleOfRoot (α : Weight K H L) (hα : α.IsNonZero) :
     -- Convert back to toLieSubmodule membership
     exact h_bracket_sl2
 
-/-- The image of the coroot space of `α` under the inclusion of `H` into `L`.
-This represents the part of the `sl₂` subalgebra that lies in the Cartan subalgebra `H`. -/
-noncomputable abbrev H_α (α : Weight K H L) : LieSubmodule K H L :=
+/-- The coroot space of `α` viewed as a submodule of the ambient Lie algebra `L`.
+This represents the image of the coroot space under the inclusion `H ↪ L`. -/
+noncomputable abbrev corootSubmodule (α : Weight K H L) : LieSubmodule K H L :=
   LieSubmodule.map H.toLieSubmodule.incl (LieAlgebra.corootSpace α.toLinear)
 
 lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
     sl2SubmoduleOfRoot α hα =
-    genWeightSpace L α.toLinear ⊔ genWeightSpace L (-α).toLinear ⊔ H_α α := by
+    genWeightSpace L α.toLinear ⊔ genWeightSpace L (-α).toLinear ⊔ corootSubmodule α := by
   ext x
   constructor
   · intro hx
@@ -109,7 +109,7 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
         exact hfα
     · apply Submodule.smul_mem
       apply Submodule.mem_sup_right
-      unfold H_α
+      unfold corootSubmodule
       have h_coroot_eq : ⁅e, f⁆ = h' := ht.lie_e_f
       rw [h_coroot_eq]
       use (LieAlgebra.IsKilling.coroot α : H)
@@ -161,7 +161,7 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
 
     have hx_h_in : x_h ∈ sl2SubalgebraOfRoot hα := by
       rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff hα ht heα hfα]
-      unfold H_α at hx_h
+      unfold corootSubmodule at hx_h
       obtain ⟨y, hy_coroot, hy_eq⟩ := hx_h
       have h_eq : ⁅e, f⁆ = h' := ht.lie_e_f
       have h_coroot : h' = (LieAlgebra.IsKilling.coroot α : L) :=
@@ -371,7 +371,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
 
           have hm_pos_weight : m_pos ∈ genWeightSpace L α.1.toLinear := hm_pos
           have hm_neg_weight : m_neg ∈ genWeightSpace L (-α.1).toLinear := hm_neg
-          have hm_h_coroot : m_h ∈ H_α α.1 := hm_h
+          have hm_h_coroot : m_h ∈ corootSubmodule α.1 := hm_h
 
           have h_bracket_sum : ⁅x_χ, m_α⁆ = ⁅x_χ, m_pos⁆ + ⁅x_χ, m_neg⁆ + ⁅x_χ, m_h⁆ := by
             rw [hm_α_decomp, lie_add, lie_add]
@@ -796,7 +796,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                   exact this
                 rw [hi_val, hj_val] at h_pairing_eq
                 exact h_pairing_eq.symm
-              simp only [H_α] at hm_h
+              simp only [corootSubmodule] at hm_h
               obtain ⟨h_elem, hh_elem, hh_eq⟩ := hm_h
               have h_bracket_elem : ⁅x_χ, (h_elem : L)⁆ = 0 :=
                 zero_pairing_implies_zero_bracket χ α.1 x_χ hx_χ h_elem hh_elem
