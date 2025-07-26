@@ -40,43 +40,28 @@ noncomputable def sl2SubmoduleOfRoot (α : Weight K H L) (hα : α.IsNonZero) :
   __ := (sl2SubalgebraOfRoot hα).toLieSubmodule
   lie_mem := by
     intro h x hx
-    -- Convert toLieSubmodule membership to LieSubalgebra membership
     have hx_sl2 : x ∈ sl2SubalgebraOfRoot hα := hx
     obtain ⟨h', e, f, ht, heα, hfα⟩ :=
       LieAlgebra.IsKilling.exists_isSl2Triple_of_weight_isNonZero hα
     rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff hα ht heα hfα] at hx_sl2
     obtain ⟨c₁, c₂, c₃, hx_eq⟩ := hx_sl2
-    -- Show the Lie bracket is also in the subalgebra
     have h_bracket_sl2 : ⁅(h : L), x⁆ ∈ sl2SubalgebraOfRoot hα := by
       rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff hα ht heα hfα]
       rw [hx_eq, lie_add, lie_add, lie_smul, lie_smul, lie_smul]
-      have he_weight : ⁅(h : L), e⁆ = α h • e := by
-        exact LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace heα h
-      have hf_weight : ⁅(h : L), f⁆ = (-α) h • f := by
-        exact LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace hfα h
-      have hef_weight : ⁅(h : L), ⁅e, f⁆⁆ = 0 • ⁅e, f⁆ := by
-        have h_coroot : ⁅e, f⁆ = (LieAlgebra.IsKilling.coroot α : L) := by
-          have : ⁅e, f⁆ = h' := ht.lie_e_f
-          rw [this]
-          exact IsSl2Triple.h_eq_coroot hα ht heα hfα
-        rw [h_coroot]
-        have : ⁅(h : L), (LieAlgebra.IsKilling.coroot α : L)⁆ = 0 := by
-          have h_coroot_in_H : (LieAlgebra.IsKilling.coroot α : L) ∈ rootSpace H (0 : H → K) := by
-            have h_coroot_mem_H : (LieAlgebra.IsKilling.coroot α : L) ∈ H := by
-              exact (LieAlgebra.IsKilling.coroot α).property
-            have h_eq : rootSpace H (0 : H → K) = H.toLieSubmodule := rootSpace_zero_eq K L H
-            rw [h_eq]
-            exact h_coroot_mem_H
-          have h_eq : ⁅(h : L), (LieAlgebra.IsKilling.coroot α : L)⁆ =
-            (0 : H → K) h • (LieAlgebra.IsKilling.coroot α : L) := by
-            exact LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace h_coroot_in_H h
-          rw [h_eq]
-          simp only [Pi.zero_apply, zero_smul]
-        rw [this, zero_smul]
-      rw [he_weight, hf_weight, hef_weight, smul_smul, smul_smul, zero_smul]
-      simp only [Weight.coe_neg, Pi.neg_apply, smul_zero, add_zero]
+      have he_wt : ⁅(h : L), e⁆ = α h • e :=
+        LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace heα h
+      have hf_wt : ⁅(h : L), f⁆ = (-α) h • f :=
+        LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace hfα h
+      have hef_zero : ⁅(h : L), ⁅e, f⁆⁆ = 0 := by
+        have h_coroot_in_zero : ⁅e, f⁆ ∈ rootSpace H (0 : H → K) := by
+          rw [ht.lie_e_f, IsSl2Triple.h_eq_coroot hα ht heα hfα]
+          have : (LieAlgebra.IsKilling.coroot α : L) ∈ H := (LieAlgebra.IsKilling.coroot α).property
+          rw [rootSpace_zero_eq K L H]
+          exact this
+        exact LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace h_coroot_in_zero h ▸
+          (zero_smul K ⁅e, f⁆)
+      rw [he_wt, hf_wt, hef_zero, smul_smul, smul_smul, smul_zero, add_zero]
       exact ⟨c₁ * α h, c₂ * (-α h), 0, by simp [mul_smul]⟩
-    -- Convert back to toLieSubmodule membership
     exact h_bracket_sl2
 
 /-- The coroot space of `α` viewed as a submodule of the ambient Lie algebra `L`.
