@@ -89,7 +89,6 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
     genWeightSpace L α.toLinear ⊔ genWeightSpace L (-α).toLinear ⊔ corootSubmodule α := by
   ext x
   obtain ⟨h', e, f, ht, heα, hfα⟩ := LieAlgebra.IsKilling.exists_isSl2Triple_of_weight_isNonZero hα
-  simp only [sl2SubmoduleOfRoot]
   constructor
   · intro hx
     have hx_sl2 : x ∈ sl2SubalgebraOfRoot hα := hx
