@@ -135,6 +135,43 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
 
 variable {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsTriangularizable K H L]
 
+/-- Helper lemma for proving weight space containment in supremum of sl2 submodules. -/
+lemma genWeightSpace_le_iSup_sl2SubmoduleOfRoot
+    (q : Submodule K (Dual K H)) (β_lin : H →ₗ[K] K) (hβ_in_q : β_lin ∈ q)
+    (hβ_ne_zero : β_lin ≠ 0) :
+    genWeightSpace L β_lin ≤
+    ⨆ γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero},
+      sl2SubmoduleOfRoot γ.1 γ.2.2 := by
+  by_cases h_trivial : genWeightSpace L β_lin = ⊥
+  · simp [h_trivial]
+  · let β : Weight K H L := {
+      toFun := β_lin,
+      genWeightSpace_ne_bot' := h_trivial
+    }
+    have hβ_in_index_set : β.toLinear ∈ q ∧ β.IsNonZero := by
+      constructor
+      · exact hβ_in_q
+      · intro h_eq
+        apply hβ_ne_zero
+        have h_zero_eq : (β.toLinear : H →ₗ[K] K) = 0 := by
+          ext h
+          simp [Weight.IsZero.eq h_eq]
+        exact h_zero_eq
+    let β_indexed : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} :=
+      ⟨β, hβ_in_index_set⟩
+    have β_term_in_supr :
+        sl2SubmoduleOfRoot β β_indexed.property.right ≤
+        ⨆ (γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero}),
+        sl2SubmoduleOfRoot γ.1 γ.2.2 := by
+      exact le_iSup (fun γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} =>
+        sl2SubmoduleOfRoot γ.1 γ.2.2) β_indexed
+    have h_β_contains : genWeightSpace L β_lin ≤
+        sl2SubmoduleOfRoot β β_indexed.property.right := by
+      rw [sl2SubmoduleOfRoot_eq_sup]
+      apply le_sup_of_le_left
+      apply le_sup_of_le_left
+      rfl
+    exact h_β_contains.trans β_term_in_supr
 
 lemma exists_root_index (γ : Weight K H L) (hγ : γ.IsNonZero) :
     ∃ i, (LieAlgebra.IsKilling.rootSystem H).root i = γ.toLinear :=
@@ -293,46 +330,9 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               genWeightSpace L (χ.toLinear + α.1.toLinear) ≤
               ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
                 sl2SubmoduleOfRoot β.1 β.2.2 := by
-              by_cases h_plus_trivial : genWeightSpace L (χ.toLinear + α.1.toLinear) = ⊥
-              · simp [h_plus_trivial]
-              · let β : Weight K H L := {
-                  toFun := χ.toLinear + α.1.toLinear,
-                  genWeightSpace_ne_bot' := h_plus_trivial
-                }
-                have hβ_in_index_set : β.toLinear ∈ q ∧ β.IsNonZero := by
-                  constructor
-                  · exact q.add_mem h_chi_in_q α.2.1
-                  · intro h_eq
-                    apply w_plus
-                    have h_zero_eq : (β.toLinear : H →ₗ[K] K) = 0 := by
-                      ext h
-                      simp [Weight.IsZero.eq h_eq]
-                    have h_beta_def : (β : H → K) = ⇑(χ.toLinear) + ⇑(α.1.toLinear) := rfl
-                    have h_coe_zero : ⇑(χ.toLinear) + ⇑(α.1.toLinear) = 0 := by
-                      rw [← h_beta_def]
-                      exact Weight.IsZero.eq h_eq
-                    ext h
-                    have := congr_fun h_coe_zero h
-                    simpa using this
-                have β_mem_index_set : β ∈ {γ : Weight K H L | γ.toLinear ∈ q ∧ γ.IsNonZero} :=
-                  hβ_in_index_set
-                let β_indexed : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} :=
-                  ⟨β, hβ_in_index_set⟩
-                have β_term_in_supr :
-                    sl2SubmoduleOfRoot β β_indexed.property.right ≤
-                      ⨆ (γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero}),
-                      sl2SubmoduleOfRoot γ γ.property.right := by
-                  have h := le_iSup (fun γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} =>
-                    sl2SubmoduleOfRoot γ.1 γ.2.2) β_indexed
-                  exact h
-                have h_β_contains : genWeightSpace L (χ.toLinear + α.1.toLinear) ≤
-                    sl2SubmoduleOfRoot β β_indexed.property.right := by
-                  rw [sl2SubmoduleOfRoot_eq_sup]
-                  apply le_sup_of_le_left
-                  apply le_sup_of_le_left
-                  have h_eq : β.toLinear = χ.toLinear + α.1.toLinear := rfl
-                  rw [h_eq]
-                exact h_β_contains.trans β_term_in_supr
+              apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
+              · exact q.add_mem h_chi_in_q α.2.1
+              · exact w_plus
 
             have h_chi_minus_alpha_in_q : χ.toLinear - α.1.toLinear ∈ q := by
               rw [sub_eq_add_neg]
@@ -345,46 +345,9 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               genWeightSpace L (χ.toLinear - α.1.toLinear) ≤
               ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
                 sl2SubmoduleOfRoot β.1 β.2.2 := by
-              by_cases h_minus_trivial : genWeightSpace L (χ.toLinear - α.1.toLinear) = ⊥
-              · simp [h_minus_trivial]
-              · let β : Weight K H L := {
-                  toFun := χ.toLinear - α.1.toLinear,
-                  genWeightSpace_ne_bot' := h_minus_trivial
-                }
-                have hβ_in_index_set : β.toLinear ∈ q ∧ β.IsNonZero := by
-                  constructor
-                  · exact h_chi_minus_alpha_in_q
-                  · intro h_eq
-                    apply w_minus
-                    have h_zero_eq : (β.toLinear : H →ₗ[K] K) = 0 := by
-                      ext h
-                      simp [Weight.IsZero.eq h_eq]
-                    have h_beta_def : (β : H → K) = ⇑(χ.toLinear) - ⇑(α.1.toLinear) := rfl
-                    have h_coe_zero : ⇑(χ.toLinear) - ⇑(α.1.toLinear) = 0 := by
-                      rw [← h_beta_def]
-                      exact Weight.IsZero.eq h_eq
-                    ext h
-                    have := congr_fun h_coe_zero h
-                    simpa using this
-                have β_mem_index_set : β ∈ {γ : Weight K H L | γ.toLinear ∈ q ∧ γ.IsNonZero} :=
-                  hβ_in_index_set
-                let β_indexed : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} :=
-                  ⟨β, hβ_in_index_set⟩
-                have β_term_in_supr :
-                    sl2SubmoduleOfRoot β β_indexed.property.right ≤
-                    ⨆ (γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero}),
-                    sl2SubmoduleOfRoot γ γ.property.right := by
-                  have h := le_iSup (fun γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} =>
-                    sl2SubmoduleOfRoot γ.1 γ.2.2) β_indexed
-                  exact h
-                have h_β_contains : genWeightSpace L (χ.toLinear - α.1.toLinear) ≤
-                    sl2SubmoduleOfRoot β β_indexed.property.right := by
-                  rw [sl2SubmoduleOfRoot_eq_sup]
-                  apply le_sup_of_le_left
-                  apply le_sup_of_le_left
-                  have h_eq : β.toLinear = χ.toLinear - α.1.toLinear := rfl
-                  rw [h_eq]
-                exact h_β_contains.trans β_term_in_supr
+              apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
+              · exact h_chi_minus_alpha_in_q
+              · exact w_minus
 
             have h_chi_containment :
               genWeightSpace L χ.toLinear ≤
