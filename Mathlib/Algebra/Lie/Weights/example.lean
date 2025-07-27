@@ -335,11 +335,8 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               · exact w_plus
 
             have h_chi_minus_alpha_in_q : χ.toLinear - α.1.toLinear ∈ q := by
-              rw [sub_eq_add_neg]
-              apply q.add_mem h_chi_in_q
-              have h_neg_smul : -α.1.toLinear = (-1 : K) • α.1.toLinear := by simp
-              rw [h_neg_smul]
-              exact q.smul_mem (-1) α.2.1
+              have : -α.1.toLinear = (-1 : K) • α.1.toLinear := by simp
+              rw [sub_eq_add_neg, this]; exact q.add_mem h_chi_in_q (q.smul_mem (-1) α.2.1)
 
             have h_minus_containment :
               genWeightSpace L (χ.toLinear - α.1.toLinear) ≤
