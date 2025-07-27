@@ -135,23 +135,6 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
 
 variable {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsTriangularizable K H L]
 
--- Unified helper lemma for sl2 membership proofs
-lemma mem_sl2SubalgebraOfRoot_of_mem_rootSpace (α : Weight K H L) (hα : α.IsNonZero)
-    (β : H →ₗ[K] K) (x : L) (hx : x ∈ genWeightSpace L β)
-    (hβ_eq : β = α.toLinear ∨ β = -α.toLinear) : x ∈ sl2SubalgebraOfRoot hα := by
-  obtain ⟨h, e, f, ht, heα, hfα⟩ := LieAlgebra.IsKilling.exists_isSl2Triple_of_weight_isNonZero hα
-  rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff hα ht heα hfα]
-  cases hβ_eq with
-  | inl h_pos =>
-    rw [h_pos] at hx
-    obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨e, heα⟩ (by simp [ht.e_ne_zero])).mp 
-      (LieAlgebra.IsKilling.finrank_rootSpace_eq_one α hα) ⟨x, hx⟩
-    exact ⟨c, 0, 0, by simpa using hc.symm⟩
-  | inr h_neg =>
-    rw [h_neg] at hx
-    obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨f, hfα⟩ (by simp [ht.f_ne_zero])).mp 
-      (LieAlgebra.IsKilling.finrank_rootSpace_eq_one (-α) (by simpa using hα)) ⟨x, hx⟩ 
-    exact ⟨0, c, 0, by simpa using hc.symm⟩
 
 lemma exists_root_index (γ : Weight K H L) (hγ : γ.IsNonZero) :
     ∃ i, (LieAlgebra.IsKilling.rootSystem H).root i = γ.toLinear :=
@@ -277,15 +260,31 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               add_eq_zero_iff_eq_neg.mp w_plus
             apply LieSubmodule.mem_iSup_of_mem α
             have hx_χ_in_sl2 : x_χ ∈ sl2SubalgebraOfRoot α.2.2 := by
-              apply mem_sl2SubalgebraOfRoot_of_mem_rootSpace α.1 α.2.2 χ.toLinear x_χ hx_χ
-              right; exact h_chi_neg_alpha
+              obtain ⟨h, e, f, ht, heα, hfα⟩ :=
+                LieAlgebra.IsKilling.exists_isSl2Triple_of_weight_isNonZero α.2.2
+              rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff α.2.2 ht heα hfα]
+              have hx_χ_neg : x_χ ∈ genWeightSpace L (-α.1.toLinear) := by
+                rwa [← h_chi_neg_alpha]
+              obtain ⟨c, hc⟩ :=
+                (finrank_eq_one_iff_of_nonzero' ⟨f, hfα⟩ (by simp [ht.f_ne_zero])).mp
+                (LieAlgebra.IsKilling.finrank_rootSpace_eq_one (-α.1) (by simpa using α.2.2))
+                ⟨x_χ, hx_χ_neg⟩
+              exact ⟨0, c, 0, by simpa using hc.symm⟩
             apply LieSubalgebra.lie_mem <;> [exact hx_χ_in_sl2; exact hm_α_original]
           by_cases w_minus : χ.toLinear - α.1.toLinear = 0
           · have h_chi_eq_alpha : χ.toLinear = α.1.toLinear := sub_eq_zero.mp w_minus
             apply LieSubmodule.mem_iSup_of_mem α
             have hx_χ_in_sl2 : x_χ ∈ sl2SubalgebraOfRoot α.2.2 := by
-              apply mem_sl2SubalgebraOfRoot_of_mem_rootSpace α.1 α.2.2 χ.toLinear x_χ hx_χ
-              left; exact h_chi_eq_alpha
+              obtain ⟨h, e, f, ht, heα, hfα⟩ :=
+                LieAlgebra.IsKilling.exists_isSl2Triple_of_weight_isNonZero α.2.2
+              rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff α.2.2 ht heα hfα]
+              have hx_χ_pos : x_χ ∈ genWeightSpace L α.1.toLinear := by
+                rwa [← h_chi_eq_alpha]
+              obtain ⟨c, hc⟩ :=
+                (finrank_eq_one_iff_of_nonzero' ⟨e, heα⟩ (by simp [ht.e_ne_zero])).mp
+                (LieAlgebra.IsKilling.finrank_rootSpace_eq_one α.1 α.2.2)
+                ⟨x_χ, hx_χ_pos⟩
+              exact ⟨c, 0, 0, by simpa using hc.symm⟩
             apply LieSubalgebra.lie_mem <;> [exact hx_χ_in_sl2; exact hm_α_original]
           by_cases w_chi : χ.toLinear = 0
           · have hx_χ_in_H : x_χ ∈ H.toLieSubmodule := by
