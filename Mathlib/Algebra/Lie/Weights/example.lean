@@ -327,16 +327,16 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
 
           by_cases h_chi_in_q : χ.toLinear ∈ q
           · have h_plus_containment :
-              genWeightSpace L (χ.toLinear + α.1.toLinear) ≤
-              ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
+                genWeightSpace L (χ.toLinear + α.1.toLinear) ≤
+                ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
                 sl2SubmoduleOfRoot β.1 β.2.2 := by
               apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
               · exact q.add_mem h_chi_in_q α.2.1
               · exact w_plus
 
             have h_minus_containment :
-              genWeightSpace L (χ.toLinear - α.1.toLinear) ≤
-              ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
+                genWeightSpace L (χ.toLinear - α.1.toLinear) ≤
+                ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
                 sl2SubmoduleOfRoot β.1 β.2.2 := by
               apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
               · have : -α.1.toLinear = (-1 : K) • α.1.toLinear := by simp
