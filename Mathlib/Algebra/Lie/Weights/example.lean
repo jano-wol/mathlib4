@@ -143,23 +143,15 @@ lemma mem_sl2SubalgebraOfRoot_of_mem_rootSpace (α : Weight K H L) (hα : α.IsN
   rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff hα ht heα hfα]
   cases hβ_eq with
   | inl h_pos =>
-    have h_dim : Module.finrank K (rootSpace H α.toLinear) = 1 :=
-      LieAlgebra.IsKilling.finrank_rootSpace_eq_one α hα
-    have he_ne_zero : (⟨e, heα⟩ : rootSpace H α.toLinear) ≠ 0 := by
-      simp only [ne_eq, LieSubmodule.mk_eq_zero]; exact ht.e_ne_zero
-    have hx_pos : x ∈ genWeightSpace L α.toLinear := by rw [h_pos] at hx; exact hx
-    obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨e, heα⟩ he_ne_zero).mp h_dim ⟨x, hx_pos⟩
-    have hc_proj : x = c • e := by simpa using hc.symm
-    exact ⟨c, 0, 0, by simp [hc_proj]⟩
+    rw [h_pos] at hx
+    obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨e, heα⟩ (by simp [ht.e_ne_zero])).mp 
+      (LieAlgebra.IsKilling.finrank_rootSpace_eq_one α hα) ⟨x, hx⟩
+    exact ⟨c, 0, 0, by simpa using hc.symm⟩
   | inr h_neg =>
-    have h_dim : Module.finrank K (rootSpace H (-α.toLinear)) = 1 :=
-      LieAlgebra.IsKilling.finrank_rootSpace_eq_one (-α) (by simpa using hα)
-    have hf_ne_zero : (⟨f, hfα⟩ : rootSpace H (-α.toLinear)) ≠ 0 := by
-      simp [ne_eq, LieSubmodule.mk_eq_zero]; exact ht.f_ne_zero
-    have hx_neg : x ∈ genWeightSpace L (-α.toLinear) := by rw [h_neg] at hx; exact hx
-    obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨f, hfα⟩ hf_ne_zero).mp h_dim ⟨x, hx_neg⟩
-    have hc_proj : x = c • f := by simpa using hc.symm
-    exact ⟨0, c, 0, by simp [hc_proj]⟩
+    rw [h_neg] at hx
+    obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨f, hfα⟩ (by simp [ht.f_ne_zero])).mp 
+      (LieAlgebra.IsKilling.finrank_rootSpace_eq_one (-α) (by simpa using hα)) ⟨x, hx⟩ 
+    exact ⟨0, c, 0, by simpa using hc.symm⟩
 
 lemma exists_root_index (γ : Weight K H L) (hγ : γ.IsNonZero) :
     ∃ i, (LieAlgebra.IsKilling.rootSystem H).root i = γ.toLinear :=
