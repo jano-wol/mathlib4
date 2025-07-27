@@ -135,24 +135,9 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
 
 variable {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsTriangularizable K H L]
 
-lemma exists_root_index_of_weight_nonzero (χ : Weight K H L) (hχ : χ.IsNonZero) :
-    ∃ i, (LieAlgebra.IsKilling.rootSystem H).root i = χ.toLinear := by
-  let S := LieAlgebra.IsKilling.rootSystem H
-  have hχ_in_root : χ ∈ H.root := by
-    simp [LieSubalgebra.root]
-    exact hχ
-  use ⟨χ, hχ_in_root⟩
-  rfl
-
-lemma exists_root_index_of_in_index_set (q : Submodule K (Dual K H))
-    (α : {α : Weight K H L // α.toLinear ∈ q ∧ α.IsNonZero}) :
-    ∃ j, (LieAlgebra.IsKilling.rootSystem H).root j = α.1.toLinear := by
-  let S := LieAlgebra.IsKilling.rootSystem H
-  have hα_in_root : α.1 ∈ H.root := by
-    simp [LieSubalgebra.root]
-    exact α.2.2
-  use ⟨α.1, hα_in_root⟩
-  rfl
+lemma exists_root_index (γ : Weight K H L) (hγ : γ.IsNonZero) :
+    ∃ i, (LieAlgebra.IsKilling.rootSystem H).root i = γ.toLinear :=
+  ⟨⟨γ, by simp [LieSubalgebra.root]; exact hγ⟩, rfl⟩
 
 
 lemma pairing_zero_of_trivial_sum_diff_spaces
@@ -167,13 +152,8 @@ lemma pairing_zero_of_trivial_sum_diff_spaces
   let i : { w : Weight K H L // w ∈ H.root } := ⟨χ, by simp [LieSubalgebra.root]; exact hχ⟩
   let j : { w : Weight K H L // w ∈ H.root } := ⟨α, by simp [LieSubalgebra.root]; exact hα⟩
   use i, j, rfl, rfl
-  have root_isNonZero (idx : { w : Weight K H L // w ∈ H.root }) : idx.val.IsNonZero := by
-    have h_mem := idx.property
-    simp only [LieSubalgebra.root, Finset.mem_filter, Finset.mem_univ, true_and] at h_mem
-    exact h_mem
   have contradiction_from_nontrivial (β γ : H →ₗ[K] K) (h_bot : genWeightSpace L β = ⊥)
-      (idx : { w : Weight K H L // w ∈ H.root }) (h_eq : S.root idx = γ)
-      (h_beta_eq : β = γ) : False := by
+      (idx : { w : Weight K H L // w ∈ H.root }) (h_eq : S.root idx = γ) (h_beta_eq : β = γ) : False := by
     have h_nontrivial : genWeightSpace L β ≠ ⊥ := by
       rw [h_beta_eq, ← h_eq, LieAlgebra.IsKilling.rootSystem_root_apply H idx]
       exact idx.val.genWeightSpace_ne_bot
@@ -187,8 +167,7 @@ lemma pairing_zero_of_trivial_sum_diff_spaces
       have h_sum_zero : S.root i + S.root j = 0 := by rw [h_eq]; simp
       exact w_plus h_sum_zero
     obtain ⟨idx, hidx⟩ := h_add_mem
-    exact contradiction_from_nontrivial (χ.toLinear + α.toLinear) (S.root i + S.root j)
-      h_plus_bot idx hidx rfl
+    exact contradiction_from_nontrivial (χ.toLinear + α.toLinear) (S.root i + S.root j) h_plus_bot idx hidx rfl
   | inr h_rest =>
     cases h_rest with
     | inl h_zero => exact (S.algebraMap_pairingIn ℤ i j ▸ by simp [h_zero])
@@ -200,8 +179,7 @@ lemma pairing_zero_of_trivial_sum_diff_spaces
         have h_chi_eq_alpha : χ = α := by injection h_eq
         exact w_minus (by rw [h_chi_eq_alpha]; simp)
       obtain ⟨idx, hidx⟩ := h_sub_mem
-      exact contradiction_from_nontrivial (χ.toLinear - α.toLinear) (S.root i - S.root j)
-        h_minus_bot idx hidx rfl
+      exact contradiction_from_nontrivial (χ.toLinear - α.toLinear) (S.root i - S.root j) h_minus_bot idx hidx rfl
 
 set_option maxHeartbeats 1000000 in
 -- The proof involves extensive case analysis.
@@ -516,8 +494,8 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                   exact hγ_nonzero
                 use ⟨γ, γ_in_root⟩
                 rfl
-              obtain ⟨i, hi⟩ := exists_root_index_of_weight_nonzero χ hχ_nonzero
-              obtain ⟨j, hj⟩ := exists_root_index_of_in_index_set q α
+              obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+              obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
                 rw [hi, hj]
                 exact h_chi_plus_alpha_is_root
@@ -558,9 +536,8 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                   exact hγ_nonzero
                 use ⟨γ, γ_in_root⟩
                 rfl
-              obtain ⟨i, hi⟩ := exists_root_index_of_weight_nonzero χ hχ_nonzero
-              have hα_neg_nonzero : (-α.1).IsNonZero := Weight.IsNonZero.neg α.2.2
-              obtain ⟨j, hj⟩ := exists_root_index_of_weight_nonzero (-α.1) hα_neg_nonzero
+              obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+              obtain ⟨j, hj⟩ := exists_root_index (-α.1) (Weight.IsNonZero.neg α.2.2)
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
                 rw [hi, hj]
                 have h_eq : χ.toLinear + (-α.1).toLinear = χ.toLinear - α.1.toLinear := by
@@ -600,8 +577,8 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               simp
 
             let S := LieAlgebra.IsKilling.rootSystem H
-            obtain ⟨i, hi⟩ := exists_root_index_of_weight_nonzero χ hχ_nonzero
-            obtain ⟨j, hj⟩ := exists_root_index_of_in_index_set q α
+            obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+            obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
             have h_pairing_zero : S.pairing i j = 0 := by
               obtain ⟨i', j', hi', hj', h_zero⟩ :=
                 pairing_zero_of_trivial_sum_diff_spaces χ α.1 hχ_nonzero α.2.2 w_plus
