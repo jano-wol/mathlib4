@@ -154,31 +154,6 @@ lemma exists_root_index_of_in_index_set (q : Submodule K (Dual K H))
   use ⟨α.1, hα_in_root⟩
   rfl
 
-lemma zero_pairing_implies_zero_bracket
-  (χ α : Weight K H L)
-  (x : L) (hx : x ∈ genWeightSpace L χ.toLinear)
-  (h : H) (hh : h ∈ LieAlgebra.corootSpace α.toLinear)
-  (h_zero : χ (LieAlgebra.IsKilling.coroot α) = 0) :
-  ⁅x, (h : L)⁆ = 0 := by
-  obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp <| by
-    rw [← LieAlgebra.IsKilling.coe_corootSpace_eq_span_singleton α, LieSubmodule.mem_toSubmodule]
-    exact hh
-  have h_chi_h_zero : (χ.toLinear) h = 0 := by
-    rw [← hc, LinearMap.map_smul]
-    have h_convert : (χ.toLinear) (LieAlgebra.IsKilling.coroot α) =
-        χ (LieAlgebra.IsKilling.coroot α) := rfl
-    rw [h_convert, h_zero, smul_zero]
-  rw [genWeightSpace, LieSubmodule.mem_iInf] at hx
-  have hx_eigen : x ∈ (ad K L (h : L)).eigenspace 0 := by
-    have h_semisimple := LieAlgebra.IsKilling.isSemisimple_ad_of_mem_isCartanSubalgebra h.property
-    rw [← h_semisimple.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace]
-    have h_eq : toEnd K H L h = ad K L (h : L) := by
-      ext y; simp [LieModule.toEnd_apply_apply, LieAlgebra.ad_apply]
-    rw [← h_eq]
-    have := hx h
-    rwa [h_chi_h_zero, genWeightSpaceOf] at this
-  rw [Module.End.mem_eigenspace_iff, LieAlgebra.ad_apply, zero_smul, ← lie_skew] at hx_eigen
-  exact neg_eq_zero.mp hx_eigen
 
 lemma pairing_zero_of_trivial_sum_diff_spaces
   (χ α : Weight K H L) (hχ : χ.IsNonZero) (hα : α.IsNonZero)
@@ -658,8 +633,6 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               exact h_zero
 
             have h_bracket_zero : ⁅x_χ, m_h⁆ = 0 := by
-              have hχ_nonzero : χ.IsNonZero := hχ_nonzero
-              have hα_nonzero : α.1.IsNonZero := α.2.2
               have h_chi_coroot_zero : χ (LieAlgebra.IsKilling.coroot α.1) = 0 := by
                 have h_pairing_eq : S.pairing i j = i.1 (LieAlgebra.IsKilling.coroot j.1) := by
                   rw [LieAlgebra.IsKilling.rootSystem_pairing_apply]
@@ -684,9 +657,19 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                 exact h_pairing_eq.symm
               simp only [corootSubmodule] at hm_h
               obtain ⟨h_elem, hh_elem, hh_eq⟩ := hm_h
-              have h_bracket_elem : ⁅x_χ, (h_elem : L)⁆ = 0 :=
-                zero_pairing_implies_zero_bracket χ α.1 x_χ hx_χ h_elem hh_elem
-                  h_chi_coroot_zero
+              have h_lie_eq_smul : ⁅(h_elem : L), x_χ⁆ = (χ.toLinear) h_elem • x_χ :=
+                LieAlgebra.IsKilling.lie_eq_smul_of_mem_rootSpace hx_χ h_elem
+              have h_chi_h_zero : (χ.toLinear) h_elem = 0 := by
+                obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp <| by
+                  rw [← LieAlgebra.IsKilling.coe_corootSpace_eq_span_singleton α.1]
+                  rw [LieSubmodule.mem_toSubmodule]
+                  exact hh_elem
+                rw [← hc, LinearMap.map_smul]
+                have h_convert : (χ.toLinear) (LieAlgebra.IsKilling.coroot α.1) =
+                    χ (LieAlgebra.IsKilling.coroot α.1) := rfl
+                rw [h_convert, h_chi_coroot_zero, smul_zero]
+              have h_bracket_elem : ⁅x_χ, (h_elem : L)⁆ = 0 := by
+                rw [← lie_skew, h_lie_eq_smul, h_chi_h_zero, zero_smul, neg_zero]
               rw [← hh_eq]
               exact h_bracket_elem
 
