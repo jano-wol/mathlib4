@@ -325,44 +325,23 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               simp [Weight.IsZero.eq h_zero]
             exact h_zero_eq
 
+          let I := ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
+            sl2SubmoduleOfRoot β.1 β.2.2
           by_cases h_chi_in_q : χ.toLinear ∈ q
-          · have h_plus_containment :
-                genWeightSpace L (χ.toLinear + α.1.toLinear) ≤
-                ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
-                sl2SubmoduleOfRoot β.1 β.2.2 := by
+          · have h_plus_contain : genWeightSpace L (χ.toLinear + α.1.toLinear) ≤ I := by
               apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
               · exact q.add_mem h_chi_in_q α.2.1
               · exact w_plus
-
-            have h_minus_containment :
-                genWeightSpace L (χ.toLinear - α.1.toLinear) ≤
-                ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
-                sl2SubmoduleOfRoot β.1 β.2.2 := by
+            have h_minus_contain : genWeightSpace L (χ.toLinear - α.1.toLinear) ≤ I := by
               apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
               · have : -α.1.toLinear = (-1 : K) • α.1.toLinear := by simp
                 rw [sub_eq_add_neg, this]; exact q.add_mem h_chi_in_q (q.smul_mem (-1) α.2.1)
               · exact w_minus
-
-            have h_chi_containment :
-              genWeightSpace L χ.toLinear ≤
-              ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
-                sl2SubmoduleOfRoot β.1 β.2.2 := by
+            have h_chi_contain : genWeightSpace L χ.toLinear ≤ I := by
               apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
               · exact h_chi_in_q
               · intro h_eq; exfalso; apply w_chi; exact h_eq
-
-            have h_total_containment :
-              genWeightSpace L (χ.toLinear + α.1.toLinear) ⊔
-              genWeightSpace L (χ.toLinear - α.1.toLinear) ⊔
-              genWeightSpace L χ.toLinear ≤
-              ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
-                sl2SubmoduleOfRoot β.1 β.2.2 := by
-              apply sup_le
-              · apply sup_le
-                · exact h_plus_containment
-                · exact h_minus_containment
-              · exact h_chi_containment
-            exact h_total_containment h_bracket_decomp
+            exact sup_le (sup_le h_plus_contain h_minus_contain) h_chi_contain h_bracket_decomp
           · have h_plus_bot : genWeightSpace L (χ.toLinear + α.1.toLinear) = ⊥ := by
               by_contra h_plus_ne_bot
               let S := LieAlgebra.IsKilling.rootSystem H
