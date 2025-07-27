@@ -144,34 +144,18 @@ lemma genWeightSpace_le_iSup_sl2SubmoduleOfRoot
       sl2SubmoduleOfRoot γ.1 γ.2.2 := by
   by_cases h_trivial : genWeightSpace L β_lin = ⊥
   · simp [h_trivial]
-  · let β : Weight K H L := {
-      toFun := β_lin,
-      genWeightSpace_ne_bot' := h_trivial
-    }
-    have hβ_in_index_set : β.toLinear ∈ q ∧ β.IsNonZero := by
-      constructor
-      · exact hβ_in_q
-      · intro h_eq
-        apply hβ_ne_zero
-        have h_zero_eq : (β.toLinear : H →ₗ[K] K) = 0 := by
-          ext h
-          simp [Weight.IsZero.eq h_eq]
-        exact h_zero_eq
-    let β_indexed : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} :=
-      ⟨β, hβ_in_index_set⟩
-    have β_term_in_supr :
-        sl2SubmoduleOfRoot β β_indexed.property.right ≤
-        ⨆ (γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero}),
-        sl2SubmoduleOfRoot γ.1 γ.2.2 := by
-      exact le_iSup (fun γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} =>
-        sl2SubmoduleOfRoot γ.1 γ.2.2) β_indexed
-    have h_β_contains : genWeightSpace L β_lin ≤
-        sl2SubmoduleOfRoot β β_indexed.property.right := by
-      rw [sl2SubmoduleOfRoot_eq_sup]
-      apply le_sup_of_le_left
-      apply le_sup_of_le_left
-      rfl
-    exact h_β_contains.trans β_term_in_supr
+  · let β : Weight K H L := ⟨β_lin, h_trivial⟩
+    have hβ_nonzero : β.IsNonZero := by
+      intro h_zero
+      apply hβ_ne_zero
+      have h_zero_eq : (β.toLinear : H →ₗ[K] K) = 0 := by
+        ext h
+        simp [Weight.IsZero.eq h_zero]
+      exact h_zero_eq
+    let β_indexed : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} := ⟨β, hβ_in_q, hβ_nonzero⟩
+    exact le_trans
+      (by rw [sl2SubmoduleOfRoot_eq_sup]; exact le_sup_of_le_left (le_sup_of_le_left le_rfl))
+      (le_iSup _ β_indexed)
 
 lemma exists_root_index (γ : Weight K H L) (hγ : γ.IsNonZero) :
     ∃ i, (LieAlgebra.IsKilling.rootSystem H).root i = γ.toLinear :=
