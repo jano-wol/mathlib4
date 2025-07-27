@@ -347,41 +347,9 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               genWeightSpace L χ.toLinear ≤
               ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
                 sl2SubmoduleOfRoot β.1 β.2.2 := by
-              by_cases h_chi_trivial : genWeightSpace L χ.toLinear = ⊥
-              · rw [h_chi_trivial]
-                simp
-              · have hχ_in_index_set : χ.toLinear ∈ q ∧ χ.IsNonZero := by
-                  constructor
-                  · exact h_chi_in_q
-                  · intro h_eq
-                    apply w_chi
-                    have h_coe_zero : (χ : H → K) = 0 := Weight.IsZero.eq h_eq
-                    convert h_coe_zero
-                    simp only [LinearMap.ext_iff, LinearMap.zero_apply]
-                    constructor
-                    · intro h
-                      ext x
-                      exact h x
-                    · intro h x
-                      have := congr_fun h x
-                      simp at this
-                      exact this
-                let χ_indexed : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} :=
-                  ⟨χ, hχ_in_index_set⟩
-                have χ_term_in_supr :
-                    sl2SubmoduleOfRoot χ χ_indexed.property.right ≤
-                    ⨆ (γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero}),
-                    sl2SubmoduleOfRoot γ γ.property.right := by
-                  have h := le_iSup (fun γ : {γ : Weight K H L // γ.toLinear ∈ q ∧ γ.IsNonZero} =>
-                    sl2SubmoduleOfRoot γ.1 γ.2.2) χ_indexed
-                  exact h
-                have h_χ_contains : genWeightSpace L χ.toLinear ≤
-                    sl2SubmoduleOfRoot χ χ_indexed.property.right := by
-                  rw [sl2SubmoduleOfRoot_eq_sup]
-                  apply le_sup_of_le_left
-                  apply le_sup_of_le_left
-                  rfl
-                exact h_χ_contains.trans χ_term_in_supr
+              apply genWeightSpace_le_iSup_sl2SubmoduleOfRoot q
+              · exact h_chi_in_q
+              · intro h_eq; exfalso; apply w_chi; exact h_eq
 
             have h_total_containment :
               genWeightSpace L (χ.toLinear + α.1.toLinear) ⊔
