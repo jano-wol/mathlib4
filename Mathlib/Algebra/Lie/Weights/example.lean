@@ -301,9 +301,9 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
             have h_chi_contain : genWeightSpace L χ.toLinear ≤ I :=
               genWeightSpace_le_I _ h_chi_in_q (fun h_eq => (w_chi h_eq).elim)
             exact sup_le (sup_le h_plus_contain h_minus_contain) h_chi_contain h_bracket_decomp
-          · have h_plus_bot : genWeightSpace L (χ.toLinear + α.1.toLinear) = ⊥ := by
+          · let S := LieAlgebra.IsKilling.rootSystem H
+            have h_plus_bot : genWeightSpace L (χ.toLinear + α.1.toLinear) = ⊥ := by
               by_contra h_plus_ne_bot
-              let S := LieAlgebra.IsKilling.rootSystem H
               let γ : Weight K H L := ⟨χ.toLinear + α.1.toLinear, h_plus_ne_bot⟩
               have hγ_nonzero : γ.IsNonZero := by
                 intro h_zero; apply w_plus
@@ -322,7 +322,6 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
 
             have h_minus_bot : genWeightSpace L (χ.toLinear - α.1.toLinear) = ⊥ := by
               by_contra h_minus_ne_bot
-              let S := LieAlgebra.IsKilling.rootSystem H
               let γ : Weight K H L := ⟨χ.toLinear - α.1.toLinear, h_minus_ne_bot⟩
               have hγ_nonzero : γ.IsNonZero := by
                 intro h_zero; apply w_minus
@@ -334,13 +333,26 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
                 rw [hi, hj, Weight.toLinear_neg, ← sub_eq_add_neg]
                 exact ⟨⟨γ, by simp [LieSubalgebra.root]; exact hγ_nonzero⟩, rfl⟩
-              have h_equiv := RootPairing.root_mem_submodule_iff_of_add_mem_invtSubmodule 
+              have h_equiv := RootPairing.root_mem_submodule_iff_of_add_mem_invtSubmodule
                 ⟨q, by rw [RootPairing.mem_invtRootSubmodule_iff]; exact hq⟩ h_sum_in_range
               rw [hi] at h_equiv
-              exact h_chi_in_q (h_equiv.mpr (by 
+              exact h_chi_in_q (h_equiv.mpr (by
                 rw [hj, Weight.toLinear_neg]
                 convert q.smul_mem (-1) α.2.1 using 1
                 rw [neg_smul, one_smul]))
+
+            obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+            obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
+            have h_pairing_zero : S.pairing i j = 0 := by
+              obtain ⟨i', j', hi', hj', h_zero⟩ :=
+                pairing_zero_of_trivial_sum_diff_spaces χ α.1 hχ_nonzero α.2.2 w_plus
+                  w_minus h_plus_bot h_minus_bot
+              have h_i_eq : i = i' :=
+                Function.Embedding.injective S.root (by rw [hi, hi'])
+              have h_j_eq : j = j' :=
+                Function.Embedding.injective S.root (by rw [hj, hj'])
+              rw [h_i_eq, h_j_eq]
+              exact h_zero
 
             have h_pos_zero : ⁅x_χ, m_pos⁆ = 0 := by
               have h_in_bot : ⁅x_χ, m_pos⁆ ∈ (⊥ : LieSubmodule K H L) := by
@@ -353,24 +365,6 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                 rw [← h_minus_bot]
                 exact h_neg_containment
               rwa [LieSubmodule.mem_bot] at h_in_bot
-
-            have h_simplified : ⁅x_χ, m_α⁆ = ⁅x_χ, m_h⁆ := by
-              rw [h_bracket_sum, h_pos_zero, h_neg_zero]
-              simp
-
-            let S := LieAlgebra.IsKilling.rootSystem H
-            obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
-            obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
-            have h_pairing_zero : S.pairing i j = 0 := by
-              obtain ⟨i', j', hi', hj', h_zero⟩ :=
-                pairing_zero_of_trivial_sum_diff_spaces χ α.1 hχ_nonzero α.2.2 w_plus
-                  w_minus h_plus_bot h_minus_bot
-              have h_i_eq : i = i' := 
-                Function.Embedding.injective S.root (by rw [hi, hi'])
-              have h_j_eq : j = j' := 
-                Function.Embedding.injective S.root (by rw [hj, hj'])
-              rw [h_i_eq, h_j_eq]
-              exact h_zero
 
             have h_bracket_zero : ⁅x_χ, m_h⁆ = 0 := by
               have h_chi_coroot_zero : χ (LieAlgebra.IsKilling.coroot α.1) = 0 := by
@@ -412,10 +406,8 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                 rw [← lie_skew, h_lie_eq_smul, h_chi_h_zero, zero_smul, neg_zero]
               rw [← hh_eq]
               exact h_bracket_elem
-
-            rw [h_simplified, h_bracket_zero]
-            simp
-
+            rw [h_bracket_sum, h_pos_zero, h_neg_zero, h_bracket_zero]
+            simp only [Submodule.carrier_eq_coe, add_zero, SetLike.mem_coe, zero_mem]
         | zero =>
           simp only [LieSubmodule.iSup_toSubmodule, Submodule.carrier_eq_coe, lie_zero,
             SetLike.mem_coe, Submodule.zero_mem]
