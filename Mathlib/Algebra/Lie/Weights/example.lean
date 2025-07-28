@@ -100,25 +100,25 @@ lemma sl2SubmoduleOfRoot_eq_sup (α : Weight K H L) (hα : α.IsNonZero) :
     obtain ⟨x_pos, hx_pos, x_neg, hx_neg, hx_αneg_eq⟩ := Submodule.mem_sup.mp hx_αneg
     rw [← hx_eq, ← hx_αneg_eq]
     have aux {β : Weight K H L} (hβ : β.IsNonZero) {y g : L}
-        (hy : y ∈ genWeightSpace L β.toLinear) (hg : g ∈ rootSpace H β.toLinear) 
+        (hy : y ∈ genWeightSpace L β.toLinear) (hg : g ∈ rootSpace H β.toLinear)
         (hg_ne_zero : g ≠ 0) : ∃ c : K, y = c • g := by
-      obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨g, hg⟩ 
-        (by rwa [ne_eq, LieSubmodule.mk_eq_zero])).mp 
+      obtain ⟨c, hc⟩ := (finrank_eq_one_iff_of_nonzero' ⟨g, hg⟩
+        (by rwa [ne_eq, LieSubmodule.mk_eq_zero])).mp
         (LieAlgebra.IsKilling.finrank_rootSpace_eq_one β hβ) ⟨y, hy⟩
       exact ⟨c, by simpa using hc.symm⟩
     obtain ⟨c₁, hx_pos_eq⟩ := aux hα hx_pos heα ht.e_ne_zero
-    obtain ⟨c₂, hx_neg_eq⟩ := aux (Weight.IsNonZero.neg hα) hx_neg hfα 
+    obtain ⟨c₂, hx_neg_eq⟩ := aux (Weight.IsNonZero.neg hα) hx_neg hfα
       ht.f_ne_zero
     obtain ⟨y, hy_coroot, hy_eq⟩ := hx_h
     obtain ⟨c₃, hc₃⟩ := Submodule.mem_span_singleton.mp (by
-      rwa [← LieAlgebra.IsKilling.coe_corootSpace_eq_span_singleton α, 
+      rwa [← LieAlgebra.IsKilling.coe_corootSpace_eq_span_singleton α,
         LieSubmodule.mem_toSubmodule])
     have hx_final : x_pos + x_neg + x_h ∈ sl2SubalgebraOfRoot hα := by
       rw [LieAlgebra.IsKilling.mem_sl2SubalgebraOfRoot_iff hα ht heα hfα]
       use c₁, c₂, c₃
       rw [hx_pos_eq, hx_neg_eq]
       suffices h_x_h_eq : x_h = c₃ • ⁅e, f⁆ by rw [h_x_h_eq]
-      rw [ht.lie_e_f, IsSl2Triple.h_eq_coroot hα ht heα hfα, ← hy_eq, 
+      rw [ht.lie_e_f, IsSl2Triple.h_eq_coroot hα ht heα hfα, ← hy_eq,
         ← hc₃]
       rfl
     exact hx_final
@@ -304,44 +304,21 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
           · have h_plus_bot : genWeightSpace L (χ.toLinear + α.1.toLinear) = ⊥ := by
               by_contra h_plus_ne_bot
               let S := LieAlgebra.IsKilling.rootSystem H
-              have q_invt : q ∈ S.invtRootSubmodule := by
-                rw [RootPairing.mem_invtRootSubmodule_iff]
-                exact hq
-              have h_chi_plus_alpha_is_root : χ.toLinear + α.1.toLinear ∈ Set.range S.root := by
-                let γ : Weight K H L := {
-                  toFun := χ.toLinear + α.1.toLinear,
-                  genWeightSpace_ne_bot' := h_plus_ne_bot
-                }
-                have hγ_nonzero : γ.IsNonZero := by
-                  intro h_zero
-                  apply w_plus
-                  have h_zero_eq : (γ.toLinear : H →ₗ[K] K) = 0 := by
-                    ext h
-                    simp [Weight.IsZero.eq h_zero]
-                  have h_def : γ.toLinear = χ.toLinear + α.1.toLinear := rfl
-                  rw [h_def] at h_zero_eq
-                  exact h_zero_eq
-                have γ_in_root : γ ∈ H.root := by
-                  simp [LieSubalgebra.root]
-                  exact hγ_nonzero
-                use ⟨γ, γ_in_root⟩
-                rfl
+              let γ : Weight K H L := ⟨χ.toLinear + α.1.toLinear, h_plus_ne_bot⟩
+              have hγ_nonzero : γ.IsNonZero := by
+                intro h_zero; apply w_plus
+                have h_zero_eq : (γ.toLinear : H →ₗ[K] K) = 0 := by
+                  ext h; simp [Weight.IsZero.eq h_zero]
+                exact h_zero_eq
               obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
               obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
                 rw [hi, hj]
-                exact h_chi_plus_alpha_is_root
-              let q_as_invt : S.invtRootSubmodule := ⟨q, q_invt⟩
-              have h_equiv : S.root i ∈ (q_as_invt : Submodule K (Dual K H)) ↔
-                            S.root j ∈ (q_as_invt : Submodule K (Dual K H)) :=
-                RootPairing.root_mem_submodule_iff_of_add_mem_invtSubmodule q_as_invt h_sum_in_range
-              have h_j_in_q : S.root j ∈ (q_as_invt : Submodule K (Dual K H)) := by
-                rw [hj]
-                exact α.2.1
-              have h_i_in_q : S.root i ∈ (q_as_invt : Submodule K (Dual K H)) :=
-                h_equiv.mpr h_j_in_q
-              rw [hi] at h_i_in_q
-              exact h_chi_in_q h_i_in_q
+                exact ⟨⟨γ, by simp [LieSubalgebra.root]; exact hγ_nonzero⟩, rfl⟩
+              have h_equiv := RootPairing.root_mem_submodule_iff_of_add_mem_invtSubmodule
+                ⟨q, by rw [RootPairing.mem_invtRootSubmodule_iff]; exact hq⟩ h_sum_in_range
+              rw [hi] at h_equiv
+              exact h_chi_in_q (h_equiv.mpr (by rw [hj]; exact α.2.1))
 
             have h_minus_bot : genWeightSpace L (χ.toLinear - α.1.toLinear) = ⊥ := by
               by_contra h_minus_ne_bot
