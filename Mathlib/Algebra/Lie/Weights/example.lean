@@ -268,13 +268,11 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
             rw [← (by rfl : ⁅(⟨x_χ, hx_χ_in_H⟩ : H), m_α⁆ = ⁅x_χ, m_α⁆)]
             exact (sl2SubmoduleOfRoot α.1 α.2.2).lie_mem hm_α_original
 
-          have hχ_nonzero : χ.IsNonZero := by
+          have get_isNonZero (w : Weight K H L) (h : w.toLinear ≠ 0) : w.IsNonZero := by
             intro h_zero
-            apply w_chi
-            have h_zero_eq : (χ.toLinear : H →ₗ[K] K) = 0 := by
-              ext h
-              simp [Weight.IsZero.eq h_zero]
-            exact h_zero_eq
+            apply h
+            ext _; simp [Weight.IsZero.eq h_zero]
+          have hχ_nonzero : χ.IsNonZero := get_isNonZero χ w_chi
 
           by_cases h_chi_in_q : χ.toLinear ∈ q
           · let I := ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
@@ -284,11 +282,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               by_cases h_trivial : genWeightSpace L β_lin = ⊥
               · simp [h_trivial]
               · let β : Weight K H L := ⟨β_lin, h_trivial⟩
-                have hβ_nonzero : β.IsNonZero := by
-                  intro h_zero; apply hβ_ne_zero
-                  have h_zero_eq : (β.toLinear : H →ₗ[K] K) = 0 := by
-                    ext h; simp [Weight.IsZero.eq h_zero]
-                  exact h_zero_eq
+                have hβ_nonzero : β.IsNonZero := get_isNonZero β hβ_ne_zero
                 refine le_trans ?_ (le_iSup _ ⟨β, hβ_in_q, hβ_nonzero⟩)
                 rw [sl2SubmoduleOfRoot_eq_sup]; exact le_sup_of_le_left (le_sup_of_le_left le_rfl)
             have h_plus_contain : genWeightSpace L (χ.toLinear + α.1.toLinear) ≤ I :=
@@ -305,11 +299,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
             have h_plus_bot : genWeightSpace L (χ.toLinear + α.1.toLinear) = ⊥ := by
               by_contra h_plus_ne_bot
               let γ : Weight K H L := ⟨χ.toLinear + α.1.toLinear, h_plus_ne_bot⟩
-              have hγ_nonzero : γ.IsNonZero := by
-                intro h_zero; apply w_plus
-                have h_zero_eq : (γ.toLinear : H →ₗ[K] K) = 0 := by
-                  ext h; simp [Weight.IsZero.eq h_zero]
-                exact h_zero_eq
+              have hγ_nonzero : γ.IsNonZero := get_isNonZero γ w_plus
               obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
               obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
@@ -323,11 +313,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
             have h_minus_bot : genWeightSpace L (χ.toLinear - α.1.toLinear) = ⊥ := by
               by_contra h_minus_ne_bot
               let γ : Weight K H L := ⟨χ.toLinear - α.1.toLinear, h_minus_ne_bot⟩
-              have hγ_nonzero : γ.IsNonZero := by
-                intro h_zero; apply w_minus
-                have h_zero_eq : (γ.toLinear : H →ₗ[K] K) = 0 := by
-                  ext h; simp [Weight.IsZero.eq h_zero]
-                exact h_zero_eq
+              have hγ_nonzero : γ.IsNonZero := get_isNonZero γ w_minus
               obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
               obtain ⟨j, hj⟩ := exists_root_index (-α.1) (Weight.IsNonZero.neg α.2.2)
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
