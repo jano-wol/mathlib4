@@ -272,7 +272,6 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
             intro h_zero
             apply h
             ext _; simp [Weight.IsZero.eq h_zero]
-          have hχ_nonzero : χ.IsNonZero := get_isNonZero χ w_chi
 
           by_cases h_chi_in_q : χ.toLinear ∈ q
           · let I := ⨆ β : {β : Weight K H L // β.toLinear ∈ q ∧ β.IsNonZero},
@@ -300,7 +299,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               by_contra h_plus_ne_bot
               let γ : Weight K H L := ⟨χ.toLinear + α.1.toLinear, h_plus_ne_bot⟩
               have hγ_nonzero : γ.IsNonZero := get_isNonZero γ w_plus
-              obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+              obtain ⟨i, hi⟩ := exists_root_index χ (get_isNonZero χ w_chi)
               obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
                 rw [hi, hj]
@@ -314,7 +313,7 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               by_contra h_minus_ne_bot
               let γ : Weight K H L := ⟨χ.toLinear - α.1.toLinear, h_minus_ne_bot⟩
               have hγ_nonzero : γ.IsNonZero := get_isNonZero γ w_minus
-              obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+              obtain ⟨i, hi⟩ := exists_root_index χ (get_isNonZero χ w_chi)
               obtain ⟨j, hj⟩ := exists_root_index (-α.1) (Weight.IsNonZero.neg α.2.2)
               have h_sum_in_range : S.root i + S.root j ∈ Set.range S.root := by
                 rw [hi, hj, Weight.toLinear_neg, ← sub_eq_add_neg]
@@ -327,11 +326,11 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
                 convert q.smul_mem (-1) α.2.1 using 1
                 rw [neg_smul, one_smul]))
 
-            obtain ⟨i, hi⟩ := exists_root_index χ hχ_nonzero
+            obtain ⟨i, hi⟩ := exists_root_index χ (get_isNonZero χ w_chi)
             obtain ⟨j, hj⟩ := exists_root_index α.1 α.2.2
             have h_pairing_zero : S.pairing i j = 0 := by
               obtain ⟨i', j', hi', hj', h_zero⟩ :=
-                pairing_zero_of_trivial_sum_diff_spaces χ α.1 hχ_nonzero α.2.2 w_plus
+                pairing_zero_of_trivial_sum_diff_spaces χ α.1 (get_isNonZero χ w_chi) α.2.2 w_plus
                   w_minus h_plus_bot h_minus_bot
               have h_i_eq : i = i' := Function.Embedding.injective S.root (by rw [hi, hi'])
               have h_j_eq : j = j' := Function.Embedding.injective S.root (by rw [hj, hj'])
