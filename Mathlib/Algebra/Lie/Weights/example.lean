@@ -365,14 +365,10 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
               obtain ⟨i', j', hi', hj', h_zero⟩ :=
                 pairing_zero_of_trivial_sum_diff_spaces χ α.1 hχ_nonzero α.2.2 w_plus
                   w_minus h_plus_bot h_minus_bot
-              have h_i_eq : i = i' := by
-                have h_root_eq : S.root i = S.root i' := by
-                  rw [hi, hi']
-                exact Function.Embedding.injective S.root h_root_eq
-              have h_j_eq : j = j' := by
-                have h_root_eq : S.root j = S.root j' := by
-                  rw [hj, hj']
-                exact Function.Embedding.injective S.root h_root_eq
+              have h_i_eq : i = i' := 
+                Function.Embedding.injective S.root (by rw [hi, hi'])
+              have h_j_eq : j = j' := 
+                Function.Embedding.injective S.root (by rw [hj, hj'])
               rw [h_i_eq, h_j_eq]
               exact h_zero
 
