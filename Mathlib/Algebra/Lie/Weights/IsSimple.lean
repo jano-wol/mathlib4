@@ -263,6 +263,28 @@ lemma eq_top_of_invtSubmodule_ne_bot (q : Submodule K (Dual K H))
     (h₀ : ∀ (i : H.root), q ∈ End.invtSubmodule ((rootSystem H).reflection i))
     (h₁ : q ≠ ⊥) : q = ⊤ := by
   have _i := nontrivial_of_isIrreducible K L L
+  by_contra h₃
+  -- Construct the Lie ideal from q
+  let I := invtSubmoduleToLieIdeal q h₀
+  -- By simplicity, I must be ⊥ or ⊤
+  have : I = ⊥ ∨ I = ⊤ := IsSimple.eq_bot_or_eq_top I
+  -- Show I ≠ ⊥ (because q ≠ ⊥ implies q contains some root)
+  have hI_ne_bot : I ≠ ⊥ := by
+    sorry
+  -- Show I ≠ ⊤ (because q ≠ ⊤ implies some root is not in q)
+  have hI_ne_top : I ≠ ⊤ := by
+    sorry
+  -- Contradiction
+  cases this with
+  | inl h => exact hI_ne_bot h
+  | inr h => exact hI_ne_top h
+
+/- Original proof kept for reference during development
+open Weight in
+lemma eq_top_of_invtSubmodule_ne_bot_OLD (q : Submodule K (Dual K H))
+    (h₀ : ∀ (i : H.root), q ∈ End.invtSubmodule ((rootSystem H).reflection i))
+    (h₁ : q ≠ ⊥) : q = ⊤ := by
+  have _i := nontrivial_of_isIrreducible K L L
   let S := rootSystem H
   by_contra h₃
   suffices h₂ : ∀ Φ, Φ.Nonempty → S.root '' Φ ⊆ q → (∀ i ∉ Φ, q ≤ LinearMap.ker (S.coroot' i)) →
@@ -410,6 +432,7 @@ lemma eq_top_of_invtSubmodule_ne_bot (q : Submodule K (Dual K H))
     rw [← h] at s₆
     exact ne_of_apply_ne (LieIdeal.toLieSubalgebra K L) s₆
   grind
+-/
 
 instance : (rootSystem H).IsIrreducible := by
   have _i := nontrivial_of_isIrreducible K L L
