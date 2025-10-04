@@ -263,18 +263,50 @@ lemma eq_top_of_invtSubmodule_ne_bot (q : Submodule K (Dual K H))
     (h₀ : ∀ (i : H.root), q ∈ End.invtSubmodule ((rootSystem H).reflection i))
     (h₁ : q ≠ ⊥) : q = ⊤ := by
   have _i := nontrivial_of_isIrreducible K L L
+  let S := rootSystem H
   by_contra h₃
-  -- Construct the Lie ideal from q
-  let I := invtSubmoduleToLieIdeal q h₀
-  -- By simplicity, I must be ⊥ or ⊤
-  have : I = ⊥ ∨ I = ⊤ := IsSimple.eq_bot_or_eq_top I
-  -- Show I ≠ ⊥ (because q ≠ ⊥ implies q contains some root)
+  -- Use the standard partition argument
+  suffices h₂ : ∀ Φ, Φ.Nonempty → S.root '' Φ ⊆ q → (∀ i ∉ Φ, q ≤ LinearMap.ker (S.coroot' i)) →
+      Φ = Set.univ by
+    have := (S.eq_top_of_mem_invtSubmodule_of_forall_eq_univ q h₁ h₀) h₂
+    apply False.elim (h₃ this)
+  intro Φ hΦ_nonempty hΦ_in_q hΦ_compl
+  by_contra hΦ_ne_univ
+  -- Define q_Φ as the span of roots in Φ
+  let q_Φ : Submodule K (Dual K H) := Submodule.span K (S.root '' Φ)
+  -- Define q_Φc as the span of roots not in Φ
+  let Φc := (Set.univ : Set H.root) \ Φ
+  let q_Φc : Submodule K (Dual K H) := Submodule.span K (S.root '' Φc)
+  -- Both are invariant under reflections
+  have hq_Φ_invt : ∀ i, q_Φ ∈ End.invtSubmodule (S.reflection i) := by
+    sorry
+  have hq_Φc_invt : ∀ i, q_Φc ∈ End.invtSubmodule (S.reflection i) := by
+    sorry
+  -- Construct corresponding ideals
+  let I := invtSubmoduleToLieIdeal q_Φ hq_Φ_invt
+  let J := invtSubmoduleToLieIdeal q_Φc hq_Φc_invt
+  -- Show neither is empty
   have hI_ne_bot : I ≠ ⊥ := by
-    sorry
-  -- Show I ≠ ⊤ (because q ≠ ⊤ implies some root is not in q)
+    sorry  -- Φ is nonempty, so q_Φ contains some root
+  have hJ_ne_bot : J ≠ ⊥ := by
+    sorry  -- Φᶜ is nonempty (since Φ ≠ univ), so q_Φᶜ contains some root
+  -- Key: Show I and J are disjoint (or I is a proper ideal)
+  have hI_disjoint_J : (I : LieSubalgebra K L) ⊓ (J : LieSubalgebra K L) = ⊥ := by
+    sorry  -- Roots in Φ and Φᶜ have zero pairing, so their sl₂ subalgebras are disjoint
+  -- This means I is a proper ideal
   have hI_ne_top : I ≠ ⊤ := by
-    sorry
-  -- Contradiction
+    intro h_top
+    -- If I = ⊤, then J ≤ I
+    have h_J_le_I : J ≤ I := by rw [h_top]; exact le_top
+    -- But J is also disjoint from I
+    have h_J_inf_I : (J : LieSubalgebra K L) ⊓ (I : LieSubalgebra K L) = ⊥ := by
+      rw [inf_comm]; exact hI_disjoint_J
+    -- So J ≤ ⊥
+    have : J = ⊥ := by
+      sorry
+    exact hJ_ne_bot this
+  -- By simplicity, I = ⊥ or I = ⊤
+  have : I = ⊥ ∨ I = ⊤ := IsSimple.eq_bot_or_eq_top I
   cases this with
   | inl h => exact hI_ne_bot h
   | inr h => exact hI_ne_top h
