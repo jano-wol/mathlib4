@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Janos Wolosz
 -/
 import Mathlib.Data.Real.Basic
-import Mathlib.MeasureTheory.Measure.Lebesgue.Basic
 import Mathlib.Data.Fintype.BigOperators
 
 /-!
@@ -16,7 +15,6 @@ Prove that `k^2 ≤ ∑ (1 / |I_i ∪ I_j|)`, where we are summing on all `(i, j
 
 namespace Schweitzer2014Q2
 
-open Set MeasureTheory
 open scoped BigOperators
 
 /-- A non-degenerate interval in [0,1] is represented by its endpoints. -/
