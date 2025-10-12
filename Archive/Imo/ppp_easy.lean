@@ -9,25 +9,29 @@ import Mathlib.Data.Rat.Defs
 import Mathlib.Data.Set.Card
 
 /-!
-# PPP easy
+# Permutations and Pigeonhole Principle (Easy Version)
 
-Let 2 ≤ n and let P be a set of permutations acting on [n] = {0, 1, 2, ..., n-1}.
-Assume that the set P acts transitively (that is, in a finite number of steps any element
-of [n] can be moved to any other element). Assume that we color red more than half of the
-elements of [n]. Take two distinct elements of [n], {a, b}. We will act on these with the
-elements of P. Show that in a finite number of steps {a, b} can be pushed to a red-red position.
+## Problem Statement
+
+Let n ≥ 2 and let P be a set of permutations acting on [n] = {0, 1, 2, ..., n-1}.
+
+**Assumptions:**
+1. **Transitivity:** The set P acts transitively on [n], meaning that for any two elements
+i, j ∈ [n], there exists a finite composition of permutations from P that maps i to j.
+2. **Majority coloring:** More than half of the elements of [n] are colored red.
+
+**Goal:** Show that for any two distinct elements a, b ∈ [n], there exists a finite composition
+of permutations from P that simultaneously maps both a and b to red-colored positions.
 
 ## Main results
 
-* `pppeasy`: Given a transitive permutation group action with more than half elements colored red,
-  any pair of distinct elements can be moved to a position where both land on red elements.
+* `pppeasy`: Given a transitive set of permutations on a finite set with more than half
+  the elements colored red, any pair of distinct elements can be moved by a composition of
+  permutations to positions where both elements land on red.
 -/
 
 namespace PPPEasy
 
-/-- Given a transitive set of permutations on Fin n, if more than n/2 elements
-are colored red, then any two distinct elements a and b can be moved by a composition
-of permutations from P to positions that are both red. -/
 theorem pppeasy (n : ℕ) (hn : 2 ≤ n) (P : Set (Equiv.Perm (Fin n)))
     (h_trans : ∀ i j : Fin n, ∃ (σ : Equiv.Perm (Fin n)),
       (∃ (perms : List (Equiv.Perm (Fin n))), (∀ p ∈ perms, p ∈ P) ∧ σ = perms.foldl (· * ·) 1) ∧
