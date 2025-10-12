@@ -20,7 +20,7 @@ of X, there exists a selected set that contains exactly one of the two elements.
 ## Definitions
 
 A family F of subsets **separates** elements x, y ∈ X if there exists S ∈ F such that
-|S ∩ {x, y}| = 1 (i.e., S contains exactly one of x or y).
+(x ∈ S ∧ y ∉ S) or (x ∉ S ∧ y ∈ S).
 
 A family F **separates all pairs** in X if it separates every pair of distinct elements.
 
