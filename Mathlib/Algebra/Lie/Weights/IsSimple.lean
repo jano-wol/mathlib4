@@ -256,6 +256,19 @@ noncomputable def invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
       simp only [add_lie, Submodule.carrier_eq_coe, SetLike.mem_coe] at ih₁ ih₂ ⊢
       exact add_mem ih₁ ih₂
 
+/-- Constructs a Lie ideal from an invariant submodule of the dual space of a Cartan subalgebra.
+This is an improved API version that takes a submodule from the `invtRootSubmodule` sublattice,
+making it usable in theorem statements. -/
+noncomputable def invtSubmoduleToLieIdeal'
+    (q : (rootSystem H).toRootPairing.invtRootSubmodule) : LieIdeal K L :=
+  invtSubmoduleToLieIdeal (q : Submodule K (Dual K H))
+    ((RootPairing.mem_invtRootSubmodule_iff (P := (rootSystem H).toRootPairing)).1 q.2)
+
+theorem disjoint_sl2SubmoduleOfRoot_of_not_mem (q : (rootSystem H).toRootPairing.invtRootSubmodule)
+    {α : Weight K H L} (hα₀ : α.IsNonZero) (hαq : ↑α ∉ (q : Submodule K (Dual K H))) :
+    Disjoint (sl2SubalgebraOfRoot hα₀) (invtSubmoduleToLieIdeal' q) := by
+  sorry
+
 section IsSimple
 
 variable [IsSimple K L]
