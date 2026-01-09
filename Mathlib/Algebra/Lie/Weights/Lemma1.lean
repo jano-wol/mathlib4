@@ -89,4 +89,17 @@ lemma exists_lieIdeal_generating_set_mem_genWeightSpace (I : LieIdeal K L) :
     exact ⟨ by exact? , by rintro x hx; rcases Set.mem_iUnion.mp hx with ⟨ χ, y, hy, rfl ⟩ ; exact ⟨ χ, by exact? ⟩ ⟩;
   obtain ⟨ x, hxS, hx ⟩ := h_contra S hS.1 ; obtain ⟨ χ, hχ ⟩ := hS.2 x hxS ; exact hx χ hχ
 
+lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
+    I.toSubmodule = ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
+  rw [ eq_comm ];
+  -- By definition of LieModule.IsTriangularizable, there exists a generating set S such that each element of S lies in some generalized weight space.
+  obtain ⟨S, hS⟩ : ∃ S : Set L, Submodule.span K S = I.toSubmodule ∧ ∀ x ∈ S, ∃ χ : Weight K H L, x ∈ genWeightSpace L χ := by
+    exact?;
+  refine' le_antisymm _ _;
+  · exact iSup_le fun χ => inf_le_left;
+  · rw [ ← hS.1, Submodule.span_le ];
+    intro x hx;
+    obtain ⟨ χ, hχ ⟩ := hS.2 x hx;
+    exact Submodule.mem_iSup_of_mem χ ( Submodule.mem_inf.mpr ⟨ Submodule.subset_span hx, hχ ⟩ )
+
 end LieAlgebra.IsKilling
