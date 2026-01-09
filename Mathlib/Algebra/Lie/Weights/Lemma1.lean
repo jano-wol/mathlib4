@@ -119,4 +119,13 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
     · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
   · aesop
 
+/-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a direct sum of
+root spaces corresponding to some subset Φ of roots. This follows from the fact that root spaces
+are 1-dimensional, so the intersection of I with each root space is either trivial or the full
+root space. -/
+lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
+    ∃ Φ : Set H.root, I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
+      ⨆ α ∈ Φ, (rootSpace H α.1).toSubmodule := by
+  sorry
+
 end LieAlgebra.IsKilling
