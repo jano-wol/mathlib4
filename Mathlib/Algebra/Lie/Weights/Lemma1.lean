@@ -102,4 +102,21 @@ lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
     obtain ⟨ χ, hχ ⟩ := hS.2 x hx;
     exact Submodule.mem_iSup_of_mem χ ( Submodule.mem_inf.mpr ⟨ Submodule.subset_span hx, hχ ⟩ )
 
+lemma lieIdeal_eq_iSup_inf (I : LieIdeal K L) :
+    I.toSubmodule = (I.toSubmodule ⊓ H.toLieSubmodule.toSubmodule) ⊔
+      ⨆ α : {α : Weight K H L // α.IsNonZero}, I.toSubmodule ⊓ (genWeightSpace L α.1).toSubmodule := by
+  -- Apply the hypothesis `h_split` to rewrite the right-hand side of the equation.
+  apply le_antisymm;
+  · have h_split : I.toSubmodule ≤ ⨆ (χ : Weight K H L), I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
+      convert lieIdeal_eq_iSup_inf_genWeightSpace I |> le_of_eq;
+      · infer_instance;
+      · infer_instance;
+    refine' le_trans h_split _;
+    refine' iSup_le _;
+    intro χ;
+    by_cases hχ : χ.IsZero;
+    · simp +decide [ hχ ];
+    · exact le_sup_of_le_right ( le_iSup_of_le ⟨ χ, hχ ⟩ le_rfl );
+  · aesop
+
 end LieAlgebra.IsKilling
