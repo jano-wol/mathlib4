@@ -130,4 +130,9 @@ theorem isCompl_killingCompl (I : LieIdeal K L) :
   · exact?;
   · apply_rules [ codisjoint_killingCompl ]
 
+
+theorem compl_eq_killingCompl (I : LieIdeal K L) :
+    Iᶜ = I.killingCompl := by
+  sorry
+
 end LieIdeal
