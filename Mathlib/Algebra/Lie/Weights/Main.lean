@@ -36,6 +36,8 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     sorry
   have s3 : Φ₁ ∪ Φ₂ = Set.univ := by
     sorry
+  have s4 : Φ₁ ≠ ∅ := by
+    sorry
   admit
 
 end LieAlgebra.IsKilling
