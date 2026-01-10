@@ -26,6 +26,9 @@ section IsIrreducible
 
 variable [(rootSystem H).IsIrreducible]
 instance : IsSimple K L := by
+  by_contra h_not_simple
+  obtain ⟨I, hI_ne_bot, hI_ne_top⟩ : ∃ I : LieIdeal K L, I ≠ ⊥ ∧ I ≠ ⊤ := by
+    sorry
   sorry
 
 end IsIrreducible
