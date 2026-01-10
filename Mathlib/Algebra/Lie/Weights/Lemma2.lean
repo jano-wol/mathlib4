@@ -133,6 +133,8 @@ theorem isCompl_killingCompl (I : LieIdeal K L) :
 
 theorem compl_eq_killingCompl (I : LieIdeal K L) :
     Iᶜ = I.killingCompl := by
-  sorry
+  have h_semisimple : IsCompl I (LieIdeal.killingCompl K L I) := by
+    apply isCompl_killingCompl;
+  exact?
 
 end LieIdeal
