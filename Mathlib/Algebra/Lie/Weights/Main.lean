@@ -9,6 +9,10 @@ open LieAlgebra LieModule Module
 variable {H : LieSubalgebra K L} [H.IsCartanSubalgebra]
 variable [IsKilling K L] [IsTriangularizable K H L]
 
+lemma cartan_sup_iSup_rootSpace_eq_top :
+    H.toLieSubmodule ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero), rootSpace H α = ⊤ := by
+  admit
+
 lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
     ∃ Φ : Set H.root, I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
       ⨆ α ∈ Φ, (rootSpace H α.1).toSubmodule := by
