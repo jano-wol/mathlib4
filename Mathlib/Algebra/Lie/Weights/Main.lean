@@ -22,15 +22,20 @@ theorem compl_eq_killingCompl (I : LieIdeal K L) :
     Iᶜ = I.killingCompl := by
   admit
 
-section IsIrreducible
-
-variable [(rootSystem H).IsIrreducible]
-instance : IsSimple K L := by
+theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimple K L := by
   by_contra h_not_simple
   obtain ⟨I, hI_ne_bot, hI_ne_top⟩ : ∃ I : LieIdeal K L, I ≠ ⊥ ∧ I ≠ ⊤ := by
     sorry
-  sorry
+  let J := I.killingCompl
+  obtain ⟨Φ₁, hΦ₁⟩ := exists_rootSet_lieIdeal_eq (H := H) I
+  obtain ⟨Φ₂, hΦ₂⟩ := exists_rootSet_lieIdeal_eq (H := H) J
 
-end IsIrreducible
+  have s1 : H.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔ (J.toSubmodule ⊓ H.toSubmodule) := by
+    sorry
+  have s2 : Φ₁ ∩ Φ₂ = ∅ := by
+    sorry
+  have s3 : Φ₁ ∪ Φ₂ = Set.univ := by
+    sorry
+  admit
 
 end LieAlgebra.IsKilling
