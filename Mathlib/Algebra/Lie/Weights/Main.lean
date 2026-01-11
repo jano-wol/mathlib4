@@ -128,9 +128,18 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     -- Since $I$ and $J$ are Lie ideals, their intersection as submodules is the same as their intersection as Lie ideals.
     convert h_compl using 1;
     simp +decide [ SetLike.ext_iff, LieSubmodule.mem_inf ]
-/-
+
   have s2 : Φ₁ ∩ Φ₂ = ∅ := by
-    sorry
+    ext α
+    simp [bot_1];
+    intro hα₁ hα₂
+    have h_contra : (rootSpace H α.val).toSubmodule ≤ (I : Submodule K L) ⊓ (J : Submodule K L) := by
+      simp +zetaDelta at *;
+      exact ⟨ hΦ₁.symm ▸ le_sup_of_le_right ( le_iSup₂_of_le α hα₁ le_rfl ), hΦ₂.symm ▸ le_sup_of_le_right ( le_iSup₂_of_le α hα₂ le_rfl ) ⟩;
+    have h_contra : (rootSpace H α.val) ≠ ⊥ := by
+      exact?;
+    exact h_contra ( by simpa [ bot_1 ] using ‹ ( LieAlgebra.rootSpace H ( α.val ) : Submodule K L ) ≤ ( I : Submodule K L ) ⊓ ( J : Submodule K L ) › )
+/-
   have s3 : Φ₁ ∪ Φ₂ = Set.univ := by
     sorry
   have s4 : Φ₁ ≠ ∅ := by
