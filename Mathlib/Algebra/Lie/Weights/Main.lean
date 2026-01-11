@@ -109,6 +109,25 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
         exact?
       exact?;
     exact h_cartan_decomp
+
+  have sup_1 : I.toSubmodule ⊔ J.toSubmodule = ⊤ := by
+    have := LieAlgebra.IsKilling.isCompl_killingCompl I;
+    -- Since $I$ and $J$ are complementary ideals, their sum as submodules is the entire space.
+    have h_sup : (I : Submodule K L) ⊔ (J : Submodule K L) = ⊤ := by
+      have := this.sup_eq_top
+      convert congr_arg ( fun x : LieIdeal K L => x.toLieSubalgebra.toSubmodule ) this using 1;
+    convert h_sup using 1
+
+  have bot_1 : I.toSubmodule ⊓ J.toSubmodule = ⊥  := by
+    -- Since $I$ and $J$ are complementary, their intersection is trivial.
+    have h_compl : I ⊓ J = ⊥ := by
+      have h_compl : IsCompl I J := by
+        -- By definition of the Killing form, we know that $I$ and $J$ are complementary as ideals.
+        apply isCompl_killingCompl
+      exact h_compl.inf_eq_bot;
+    -- Since $I$ and $J$ are Lie ideals, their intersection as submodules is the same as their intersection as Lie ideals.
+    convert h_compl using 1;
+    simp +decide [ SetLike.ext_iff, LieSubmodule.mem_inf ]
 /-
   have s2 : Φ₁ ∩ Φ₂ = ∅ := by
     sorry
