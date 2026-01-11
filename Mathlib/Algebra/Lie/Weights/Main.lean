@@ -137,7 +137,11 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       simp +zetaDelta at *;
       exact ⟨ hΦ₁.symm ▸ le_sup_of_le_right ( le_iSup₂_of_le α hα₁ le_rfl ), hΦ₂.symm ▸ le_sup_of_le_right ( le_iSup₂_of_le α hα₂ le_rfl ) ⟩;
     have h_contra : (rootSpace H α.val) ≠ ⊥ := by
-      exact?;
+      have := α.val.genWeightSpace_ne_bot
+      simp at this
+      simp
+      dsimp [rootSpace]
+      exact this
     exact h_contra ( by simpa [ bot_1 ] using ‹ ( LieAlgebra.rootSpace H ( α.val ) : Submodule K L ) ≤ ( I : Submodule K L ) ⊓ ( J : Submodule K L ) › )
 /-
   have s3 : Φ₁ ∪ Φ₂ = Set.univ := by
