@@ -73,8 +73,25 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     -- Step 4: (rootSpace H β) ⊓ H = ⊥
     -- Key: H.toLieSubmodule = rootSpace H 0 (by rootSpace_zero_eq)
     -- Since β.IsNonZero, β ≠ 0, so by h_indep they have trivial intersection
-    have h_inf_H : (rootSpace H β).toSubmodule ⊓ H.toSubmodule = ⊥ :=
-      sorry
+    have h_inf_H : (rootSpace H β).toSubmodule ⊓ H.toSubmodule = ⊥ := by
+        -- Since β is a non-zero root, the root space LieAlgebra.rootSpace H β is non-zero. However, the Cartan subalgebra H is a subalgebra, and the root spaces are orthogonal to H. Therefore, the intersection of LieAlgebra.rootSpace H β and H.toSubmodule must be zero.
+        have h_orthogonal : ∀ x ∈ LieAlgebra.rootSpace H β.val, x ∈ H.toSubmodule → x = 0 := by
+          intro x hx₁ hx₂;
+          have h_orthogonal : ∀ h : H, β.val h • x = 0 := by
+            intro h;
+            have h_orthogonal : ∀ h : H, β.val h • x = 0 := by
+              intro h
+              have h_comm : ⁅h, x⁆ = β.val h • x := by
+                exact?
+              rw [ ← h_comm, LieSubalgebra.coe_bracket_of_module ];
+              -- Since $H$ is a Cartan subalgebra, it is abelian, so $[h, x] = 0$ for any $h, x \in H$.
+              have h_abelian : ∀ h x : H, ⁅h, x⁆ = 0 := by
+                simp +decide [ LieSubalgebra.IsCartanSubalgebra ];
+              exact congr_arg Subtype.val ( h_abelian h ⟨ x, hx₂ ⟩ );
+            exact h_orthogonal h;
+          contrapose! hβ_nonzero;
+          exact funext fun h => by simpa [ hβ_nonzero ] using h_orthogonal h;
+        exact eq_bot_iff.mpr fun x hx => h_orthogonal x hx.1 hx.2
 
     -- Step 5: (rootSpace H β) ⊓ I = ⊥
     -- From hΦ₁: I = (I ⊓ H) ⊔ (⨆ α ∈ Φ₁, rootSpace H α)
