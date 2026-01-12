@@ -55,61 +55,53 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
 
     -- Step 2: Independence of weight spaces (rootSpace = genWeightSpace)
     -- Key lemma: iSupIndep_genWeightSpace' gives independence over all weights
+    -- rootSpace H χ = genWeightSpace L χ by definition
     have h_indep : iSupIndep fun (χ : Weight K H L) => (rootSpace H χ).toSubmodule :=
-      sorry -- use iSupIndep_genWeightSpace' and the fact that rootSpace = genWeightSpace
+      LieSubmodule.iSupIndep_toSubmodule.mpr (iSupIndep_genWeightSpace' K H L)
 
-    -- Step 3: rootSpace H β is disjoint from ⨆ α ∈ Φ₁, rootSpace H α
+    -- Step 3: (rootSpace H β) ⊓ (⨆ α ∈ Φ₁, rootSpace H α) = ⊥
     -- Use: iSupIndep.disjoint_biSup with h_indep and hβ_not_Φ₁
-    have h_disj_Φ₁ : Disjoint (rootSpace H β).toSubmodule (⨆ α ∈ Φ₁, (rootSpace H α.1).toSubmodule) :=
+    have h_inf_Φ₁ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₁, (rootSpace H α.1).toSubmodule) = ⊥ :=
       sorry
 
-    -- Step 4: rootSpace H β is disjoint from H.toSubmodule
+    -- Step 4: (rootSpace H β) ⊓ H = ⊥
     -- Key: H.toLieSubmodule = rootSpace H 0 (by rootSpace_zero_eq)
-    -- Since β.IsNonZero, β ≠ 0, so by h_indep they are disjoint
-    have h_disj_H : Disjoint (rootSpace H β).toSubmodule H.toSubmodule :=
+    -- Since β.IsNonZero, β ≠ 0, so by h_indep they have trivial intersection
+    have h_inf_H : (rootSpace H β).toSubmodule ⊓ H.toSubmodule = ⊥ :=
       sorry
 
-    -- Step 5: rootSpace H β is disjoint from I.toSubmodule
+    -- Step 5: (rootSpace H β) ⊓ I = ⊥
     -- From hΦ₁: I = (I ⊓ H) ⊔ (⨆ α ∈ Φ₁, rootSpace H α)
-    -- rootSpace H β is disjoint from H (step 4), hence from I ⊓ H
-    -- rootSpace H β is disjoint from ⨆ α ∈ Φ₁ (step 3)
-    -- Therefore disjoint from their sup
-    -- Use: Disjoint.sup_right or Submodule.disjoint_def
-    have h_disj_I : Disjoint (rootSpace H β).toSubmodule I.toSubmodule := by
-      rw [hΦ₁]
-      -- Need: Disjoint with (I ⊓ H) ⊔ (⨆ α ∈ Φ₁, rootSpace H α)
-      -- We have h_disj_H (disjoint with H) and h_disj_Φ₁ (disjoint with the sup)
+    -- (rootSpace H β) ⊓ H = ⊥ (step 4), hence (rootSpace H β) ⊓ (I ⊓ H) = ⊥
+    -- (rootSpace H β) ⊓ (⨆ α ∈ Φ₁) = ⊥ (step 3)
+    -- Need: a ⊓ (b ⊔ c) = ⊥ when a ⊓ b = ⊥ and a ⊓ c = ⊥
+    -- This follows from: a ⊓ (b ⊔ c) ≤ (a ⊓ b) ⊔ (a ⊓ c) in modular lattice? No...
+    -- Actually need: I ≤ ⨆ χ ≠ β, rootSpace H χ, then use h_indep
+    have h_inf_I : (rootSpace H β).toSubmodule ⊓ I.toSubmodule = ⊥ := by
       sorry
 
-    -- Step 6: rootSpace H β is disjoint from ⨆ α ∈ Φ₂, rootSpace H α
+    -- Step 6: (rootSpace H β) ⊓ (⨆ α ∈ Φ₂, rootSpace H α) = ⊥
     -- Similar to step 3, using hβ_not_Φ₂
-    have h_disj_Φ₂ : Disjoint (rootSpace H β).toSubmodule (⨆ α ∈ Φ₂, (rootSpace H α.1).toSubmodule) :=
+    have h_inf_Φ₂ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₂, (rootSpace H α.1).toSubmodule) = ⊥ :=
       sorry
 
-    -- Step 7: rootSpace H β is disjoint from J.toSubmodule
-    have h_disj_J : Disjoint (rootSpace H β).toSubmodule J.toSubmodule := by
-      rw [hΦ₂]
+    -- Step 7: (rootSpace H β) ⊓ J = ⊥
+    have h_inf_J : (rootSpace H β).toSubmodule ⊓ J.toSubmodule = ⊥ := by
       sorry
 
-    -- Step 8: rootSpace H β is disjoint from I ⊔ J
-    have h_disj_IJ : Disjoint (rootSpace H β).toSubmodule (I.toSubmodule ⊔ J.toSubmodule) := by
-      -- Use h_disj_I and h_disj_J
-      -- For Submodules: x ⊓ (y ⊔ z) = (x ⊓ y) ⊔ (x ⊓ z) due to IsModularLattice
-      -- Disjoint a b ↔ a ⊓ b = ⊥
-      -- Disjoint a (b ⊔ c) ← Disjoint a b ∧ Disjoint a c
+    -- Step 8: (rootSpace H β) ⊓ (I ⊔ J) = ⊥
+    have h_inf_IJ : (rootSpace H β).toSubmodule ⊓ (I.toSubmodule ⊔ J.toSubmodule) = ⊥ := by
       sorry
 
-    -- Step 9: But I ⊔ J = ⊤, so rootSpace H β is disjoint from ⊤
-    rw [sup_1, disjoint_top] at h_disj_IJ
+    -- Step 9: But I ⊔ J = ⊤, so (rootSpace H β) ⊓ ⊤ = ⊥
+    rw [sup_1, inf_top_eq] at h_inf_IJ
 
     -- Step 10: This means rootSpace H β = ⊥
     have h_bot : rootSpace H β = ⊥ := by
       rw [← LieSubmodule.toSubmodule_eq_bot]
-      exact h_disj_IJ
+      exact h_inf_IJ
 
     -- Step 11: But rootSpace H β ≠ ⊥ for any weight β
-    -- β : ↥LieSubalgebra.root coerces to Weight K H L
-    -- rootSpace H β = genWeightSpace L β, and Weight.genWeightSpace_ne_bot' gives ne ⊥
     have h_ne_bot : rootSpace H β ≠ ⊥ := (β : Weight K H L).genWeightSpace_ne_bot'
 
     exact h_ne_bot h_bot
