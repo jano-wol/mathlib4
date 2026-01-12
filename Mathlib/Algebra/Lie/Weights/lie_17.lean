@@ -62,7 +62,13 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     -- Step 3: (rootSpace H β) ⊓ (⨆ α ∈ Φ₁, rootSpace H α) = ⊥
     -- Use: iSupIndep.disjoint_biSup with h_indep and hβ_not_Φ₁
     have h_inf_Φ₁ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₁, (rootSpace H α.1).toSubmodule) = ⊥ :=
-      sorry
+      by
+        have := h_indep ( β : LieModule.Weight K H L );
+        -- Since the supremum of the root spaces for Φ₁ is contained within the supremum of the root spaces for all weights except β, and the root space of β is disjoint from that supremum, their intersection is zero.
+        have h_contained : ⨆ α ∈ Φ₁, (rootSpace H α.val).toSubmodule ≤ ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
+          simp +decide [ iSup_le_iff ];
+          exact fun a ha ha' => le_iSup₂_of_le a ( by rintro rfl; exact hβ_not_Φ₁ ha' ) le_rfl;
+        exact eq_bot_iff.mpr fun x hx => this.le_bot ⟨ hx.1, h_contained hx.2 ⟩
 
     -- Step 4: (rootSpace H β) ⊓ H = ⊥
     -- Key: H.toLieSubmodule = rootSpace H 0 (by rootSpace_zero_eq)
@@ -82,8 +88,13 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
 
     -- Step 6: (rootSpace H β) ⊓ (⨆ α ∈ Φ₂, rootSpace H α) = ⊥
     -- Similar to step 3, using hβ_not_Φ₂
-    have h_inf_Φ₂ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₂, (rootSpace H α.1).toSubmodule) = ⊥ :=
-      sorry
+    have h_inf_Φ₂ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₂, (rootSpace H α.1).toSubmodule) = ⊥ := by
+      have := h_indep (β : Weight K H L)
+      have h_contained : ⨆ α ∈ Φ₂, (rootSpace H α.val).toSubmodule ≤
+          ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
+        simp +decide [iSup_le_iff]
+        exact fun a ha ha' => le_iSup₂_of_le a (by rintro rfl; exact hβ_not_Φ₂ ha') le_rfl
+      exact eq_bot_iff.mpr fun x hx => this.le_bot ⟨hx.1, h_contained hx.2⟩
 
     -- Step 7: (rootSpace H β) ⊓ J = ⊥
     have h_inf_J : (rootSpace H β).toSubmodule ⊓ J.toSubmodule = ⊥ := by
