@@ -59,81 +59,38 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     have h_indep : iSupIndep fun (χ : Weight K H L) => (rootSpace H χ).toSubmodule :=
       LieSubmodule.iSupIndep_toSubmodule.mpr (iSupIndep_genWeightSpace' K H L)
 
-    -- Step 3: (rootSpace H β) ⊓ (⨆ α ∈ Φ₁, rootSpace H α) = ⊥
-    -- Use: iSupIndep.disjoint_biSup with h_indep and hβ_not_Φ₁
-    have h_inf_Φ₁ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₁, (rootSpace H α.1).toSubmodule) = ⊥ :=
-      by
-        have := h_indep ( β : LieModule.Weight K H L );
-        -- Since the supremum of the root spaces for Φ₁ is contained within the supremum of the root spaces for all weights except β, and the root space of β is disjoint from that supremum, their intersection is zero.
-        have h_contained : ⨆ α ∈ Φ₁, (rootSpace H α.val).toSubmodule ≤ ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
-          simp +decide [ iSup_le_iff ];
-          exact fun a ha ha' => le_iSup₂_of_le a ( by rintro rfl; exact hβ_not_Φ₁ ha' ) le_rfl;
-        exact eq_bot_iff.mpr fun x hx => this.le_bot ⟨ hx.1, h_contained hx.2 ⟩
+    let C := ⨆ j ≠ (β : Weight K H L), (rootSpace H j).toSubmodule
 
-    -- Step 4: (rootSpace H β) ⊓ H = ⊥
-    -- Key: H.toLieSubmodule = rootSpace H 0 (by rootSpace_zero_eq)
-    -- Since β.IsNonZero, β ≠ 0, so by h_indep they have trivial intersection
-    have h_inf_H : (rootSpace H β).toSubmodule ⊓ H.toSubmodule = ⊥ := by
-        -- Since β is a non-zero root, the root space LieAlgebra.rootSpace H β is non-zero. However, the Cartan subalgebra H is a subalgebra, and the root spaces are orthogonal to H. Therefore, the intersection of LieAlgebra.rootSpace H β and H.toSubmodule must be zero.
-        have h_orthogonal : ∀ x ∈ LieAlgebra.rootSpace H β.val, x ∈ H.toSubmodule → x = 0 := by
-          intro x hx₁ hx₂;
-          have h_orthogonal : ∀ h : H, β.val h • x = 0 := by
-            intro h;
-            have h_orthogonal : ∀ h : H, β.val h • x = 0 := by
-              intro h
-              have h_comm : ⁅h, x⁆ = β.val h • x := by
-                exact?
-              rw [ ← h_comm, LieSubalgebra.coe_bracket_of_module ];
-              -- Since $H$ is a Cartan subalgebra, it is abelian, so $[h, x] = 0$ for any $h, x \in H$.
-              have h_abelian : ∀ h x : H, ⁅h, x⁆ = 0 := by
-                simp +decide [ LieSubalgebra.IsCartanSubalgebra ];
-              exact congr_arg Subtype.val ( h_abelian h ⟨ x, hx₂ ⟩ );
-            exact h_orthogonal h;
-          contrapose! hβ_nonzero;
-          exact funext fun h => by simpa [ hβ_nonzero ] using h_orthogonal h;
-        exact eq_bot_iff.mpr fun x hx => h_orthogonal x hx.1 hx.2
+    -- Step 3: (rootSpace H β) ⊓ C = ⊥ (directly from h_indep)
+    -- h_indep gives Disjoint, convert to ⊓ = ⊥ using disjoint_iff
+    have h_inf_C : (rootSpace H β).toSubmodule ⊓ C = ⊥ := disjoint_iff.mp (h_indep (β : Weight K H L))
 
-    -- Step 5: (rootSpace H β) ⊓ I = ⊥
-    -- From hΦ₁: I = (I ⊓ H) ⊔ (⨆ α ∈ Φ₁, rootSpace H α)
-    -- (rootSpace H β) ⊓ H = ⊥ (step 4), hence (rootSpace H β) ⊓ (I ⊓ H) = ⊥
-    -- (rootSpace H β) ⊓ (⨆ α ∈ Φ₁) = ⊥ (step 3)
-    -- Need: a ⊓ (b ⊔ c) = ⊥ when a ⊓ b = ⊥ and a ⊓ c = ⊥
-    -- This follows from: a ⊓ (b ⊔ c) ≤ (a ⊓ b) ⊔ (a ⊓ c) in modular lattice? No...
-    -- Actually need: I ≤ ⨆ χ ≠ β, rootSpace H χ, then use h_indep
-    have h_inf_I : (rootSpace H β).toSubmodule ⊓ I.toSubmodule = ⊥ := by
+
+    -- (1) H ≤ C: H = rootSpace H 0, and 0 ≠ β (since β is nonzero)
+    -- Key: rootSpace_zero_eq, le_iSup₂_of_le
+    have h_H_le_C : H.toSubmodule ≤ C := by
       sorry
 
-    -- Step 6: (rootSpace H β) ⊓ (⨆ α ∈ Φ₂, rootSpace H α) = ⊥
-    -- Similar to step 3, using hβ_not_Φ₂
-    have h_inf_Φ₂ : (rootSpace H β).toSubmodule ⊓ (⨆ α ∈ Φ₂, (rootSpace H α.1).toSubmodule) = ⊥ := by
-      have := h_indep (β : Weight K H L)
-      have h_contained : ⨆ α ∈ Φ₂, (rootSpace H α.val).toSubmodule ≤
-          ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
-        simp +decide [iSup_le_iff]
-        exact fun a ha ha' => le_iSup₂_of_le a (by rintro rfl; exact hβ_not_Φ₂ ha') le_rfl
-      exact eq_bot_iff.mpr fun x hx => this.le_bot ⟨hx.1, h_contained hx.2⟩
+    -- (2) For any α ≠ β, rootSpace H α ≤ C
+    have h_rootSpace_le_C : ∀ α : Weight K H L, α ≠ β → (rootSpace H α).toSubmodule ≤ C :=
+      fun α hα => le_iSup₂_of_le α hα (le_refl _)
 
-    -- Step 7: (rootSpace H β) ⊓ J = ⊥
-    have h_inf_J : (rootSpace H β).toSubmodule ⊓ J.toSubmodule = ⊥ := by
-      sorry
+    -- I ≤ C: From hΦ₁, I = (I ⊓ H) ⊔ ⨆ α ∈ Φ₁, rootSpace H α
+    -- (I ⊓ H) ≤ H ≤ C and each rootSpace in Φ₁ ≤ C (since β ∉ Φ₁)
+    have h_I_le_C : I.toSubmodule ≤ C := by
+      refine' le_trans ( hΦ₁.le ) _;
+      -- Since $H \subseteq C$, we have $I \cap H \subseteq C$.
+      have hIH_subset_C : (I : Submodule K L) ⊓ H.toSubmodule ≤ ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
+        refine' le_trans _ ( h_H_le_C);
+        exact inf_le_right;
+      refine' sup_le hIH_subset_C _;
+      simp +decide [ iSup_le_iff ];
+      exact fun a ha ha' => le_iSup₂_of_le a ( by rintro rfl; exact hβ_not_Φ₁ ha' ) le_rfl
 
-    -- Step 8: (rootSpace H β) ⊓ (I ⊔ J) = ⊥
-    have h_inf_IJ : (rootSpace H β).toSubmodule ⊓ (I.toSubmodule ⊔ J.toSubmodule) = ⊥ := by
-      sorry
-
-    -- Step 9: But I ⊔ J = ⊤, so (rootSpace H β) ⊓ ⊤ = ⊥
-    rw [sup_1, inf_top_eq] at h_inf_IJ
-
-    -- Step 10: This means rootSpace H β = ⊥
-    have h_bot : rootSpace H β = ⊥ := by
-      rw [← LieSubmodule.toSubmodule_eq_bot]
-      exact h_inf_IJ
-
-    -- Step 11: But rootSpace H β ≠ ⊥ for any weight β
-    have h_ne_bot : rootSpace H β ≠ ⊥ := (β : Weight K H L).genWeightSpace_ne_bot'
-
-    exact h_ne_bot h_bot
-
+    -- Now h_inf_I follows from h_I_le_C and h_inf_C via eq_bot_iff.
+    have h_inf_I : (rootSpace H β).toSubmodule ⊓ I.toSubmodule = ⊥ :=
+      eq_bot_iff.mpr fun x hx => h_inf_C.le ⟨hx.1, h_I_le_C hx.2⟩
+    admit
   admit
 
 end LieAlgebra.IsKilling
