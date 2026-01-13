@@ -204,10 +204,30 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       simp +decide [ iSup_le_iff ];
       exact fun a ha ha' => le_iSup₂_of_le a ( by rintro rfl; exact hβ_not_Φ₁ ha' ) le_rfl
 
+    have h_J_le_C : J.toSubmodule ≤ C := by
+      refine' le_trans ( hΦ₂.le ) _;
+      -- Since $H \subseteq C$, we have $I \cap H \subseteq C$.
+      have hJH_subset_C : (J : Submodule K L) ⊓ H.toSubmodule ≤ ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
+        refine' le_trans _ ( h_H_le_C);
+        exact inf_le_right;
+      refine' sup_le hJH_subset_C _;
+      simp +decide [ iSup_le_iff ];
+      exact fun a ha ha' => le_iSup₂_of_le a ( by rintro rfl; exact hβ_not_Φ₂ ha' ) le_rfl
+
+    have h_leq : I.toSubmodule ⊔ J.toSubmodule ≤ C := by
+      exact sup_le h_I_le_C h_J_le_C
+
     -- Now h_inf_I follows from h_I_le_C and h_inf_C via eq_bot_iff.
-    have h_inf_I : (rootSpace H β).toSubmodule ⊓ I.toSubmodule = ⊥ :=
-      eq_bot_iff.mpr fun x hx => h_inf_C.le ⟨hx.1, h_I_le_C hx.2⟩
-    admit
+    have h_inf_I : (rootSpace H β).toSubmodule ⊓ (I.toSubmodule ⊔ J.toSubmodule) = ⊥ :=
+      eq_bot_iff.mpr fun x hx => h_inf_C.le ⟨hx.1, h_leq hx.2⟩
+    rw [sup_1] at h_inf_I
+    have h_rootSpace_nonzero : (rootSpace H β : Submodule K L) ≠ ⊥ := by
+      have := β.val.genWeightSpace_ne_bot
+      simp at this
+      simp
+      dsimp [rootSpace]
+      exact this
+    exact h_rootSpace_nonzero ( by simpa using h_inf_I )
 
 /-
   have s4 : Φ₁ ≠ ∅ := by
