@@ -133,6 +133,12 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       convert congr_arg ( fun x : LieIdeal K L => x.toLieSubalgebra.toSubmodule ) this using 1;
     convert h_sup using 1
 
+  have hJ_ne_bot : J ≠ ⊥ := by
+    by_contra J_bot
+    rw [J_bot] at sup_1
+    simp at sup_1
+    exact Ne.elim hI_ne_top sup_1
+
   have bot_1 : I.toSubmodule ⊓ J.toSubmodule = ⊥  := by
     -- Since $I$ and $J$ are complementary, their intersection is trivial.
     have h_compl : I ⊓ J = ⊥ := by
@@ -233,7 +239,39 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     by_contra Φ_empty
     rw [Φ_empty] at hΦ₁
     simp at hΦ₁
-    exact Ne.elim (fun a ↦ h_not_simple instIsSimple) hΦ₂
+    have ttt := cartan_is_abelian (K := K) (H := H) (L := L)
+    have rrr : IsLieAbelian I := by
+      have hI_abelian : IsLieAbelian (↥I) := by
+        have h_submodule : I.toSubmodule ≤ H.toSubmodule := hΦ₁
+        constructor;
+        have h_abelian : ∀ x m : L, x ∈ I.toSubmodule → m ∈ I.toSubmodule → ⁅x, m⁆ = 0 := by
+          intro x m hx hm;
+          have := ttt.1 ⟨ x, h_submodule hx ⟩ ⟨ m, h_submodule hm ⟩;
+          exact congr_arg Subtype.val this;
+        exact fun x m => Subtype.ext <| h_abelian x m x.2 m.2;
+      exact hI_abelian
+    haveI : LieAlgebra.IsSemisimple K L := LieAlgebra.IsKilling.instSemisimple K L
+    exact hI_ne_bot ( by
+      exact HasTrivialRadical.eq_bot_of_isSolvable I )
+
+  have s5 : Φ₂ ≠ ∅ := by
+    by_contra Φ_empty
+    rw [Φ_empty] at hΦ₂
+    simp at hΦ₂
+    have ttt := cartan_is_abelian (K := K) (H := H) (L := L)
+    have rrr : IsLieAbelian J := by
+      have hI_abelian : IsLieAbelian (↥J) := by
+        have h_submodule : J.toSubmodule ≤ H.toSubmodule := hΦ₂
+        constructor;
+        have h_abelian : ∀ x m : L, x ∈ J.toSubmodule → m ∈ J.toSubmodule → ⁅x, m⁆ = 0 := by
+          intro x m hx hm;
+          have := ttt.1 ⟨ x, h_submodule hx ⟩ ⟨ m, h_submodule hm ⟩;
+          exact congr_arg Subtype.val this;
+        exact fun x m => Subtype.ext <| h_abelian x m x.2 m.2;
+      exact hI_abelian
+    haveI : LieAlgebra.IsSemisimple K L := LieAlgebra.IsKilling.instSemisimple K L
+    exact hJ_ne_bot ( by
+      exact HasTrivialRadical.eq_bot_of_isSolvable J )
   admit
 
 end LieAlgebra.IsKilling
