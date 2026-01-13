@@ -78,6 +78,21 @@ lemma cartan_eq_sup_inf_ideal (I : LieIdeal K L) (hI : IsCompl I I.killingCompl)
     exact Submodule.mem_sup.mpr ⟨ i, ⟨ hi, h_i_j_in_H.1 ⟩, j, ⟨ hj, h_i_j_in_H.2 ⟩, by simp +decide [ hx_eq ] ⟩;
   exact le_antisymm h_le ( sup_le ( inf_le_right ) ( inf_le_right ) )
 
+lemma h_H_le_C_1 (β : Weight K H L) (hβ : β.IsNonZero) :
+    H.toSubmodule ≤ ⨆ j ≠ β, (rootSpace H j).toSubmodule := by
+  intro x hx;
+  have h_sum : x ∈ LieAlgebra.rootSpace H 0 := by
+    simp_all +decide [ LieAlgebra.rootSpace, LieSubalgebra.mem_toSubmodule ];
+  refine' Submodule.mem_iSup_of_mem _ ( Submodule.mem_iSup_of_mem _ _ );
+  exact ⟨ 0, by
+    intro h;
+    rw [ LieSubmodule.eq_bot_iff ] at h;
+    contrapose! hβ;
+    ext x; specialize h x; aesop; ⟩
+  all_goals generalize_proofs at *;
+  · exact fun h => hβ <| h ▸ rfl;
+  · exact h_sum
+
 theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimple K L := by
   by_contra h_not_simple
   obtain ⟨I, hI_ne_bot, hI_ne_top⟩ : ∃ I : LieIdeal K L, I ≠ ⊥ ∧ I ≠ ⊤ := by
@@ -143,9 +158,58 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       dsimp [rootSpace]
       exact this
     exact h_contra ( by simpa [ bot_1 ] using ‹ ( LieAlgebra.rootSpace H ( α.val ) : Submodule K L ) ≤ ( I : Submodule K L ) ⊓ ( J : Submodule K L ) › )
-/-
+
   have s3 : Φ₁ ∪ Φ₂ = Set.univ := by
-    sorry
+    by_contra h_not_univ
+    rw [← ne_eq, Set.ne_univ_iff_exists_notMem] at h_not_univ
+    obtain ⟨β, hβ⟩ := h_not_univ
+    rw [Set.mem_union, not_or] at hβ
+    obtain ⟨hβ_not_Φ₁, hβ_not_Φ₂⟩ := hβ
+
+    -- Step 1: β is a nonzero weight (since β ∈ H.root = {α | α.IsNonZero})
+    have hβ_nonzero : (β : Weight K H L).IsNonZero := by
+      -- Extract IsNonZero from membership in LieSubalgebra.root
+      have := β.2
+      simp only [LieSubalgebra.root, Finset.mem_filter, Finset.mem_univ, true_and] at this
+      exact this
+
+    -- Step 2: Independence of weight spaces (rootSpace = genWeightSpace)
+    -- Key lemma: iSupIndep_genWeightSpace' gives independence over all weights
+    -- rootSpace H χ = genWeightSpace L χ by definition
+    have h_indep : iSupIndep fun (χ : Weight K H L) => (rootSpace H χ).toSubmodule :=
+      LieSubmodule.iSupIndep_toSubmodule.mpr (iSupIndep_genWeightSpace' K H L)
+
+    let C := ⨆ j ≠ (β : Weight K H L), (rootSpace H j).toSubmodule
+
+    -- Step 3: (rootSpace H β) ⊓ C = ⊥ (directly from h_indep)
+    -- h_indep gives Disjoint, convert to ⊓ = ⊥ using disjoint_iff
+    have h_inf_C : (rootSpace H β).toSubmodule ⊓ C = ⊥ := disjoint_iff.mp (h_indep (β : Weight K H L))
+
+    have h_H_le_C : H.toSubmodule ≤ C := by
+      apply h_H_le_C_1 β.val hβ_nonzero
+
+    -- (2) For any α ≠ β, rootSpace H α ≤ C
+    have h_rootSpace_le_C : ∀ α : Weight K H L, α ≠ β → (rootSpace H α).toSubmodule ≤ C :=
+      fun α hα => le_iSup₂_of_le α hα (le_refl _)
+
+    -- I ≤ C: From hΦ₁, I = (I ⊓ H) ⊔ ⨆ α ∈ Φ₁, rootSpace H α
+    -- (I ⊓ H) ≤ H ≤ C and each rootSpace in Φ₁ ≤ C (since β ∉ Φ₁)
+    have h_I_le_C : I.toSubmodule ≤ C := by
+      refine' le_trans ( hΦ₁.le ) _;
+      -- Since $H \subseteq C$, we have $I \cap H \subseteq C$.
+      have hIH_subset_C : (I : Submodule K L) ⊓ H.toSubmodule ≤ ⨆ j ≠ β.val, (rootSpace H j).toSubmodule := by
+        refine' le_trans _ ( h_H_le_C);
+        exact inf_le_right;
+      refine' sup_le hIH_subset_C _;
+      simp +decide [ iSup_le_iff ];
+      exact fun a ha ha' => le_iSup₂_of_le a ( by rintro rfl; exact hβ_not_Φ₁ ha' ) le_rfl
+
+    -- Now h_inf_I follows from h_I_le_C and h_inf_C via eq_bot_iff.
+    have h_inf_I : (rootSpace H β).toSubmodule ⊓ I.toSubmodule = ⊥ :=
+      eq_bot_iff.mpr fun x hx => h_inf_C.le ⟨hx.1, h_I_le_C hx.2⟩
+    admit
+
+/-
   have s4 : Φ₁ ≠ ∅ := by
     sorry
 --/
