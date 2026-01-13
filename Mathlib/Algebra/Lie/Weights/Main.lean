@@ -229,10 +229,11 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       exact this
     exact h_rootSpace_nonzero ( by simpa using h_inf_I )
 
-/-
   have s4 : Φ₁ ≠ ∅ := by
-    sorry
---/
+    by_contra Φ_empty
+    rw [Φ_empty] at hΦ₁
+    simp at hΦ₁
+    exact Ne.elim (fun a ↦ h_not_simple instIsSimple) hΦ₂
   admit
 
 end LieAlgebra.IsKilling
