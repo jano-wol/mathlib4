@@ -274,7 +274,57 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       exact HasTrivialRadical.eq_bot_of_isSolvable J )
   let S := rootSystem H
   have xxx (i : Φ₁) (j : Φ₂) : S.pairing i j = 0 := by
-    sorry
-  admit
+    admit
+  have := hIrr;
+  cases this;
+  rename_i h₁ h₂ h₃;
+  contrapose! h₂;
+  refine' ⟨ Submodule.span K ( Set.image ( fun i : Φ₁ => ( LieAlgebra.IsKilling.rootSystem H ).root i ) Set.univ ), _, _, _ ⟩;
+  · intro i;
+    simp +decide [ Module.End.mem_invtSubmodule ];
+    rw [ Submodule.span_le ];
+    rintro _ ⟨ a, rfl ⟩;
+    simp +decide [ RootPairing.reflection_apply, xxx ];
+    refine' Submodule.sub_mem _ _ _;
+    · exact Submodule.subset_span ⟨ a, rfl ⟩;
+    · by_cases hi : i ∈ Φ₁;
+      · exact Submodule.smul_mem _ _ ( Submodule.subset_span ⟨ ⟨ i, hi ⟩, rfl ⟩ );
+      · -- Since $i \notin \Phi_1$, we have $i \in \Phi_2$.
+        have hi₂ : i ∈ Φ₂ := by
+          exact Or.resolve_left ( s3.symm.subset ( Set.mem_univ i ) ) hi;
+        specialize xxx a ⟨ i, hi₂ ⟩;
+        simp +zetaDelta at *;
+        simp +decide [ xxx ];
+  · simp +decide [ Submodule.ne_bot_iff ];
+    obtain ⟨ x, hx ⟩ := Set.nonempty_iff_ne_empty.2 s4;
+    -- Since $x$ is in $\Phi_1$, we can take $x$ as the element in $\Phi_1$.
+
+    grind;
+  · -- Since Φ₁ is a proper subset of the roots, the span of the roots in Φ₁ cannot be the entire space.
+    have h_span_proper : Submodule.span K (Set.image (fun i : Φ₁ => S.root i) Set.univ) ≠ ⊤ := by
+      have h_nonzero : ∃ j : { x : LieModule.Weight K (↥H) L // x ∈ LieSubalgebra.root }, j ∈ Φ₂ := by
+        exact Set.nonempty_iff_ne_empty.2 s5
+      obtain ⟨ j, hj ⟩ := h_nonzero;
+      intro h;
+      rw [ Submodule.eq_top_iff' ] at h;
+      specialize h ( S.root j );
+      rw [ Finsupp.mem_span_image_iff_linearCombination ] at h;
+      obtain ⟨ l, hl₁, hl₂ ⟩ := h;
+      replace hl₂ := congr_arg ( fun f => f ( S.coroot j ) ) hl₂ ; simp +decide [ Finsupp.linearCombination_apply, Finsupp.sum ] at hl₂;
+      simp +zetaDelta at *;
+      -- Since each term in the sum is zero, the entire sum must be zero.
+      have h_sum_zero : ∑ x ∈ l.support, (l x) * ((x.val : LieModule.Weight K (↥H) L) : ↥H → K) (LieAlgebra.IsKilling.coroot (j.val)) = 0 := by
+        -- Since each term in the sum is zero, the entire sum must be zero. We can apply the hypothesis `xxx` to each term in the sum.
+        have h_term_zero : ∀ x ∈ l.support, (l x) * ((x.val : LieModule.Weight K (↥H) L) : ↥H → K) (LieAlgebra.IsKilling.coroot (j.val)) = 0 := by
+          grind;
+        exact Finset.sum_eq_zero h_term_zero;
+      simp +decide [ h_sum_zero ] at hl₂;
+      -- Since $j$ is a root, we have $j(coroot j) = 2$.
+      have h_root_coroot : (j.val : ↥H → K) (LieAlgebra.IsKilling.coroot (j.val)) = 2 := by
+        -- By definition of the coroot, we have that the root applied to the coroot is 2.
+        apply LieAlgebra.IsKilling.root_apply_coroot;
+        grind;
+      norm_num [ h_root_coroot ] at hl₂;
+    exact h_span_proper
 
 end LieAlgebra.IsKilling
