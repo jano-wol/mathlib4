@@ -272,6 +272,9 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     haveI : LieAlgebra.IsSemisimple K L := LieAlgebra.IsKilling.instSemisimple K L
     exact hJ_ne_bot ( by
       exact HasTrivialRadical.eq_bot_of_isSolvable J )
+  let S := rootSystem H
+  have xxx (i : Φ₁) (j : Φ₂) : S.pairing i j = 0 := by
+    sorry
   admit
 
 end LieAlgebra.IsKilling
