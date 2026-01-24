@@ -1,6 +1,8 @@
 import Mathlib.Algebra.Lie.Weights.IsSimple
 import Mathlib.Algebra.Lie.Weights.RootSystem
 import Mathlib.LinearAlgebra.RootSystem.Finite.Lemmas
+import Mathlib.Algebra.Lie.Weights.Lemma1
+import Mathlib.Algebra.Lie.Weights.Lemma2
 
 namespace LieAlgebra.IsKilling
 
@@ -8,19 +10,6 @@ variable {K L : Type*} [Field K] [CharZero K] [LieRing L] [LieAlgebra K L] [Fini
 open LieAlgebra LieModule Module
 variable {H : LieSubalgebra K L} [H.IsCartanSubalgebra]
 variable [IsKilling K L] [IsTriangularizable K H L]
-
-lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
-    ∃ Φ : Set H.root, I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-      ⨆ α ∈ Φ, (rootSpace H α.1).toSubmodule := by
-  admit
-
-theorem isCompl_killingCompl (I : LieIdeal K L) :
-    IsCompl I I.killingCompl := by
-  admit
-
-theorem compl_eq_killingCompl (I : LieIdeal K L) :
-    Iᶜ = I.killingCompl := by
-  admit
 
 lemma cartan_is_abelian : IsLieAbelian H := by
   constructor ; aesop
@@ -135,7 +124,7 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     exact h_cartan_decomp
 
   have sup_1 : I.toSubmodule ⊔ J.toSubmodule = ⊤ := by
-    have := LieAlgebra.IsKilling.isCompl_killingCompl I;
+    have := LieIdeal.isCompl_killingCompl I;
     -- Since $I$ and $J$ are complementary ideals, their sum as submodules is the entire space.
     have h_sup : (I : Submodule K L) ⊔ (J : Submodule K L) = ⊤ := by
       have := this.sup_eq_top
@@ -153,7 +142,7 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
     have h_compl : I ⊓ J = ⊥ := by
       have h_compl : IsCompl I J := by
         -- By definition of the Killing form, we know that $I$ and $J$ are complementary as ideals.
-        apply isCompl_killingCompl
+        apply LieIdeal.isCompl_killingCompl
       exact h_compl.inf_eq_bot;
     -- Since $I$ and $J$ are Lie ideals, their intersection as submodules is the same as their intersection as Lie ideals.
     convert h_compl using 1;

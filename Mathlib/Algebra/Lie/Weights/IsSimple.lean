@@ -441,14 +441,4 @@ instance : (rootSystem H).IsIrreducible := by
 
 end IsSimple
 
-section IsIrreducible
-
-/-
-variable [(rootSystem H).IsIrreducible]
-instance : IsSimple K L := by
-  sorry
--/
-
-end IsIrreducible
-
 end LieAlgebra.IsKilling
