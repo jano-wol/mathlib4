@@ -15,7 +15,6 @@ The following was proved by Aristotle:
 import Mathlib.Algebra.Lie.Weights.RootSystem
 import Mathlib.LinearAlgebra.RootSystem.Finite.Lemmas
 import Mathlib.CategoryTheory.Category.Basic
-set_option maxHeartbeats 0
 
 namespace LieAlgebra.IsKilling
 
@@ -139,7 +138,8 @@ lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
       convert lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace I |> fun h => h ▸ hx;
       · infer_instance;
       · infer_instance;
-    simp_all +decide [ Submodule.mem_sup, Submodule.mem_iSup ];
+    simp_all only [ Submodule.mem_sup, Submodule.mem_iSup ];
+    simp at hx_decomp
     obtain ⟨ y, hy, z, hz, rfl ⟩ := hx_decomp;
     refine' ⟨ y, hy, z, _, rfl ⟩;
     intro N hN;
