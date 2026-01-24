@@ -29,6 +29,19 @@ theorem compl_eq_killingCompl (I : LieIdeal K L) :
 lemma cartan_is_abelian : IsLieAbelian H := by
   constructor ; aesop
 
+/-- If the root space of α is contained in a Lie ideal J, then the coroot of α is also in J.
+This follows because the coroot is in the corootSpace, which is spanned by brackets ⁅y, z⁆
+where y ∈ rootSpace α. Since y ∈ J and J is an ideal, ⁅y, z⁆ ∈ J by lie_mem_left. -/
+lemma coroot_mem_lieIdeal_of_rootSpace_le
+    (J : LieIdeal K L) (α : Weight K H L)
+    (h : (rootSpace H α : Submodule K L) ≤ J.toSubmodule) :
+    (coroot α : L) ∈ J.toSubmodule := by
+  have h1 := coroot_mem_corootSpace α
+  rw [mem_corootSpace] at h1
+  refine Submodule.span_le.mpr ?_ h1
+  rintro _ ⟨y, hy, z, hz, rfl⟩
+  exact lie_mem_left K L J y z (h hy)
+
 lemma cartan_eq_sup_inf_ideal (I : LieIdeal K L) (hI : IsCompl I I.killingCompl) :
     H.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔ (I.killingCompl.toSubmodule ⊓ H.toSubmodule) := by
   -- Since $I$ and $J$ are complementary ideals, we have $H \subseteq (H \cap I) + (H \cap J)$.
@@ -274,7 +287,50 @@ theorem isSimple_of_isIrreducible (hIrr : (rootSystem H).IsIrreducible) : IsSimp
       exact HasTrivialRadical.eq_bot_of_isSolvable J )
   let S := rootSystem H
   have xxx (i : Φ₁) (j : Φ₂) : S.pairing i j = 0 := by
-    admit
+    -- Derive that rootSpace α ≤ I for α ∈ Φ₁
+    have hΦ₁_le : ∀ α : H.root, α ∈ Φ₁ → (rootSpace H (α : Weight K H L) : Submodule K L) ≤ I.toSubmodule := by
+      intro α hα
+      calc (rootSpace H (α : Weight K H L) : Submodule K L)
+        _ ≤ ⨆ β ∈ Φ₁, (rootSpace H β.1).toSubmodule := le_iSup₂_of_le α hα le_rfl
+        _ ≤ I.toSubmodule := by rw [hΦ₁]; exact le_sup_right
+    -- Derive that rootSpace α ≤ J for α ∈ Φ₂
+    have hΦ₂_le : ∀ α : H.root, α ∈ Φ₂ → (rootSpace H (α : Weight K H L) : Submodule K L) ≤ J.toSubmodule := by
+      intro α hα
+      calc (rootSpace H (α : Weight K H L) : Submodule K L)
+        _ ≤ ⨆ β ∈ Φ₂, (rootSpace H β.1).toSubmodule := le_iSup₂_of_le α hα le_rfl
+        _ ≤ J.toSubmodule := by rw [hΦ₂]; exact le_sup_right
+    -- Step 1: Get a nonzero element e_i in the root space of i
+    obtain ⟨e_i, he_i_mem, he_i_ne_zero⟩ := (i.val : Weight K H L).exists_ne_zero
+    -- Step 2: Show e_i ∈ I
+    have h_e_i_in_I : e_i ∈ I.toSubmodule := hΦ₁_le i.val i.property he_i_mem
+    -- Step 3: Show (coroot j : L) ∈ J using the lemma
+    have h_coroot_j_in_J : (coroot (j.val : Weight K H L) : L) ∈ J.toSubmodule :=
+      coroot_mem_lieIdeal_of_rootSpace_le J (j.val : Weight K H L) (hΦ₂_le j.val j.property)
+    -- Step 4: Show ⁅coroot j, e_i⁆ ∈ I (by lie_mem_right since e_i ∈ I)
+    have h_bracket_in_I : ⁅(coroot (j.val : Weight K H L) : L), e_i⁆ ∈ I.toSubmodule :=
+      lie_mem_right K L I _ _ h_e_i_in_I
+    -- Step 5: Show ⁅coroot j, e_i⁆ ∈ J (by lie_mem_left since coroot j ∈ J)
+    have h_bracket_in_J : ⁅(coroot (j.val : Weight K H L) : L), e_i⁆ ∈ J.toSubmodule :=
+      lie_mem_left K L J _ _ h_coroot_j_in_J
+    -- Step 6: Since I ∩ J = ⊥, the bracket is zero
+    have h_bracket_zero : ⁅(coroot (j.val : Weight K H L) : L), e_i⁆ = 0 := by
+      have h_in_inf : ⁅(coroot (j.val : Weight K H L) : L), e_i⁆ ∈ I.toSubmodule ⊓ J.toSubmodule :=
+        ⟨h_bracket_in_I, h_bracket_in_J⟩
+      rw [bot_1] at h_in_inf
+      exact h_in_inf
+    -- Step 7: Use lie_eq_smul_of_mem_rootSpace: ⁅coroot j, e_i⁆ = i(coroot j) • e_i
+    have h_lie_eq_smul : ⁅(coroot (j.val : Weight K H L) : L), e_i⁆ =
+        (i.val : Weight K H L) (coroot (j.val : Weight K H L)) • e_i :=
+      lie_eq_smul_of_mem_rootSpace he_i_mem (coroot (j.val : Weight K H L))
+    -- Step 8: Since 0 = i(coroot j) • e_i and e_i ≠ 0, we get i(coroot j) = 0
+    have h_eval_zero : (i.val : Weight K H L) (coroot (j.val : Weight K H L)) = 0 := by
+      rw [h_bracket_zero] at h_lie_eq_smul
+      exact smul_eq_zero.mp h_lie_eq_smul.symm |>.resolve_right he_i_ne_zero
+    -- Step 9: This equals S.pairing i j by rootSystem_pairing_apply
+    -- S = rootSystem H, so S.pairing i j = i.val (coroot j.val)
+    change S.pairing i j = 0
+    simp only [S, rootSystem_pairing_apply]
+    exact h_eval_zero
   have := hIrr;
   cases this;
   rename_i h₁ h₂ h₃;
