@@ -33,6 +33,8 @@ This file contains basic definitions and results for such Lie algebras.
   has non-singular Killing form then it is semisimple.
 * `LieAlgebra.IsKilling.instHasTrivialRadical`: if a Lie algebra over a PID
   has non-singular Killing form then it has trivial radical.
+* `LieIdeal.isCompl_killingCompl`: an ideal in a Killing Lie algebra and its Killing orthogonal
+  complement are complementary.
 
 ## TODO
 
@@ -127,3 +129,30 @@ alias _root_.LieEquiv.isKilling := LieAlgebra.isKilling_of_equiv
 end LieEquiv
 
 end LieAlgebra
+
+namespace LieIdeal
+
+variable {K L} [LieAlgebra.IsKilling K L] [Module.Finite K L]
+
+lemma disjoint_killingCompl (I : LieIdeal K L) : Disjoint I I.killingCompl := by
+  rw [disjoint_iff]
+  suffices IsLieAbelian (I ⊓ I.killingCompl : LieIdeal K L) from
+    LieAlgebra.IsKilling.ideal_eq_bot_of_isLieAbelian _
+  rw [LieSubmodule.lie_abelian_iff_lie_self_eq_bot, LieSubmodule.lie_eq_bot_iff]
+  intro x ⟨_, hxK⟩ y ⟨hyI, _⟩
+  suffices h : ∀ z, (LieModule.traceForm K L L) ⁅x, y⁆ z = 0 from
+    (LieAlgebra.IsKilling.killingForm_nondegenerate K L).1 _ h
+  intro z
+  rw [LieModule.traceForm_apply_lie_apply K L L x y z, LieModule.traceForm_comm K L L]
+  exact I.mem_killingCompl.mp hxK _ (lie_mem_left K L I y z hyI)
+
+lemma isCompl_killingCompl (I : LieIdeal K L) : IsCompl I I.killingCompl := by
+  rw [← LieSubmodule.isCompl_toSubmodule, I.toSubmodule_killingCompl]
+  exact (LinearMap.BilinForm.isCompl_orthogonal_iff_disjoint
+    (LieModule.traceForm_isSymm K L L).isRefl).mpr
+    (I.toSubmodule_killingCompl ▸ LieSubmodule.disjoint_toSubmodule.mpr (disjoint_killingCompl I))
+
+lemma compl_eq_killingCompl (I : LieIdeal K L) : Iᶜ = I.killingCompl :=
+  IsCompl.compl_eq (isCompl_killingCompl I)
+
+end LieIdeal
