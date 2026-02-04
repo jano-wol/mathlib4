@@ -33,8 +33,8 @@ This file contains basic definitions and results for such Lie algebras.
   has non-singular Killing form then it is semisimple.
 * `LieAlgebra.IsKilling.instHasTrivialRadical`: if a Lie algebra over a PID
   has non-singular Killing form then it has trivial radical.
-* `LieIdeal.isCompl_killingCompl`: an ideal in a Killing Lie algebra and its Killing orthogonal
-  complement are complementary.
+* `LieIdeal.isCompl_killingCompl`: if a Lie algebra has non-singular Killing form then for all
+  ideals, an ideal and its Killing orthogonal complement are complements.
 
 ## TODO
 
