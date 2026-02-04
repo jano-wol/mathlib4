@@ -1,16 +1,3 @@
-/-
-This file was edited by Aristotle.
-
-Lean version: leanprover/lean4:v4.24.0
-Mathlib version: f897ebcf72cd16f89ab4577d0c826cd14afaafc7
-This project request had uuid: 211c7d16-4c18-4317-a033-6615ade2680a
-
-The following was proved by Aristotle:
-
-- theorem isCompl_killingCompl (I : LieIdeal K L) :
-    IsCompl I I.killingCompl
--/
-
 import Mathlib.Algebra.Lie.Killing
 
 variable {K L : Type*} [Field K] [LieRing L] [LieAlgebra K L] [FiniteDimensional K L]
