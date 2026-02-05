@@ -139,12 +139,12 @@ lemma disjoint_killingCompl (I : LieIdeal K L) : Disjoint I I.killingCompl := by
   suffices IsLieAbelian (I ⊓ I.killingCompl : LieIdeal K L) from
     LieAlgebra.IsKilling.ideal_eq_bot_of_isLieAbelian _
   rw [LieSubmodule.lie_abelian_iff_lie_self_eq_bot, LieSubmodule.lie_eq_bot_iff]
-  intro x ⟨_, hxK⟩ y ⟨hyI, _⟩
+  intro x ⟨_, hx⟩ y ⟨hy, _⟩
   suffices h : ∀ z, (LieModule.traceForm K L L) ⁅x, y⁆ z = 0 from
     (LieAlgebra.IsKilling.killingForm_nondegenerate K L).1 _ h
   intro z
   rw [LieModule.traceForm_apply_lie_apply K L L x y z, LieModule.traceForm_comm K L L]
-  exact I.mem_killingCompl.mp hxK _ (lie_mem_left K L I y z hyI)
+  exact I.mem_killingCompl.mp hx _ (lie_mem_left K L I y z hy)
 
 lemma isCompl_killingCompl (I : LieIdeal K L) : IsCompl I I.killingCompl := by
   rw [← LieSubmodule.isCompl_toSubmodule, I.toSubmodule_killingCompl]
