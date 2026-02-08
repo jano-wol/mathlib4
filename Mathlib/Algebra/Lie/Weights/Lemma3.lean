@@ -9,6 +9,7 @@ The full order isomorphism `lieIdealOrderIso` is sketched with sorry'd proofs.
 -/
 
 import Mathlib.Algebra.Lie.Weights.IsSimple
+import Mathlib.Algebra.Lie.Weights.Lemma1
 
 namespace LieAlgebra.IsKilling
 
@@ -18,14 +19,6 @@ variable {K L : Type*} [Field K] [CharZero K] [LieRing L] [LieAlgebra K L] [Fini
   {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsKilling K L] [IsTriangularizable K H L]
 
 noncomputable section
-
-/-! ### Lie ideal decomposition (sorry'd; proved in Lemma1) -/
-
-/-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a direct sum of
-root spaces corresponding to some subset Φ of roots. -/
-lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
-    ∃ Φ : Set H.root, I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-      ⨆ α ∈ Φ, (rootSpace H α.1).toSubmodule := sorry
 
 /-! ### Root set of a Lie ideal -/
 
@@ -40,6 +33,21 @@ This maps each root `α ∈ Φ_I` (where `g_α ⊆ I`) to its weight functional 
 and takes their span. -/
 def lieIdealToSubmodule (I : LieIdeal K L) : Submodule K (Dual K H) :=
   Submodule.span K ((↑) '' lieIdealRootSet (H := H) I)
+
+/-! ### Coroot lemmas (needed for reflection invariance) -/
+
+omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
+/-- If `g_α ⊆ I`, then the coroot submodule of `α` is contained in `I`.
+This uses that `I` is a Lie ideal: brackets `⁅g_{-α}, g_α⁆ ⊆ I` since `g_α ⊆ I`. -/
+private lemma corootSubmodule_le_lieIdeal' (I : LieIdeal K L) {α : Weight K H L}
+    (hα : (rootSpace H α).toSubmodule ≤ I.toSubmodule) :
+    (corootSubmodule α).toSubmodule ≤ I.toSubmodule := by
+  intro x hx
+  obtain ⟨h, hh, rfl⟩ := (LieSubmodule.mem_map _).mp hx
+  rw [mem_corootSpace] at hh
+  refine (Submodule.span_le.mpr ?_) hh
+  rintro _ ⟨y, hy, _, -, rfl⟩
+  exact lie_mem_left K L I y _ (hα hy)
 
 /-! ### Weyl reflection invariance -/
 
@@ -100,20 +108,66 @@ lemma exists_bracket_ne_zero_of_lt_chainTopCoeff
   convert h using 2
   simp
 
-/-- The root set of a Lie ideal is closed under Weyl reflections: if `g_α ⊆ I` and `i` is any
-root, then `g_{s_i(α)} ⊆ I`.
+/-- If `g_α ⊆ I` and there exists a nonzero element of `g_γ ∩ I` where `γ` is a nonzero
+weight, then `g_γ ⊆ I` (since `g_γ` is 1-dimensional). -/
+private lemma rootSpace_le_ideal_of_ne_zero_mem (I : LieIdeal K L)
+    {γ : Weight K H L} (hγ : γ.IsNonZero) {z : L}
+    (hz_mem : z ∈ (rootSpace H γ).toSubmodule) (hz_I : z ∈ I.toSubmodule)
+    (hz_ne : z ≠ 0) :
+    (rootSpace H γ).toSubmodule ≤ I.toSubmodule := by
+  have h_inf_ne : I.toSubmodule ⊓ (rootSpace H γ).toSubmodule ≠ ⊥ :=
+    fun h_eq ↦ hz_ne ((Submodule.mem_bot K).mp
+      (h_eq ▸ Submodule.mem_inf.mpr ⟨hz_I, hz_mem⟩))
+  exact Submodule.eq_of_le_of_finrank_le inf_le_right
+    ((finrank_rootSpace_eq_one γ hγ).symm ▸
+      Submodule.one_le_finrank_iff.mpr h_inf_ne) ▸ inf_le_left
 
-Proof sketch: The reflected root `s_i(α) = α + m•i` (where `m = chainTopCoeff i α -
-chainBotCoeff i α`) lies in the i-chain through α. We show all chain members are in `I`
-by induction: starting from `g_α ⊆ I` (given), each step uses:
-1. `[g_i, g_{k•i+α}] ⊆ g_{(k+1)•i+α}` (weight space product) and `⊆ I` (ideal property)
-2. `[g_i, g_{k•i+α}] ≠ 0` (`exists_bracket_ne_zero_of_lt_chainTopCoeff`)
-3. `g_{(k+1)•i+α}` is 1-dimensional (`finrank_rootSpace_eq_one`)
-Together these give `g_{(k+1)•i+α} ⊆ I`. The downward direction uses `g_{-i}` analogously. -/
+/-- If `g_α ⊆ I` and `γ(coroot α) ≠ 0`, then `g_γ ⊆ I`.
+Proof: `coroot α ∈ I` (from `corootSubmodule_le_lieIdeal`), and for `y ∈ g_γ`,
+`[coroot α, y] = γ(coroot α) • y ∈ I`, so `y ∈ I`. -/
+private lemma rootSpace_le_ideal_of_apply_coroot_ne_zero (I : LieIdeal K L)
+    {α : Weight K H L} (hI : (rootSpace H α).toSubmodule ≤ I.toSubmodule)
+    {γ : H → K} (hγ_ne : γ (coroot α) ≠ 0) :
+    (rootSpace H γ).toSubmodule ≤ I.toSubmodule := by
+  have h_coroot_I : (coroot α : L) ∈ I.toSubmodule := by
+    apply corootSubmodule_le_lieIdeal' I hI
+    exact (LieSubmodule.mem_map _).mpr
+      ⟨⟨coroot α, (coroot α).property⟩, coroot_mem_corootSpace α, rfl⟩
+  intro y hy
+  have h_lie : ⁅(coroot α : L), y⁆ ∈ I.toSubmodule :=
+    lie_mem_left K L I (coroot α : L) y h_coroot_I
+  have h_eq : ⁅(coroot α : L), y⁆ = γ ⟨coroot α, (coroot α).property⟩ • y :=
+    lie_eq_smul_of_mem_rootSpace hy ⟨coroot α, (coroot α).property⟩
+  rwa [h_eq, I.toSubmodule.smul_mem_iff (by exact_mod_cast hγ_ne)] at h_lie
+
+/-- The root set of a Lie ideal is closed under Weyl reflections: if `g_α ⊆ I` and
+`i` is any root, then `g_{s_i(α)} ⊆ I`.
+
+The proof walks the `i`-chain through `α` by ℕ-induction. At each step, the nonzero
+bracket `[g_i, g_{k•i+α}]` lands in the next root space which is 1-dimensional.
+If the path passes through the zero weight (only when `α = ±i`), the coroot argument
+is used instead: `coroot α ∈ I` and `γ(coroot α) ≠ 0` gives `g_γ ⊆ I`. -/
 lemma lieIdealRootSet_reflectionPerm_invariant (I : LieIdeal K L) (i : H.root)
     {α : H.root} (hα : α ∈ lieIdealRootSet (H := H) I) :
-    (rootSystem H).reflectionPerm i α ∈ lieIdealRootSet (H := H) I :=
-  sorry
+    (rootSystem H).reflectionPerm i α ∈ lieIdealRootSet (H := H) I := by
+  simp only [lieIdealRootSet, Set.mem_setOf_eq] at hα ⊢
+  by_cases hp : (rootSystem H).pairing α i = 0
+  · rw [(rootSystem H).reflectionPerm_eq_of_pairing_eq_zero hp]; exact hα
+  · -- pairing α i ≠ 0 implies pairing i α ≠ 0
+    have hq : (rootSystem H).pairing i α ≠ 0 :=
+      mt (rootSystem H).pairing_eq_zero_iff.mpr hp
+    -- g_i ⊆ I: coroot α ∈ I and i(coroot α) = pairing i α ≠ 0
+    have hi_in_I : (rootSpace H (i.1 : Weight K H L)).toSubmodule ≤ I.toSubmodule :=
+      rootSpace_le_ideal_of_apply_coroot_ne_zero I hα hq
+    -- pairing(s_i(α), i) = -pairing(α, i) ≠ 0
+    have h_neg_p : (rootSystem H).pairing ((rootSystem H).reflectionPerm i α) i ≠ 0 := by
+      rw [show (rootSystem H).pairing ((rootSystem H).reflectionPerm i α) i =
+          -(rootSystem H).pairing α i from
+        ((rootSystem H).pairing_reflectionPerm i α i).symm.trans
+          ((rootSystem H).pairing_reflectionPerm_self_right α i)]
+      exact neg_ne_zero.mpr hp
+    -- g_{s_i(α)} ⊆ I: coroot i ∈ I and s_i(α)(coroot i) ≠ 0
+    exact rootSpace_le_ideal_of_apply_coroot_ne_zero I hi_in_I h_neg_p
 
 /-- The submodule spanned by roots of a Lie ideal is invariant under all root reflections. -/
 lemma lieIdealToSubmodule_mem_invtRootSubmodule (I : LieIdeal K L) :
