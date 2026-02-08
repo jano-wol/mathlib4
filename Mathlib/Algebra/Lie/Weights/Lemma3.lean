@@ -43,17 +43,16 @@ def lieIdealToSubmodule (I : LieIdeal K L) : Submodule K (Dual K H) :=
 
 /-! ### Weyl reflection invariance -/
 
-/-- In a root chain, bracketing with `g_β` maps `g_{k•β + α}` to a nonzero subspace of
-`g_{(k+1)•β + α}` when `k` is strictly below the chain top. This is a consequence of the
-irreducibility of the sl₂(β)-module structure on the chain.
+/-- In a root chain, bracketing with `g_{-β}` maps `g_{k•β + α}` to a nonzero subspace of
+`g_{(k-1)•β + α}` when `k` is strictly above the chain bottom.
 
-Proof sketch: The chain `⨁_{-b ≤ k ≤ t} g_{k•β+α}` is an irreducible sl₂(β)-module because
-each weight space is 1-dimensional and the weights form a consecutive string. The raising
-operator (bracket with `e_β`) is therefore nonzero on all weight spaces except the highest. -/
-lemma exists_bracket_ne_zero_of_lt_chainTopCoeff
+The chain `⨁_{-b ≤ k ≤ t} g_{k•β+α}` is an irreducible sl₂(β)-module because
+each weight space is 1-dimensional and the weights form a consecutive string. The lowering
+operator (bracket with `f_β`) is therefore nonzero on all weight spaces except the lowest. -/
+lemma exists_bracket_ne_zero_of_neg_lt_chainBotCoeff
     {α β : Weight K H L} (hβ : β.IsNonZero)
-    {k : ℤ} (hk_bot : -k ≤ chainBotCoeff β α) (hk_top : k < chainTopCoeff β α) :
-    ∃ x ∈ rootSpace H β, ∃ y ∈ rootSpace H (k • β + α),
+    {k : ℤ} (hk_top : k ≤ chainTopCoeff β α) (hk_bot : -k < chainBotCoeff β α) :
+    ∃ x ∈ rootSpace H (-β), ∃ y ∈ rootSpace H (k • β + α),
       ⁅(x : L), (y : L)⁆ ≠ 0 := by
   -- Get sl₂ triple for β
   obtain ⟨_, e, f, isSl2, he, hf⟩ := exists_isSl2Triple_of_weight_isNonZero hβ
@@ -64,54 +63,42 @@ lemma exists_bracket_ne_zero_of_lt_chainTopCoeff
     have := lie_mem_genWeightSpace_of_mem_genWeightSpace he hv
     ⟨v_ne0, (chainLength_smul _ _ hv).symm, by rwa [genWeightSpace_add_chainTop _ _ hβ] at this⟩
   -- Define chain index n = chainTopCoeff β α - k (as ℕ)
-  have h_pos : (0 : ℤ) < chainTopCoeff β α - k := by omega
+  have h_nn : (0 : ℤ) ≤ chainTopCoeff β α - k := by omega
   set n := (chainTopCoeff β α - k).toNat with hn_def
-  have hn : (n : ℤ) = chainTopCoeff β α - k := Int.toNat_of_nonneg h_pos.le
+  have hn : (n : ℤ) = chainTopCoeff β α - k := Int.toNat_of_nonneg h_nn
   -- f^n v is in the root space g_{k•β+α}
   have hfnv_mem : ((toEnd K L L f) ^ n) v ∈
       genWeightSpace L (k • (β : H → K) + (α : H → K)) := by
     have h1 := toEnd_pow_apply_mem hf hv n
     suffices n • (-(β : H → K)) + (chainTop (β : H → K) α : H → K) =
         k • (β : H → K) + (α : H → K) by rwa [this] at h1
-    rw [← Nat.cast_smul_eq_nsmul ℤ, smul_neg, coe_chainTop]
-    have hk : ((chainTopCoeff (β : H → K) α : ℤ) - (n : ℤ) : ℤ) = k := by omega
-    -- rw [show -(↑n • (β : H → K)) + (↑(chainTopCoeff (β : H → K) α) • (β : H → K) + (α : H → K)) =
-    --    ((↑(chainTopCoeff (β : H → K) α) - ↑n) • (β : H → K) + (α : H → K)) from by
-    --  rw [← sub_smul]; ring_nf, hk]
-    -- Substitute $n = (chainTopCoeff β α) - k$ into the expression and simplify.
-    rw [hn]
-    simp [sub_eq_add_neg];
+    rw [← Nat.cast_smul_eq_nsmul ℤ, smul_neg, coe_chainTop, hn]
+    simp [sub_eq_add_neg]
     grind
   -- f^n v is nonzero
   have hn_le : n ≤ chainLength β α := by
     suffices (n : ℤ) ≤ chainLength β α by exact Int.le_of_ofNat_le_ofNat this
     rw [← chainBotCoeff_add_chainTopCoeff]; push_cast; omega
-  have hfnv_ne : ((toEnd K L L f) ^ n) v ≠ 0 :=
-    prim.pow_toEnd_f_ne_zero_of_eq_nat rfl hn_le
-  -- n ≥ 1 so we can apply lie_e_pow_succ_toEnd_f
-  have hn_pos : 0 < n := by omega
-  clear_value n
-  obtain ⟨m, rfl⟩ : ∃ m, n = m + 1 := ⟨n - 1, by omega⟩
-  refine ⟨e, he, _, hfnv_mem, ?_⟩
-  rw [prim.lie_e_pow_succ_toEnd_f m]
-  refine smul_ne_zero ?_ (prim.pow_toEnd_f_ne_zero_of_eq_nat rfl (by omega))
-  apply mul_ne_zero
-  · exact_mod_cast (show (m + 1 : ℕ) ≠ 0 by omega)
-  · rw [sub_ne_zero]
-    exact_mod_cast (show (chainLength β α : ℤ) ≠ (m : ℤ) by
-      rw [← chainBotCoeff_add_chainTopCoeff]; push_cast; omega)
+  -- ⁅f, f^n v⁆ = f^(n+1) v is nonzero since n+1 ≤ chainLength
+  have hn1_le : n + 1 ≤ chainLength β α := by
+    suffices (n : ℤ) + 1 ≤ chainLength β α by exact Int.le_of_ofNat_le_ofNat this
+    rw [← chainBotCoeff_add_chainTopCoeff]; push_cast; omega
+  refine ⟨f, hf, _, hfnv_mem, ?_⟩
+  rw [prim.lie_f_pow_toEnd_f n]
+  exact prim.pow_toEnd_f_ne_zero_of_eq_nat rfl hn1_le
 
-/-- In a root chain, bracketing with `g_{-β}` maps `g_{k•β + α}` to a nonzero subspace of
-`g_{(k-1)•β + α}` when `k` is strictly above the chain bottom.
-
-Proof sketch: Same as `exists_bracket_ne_zero_of_lt_chainTopCoeff`, using the lowering
-operator `f_{-β}` in place of the raising operator. -/
-lemma exists_bracket_ne_zero_of_neg_lt_chainBotCoeff
+/-- In a root chain, bracketing with `g_β` maps `g_{k•β + α}` to a nonzero subspace of
+`g_{(k+1)•β + α}` when `k` is strictly below the chain top. This follows from
+`exists_bracket_ne_zero_of_neg_lt_chainBotCoeff` by the symmetry `β ↦ -β`. -/
+lemma exists_bracket_ne_zero_of_lt_chainTopCoeff
     {α β : Weight K H L} (hβ : β.IsNonZero)
-    {k : ℤ} (hk_top : k ≤ chainTopCoeff β α) (hk_bot : -k < chainBotCoeff β α) :
-    ∃ x ∈ rootSpace H (-β), ∃ y ∈ rootSpace H (k • β + α),
-      ⁅(x : L), (y : L)⁆ ≠ 0 :=
-  sorry
+    {k : ℤ} (hk_bot : -k ≤ chainBotCoeff β α) (hk_top : k < chainTopCoeff β α) :
+    ∃ x ∈ rootSpace H β, ∃ y ∈ rootSpace H (k • β + α),
+      ⁅(x : L), (y : L)⁆ ≠ 0 := by
+  have h := exists_bracket_ne_zero_of_neg_lt_chainBotCoeff (α := α) (β := -β) hβ.neg
+    (k := -k) (by simp [chainTopCoeff_neg]; omega) (by simp [chainBotCoeff_neg]; omega)
+  convert h using 2
+  simp
 
 /-- The root set of a Lie ideal is closed under Weyl reflections: if `g_α ⊆ I` and `i` is any
 root, then `g_{s_i(α)} ⊆ I`.
