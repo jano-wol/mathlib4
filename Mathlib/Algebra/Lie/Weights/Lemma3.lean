@@ -201,18 +201,139 @@ lemma weight_apply_eq_zero_of_not_mem_lieIdealRootSet (I : LieIdeal K L)
     exact lie_mem_left K L I x y hxI
   rwa [I.toSubmodule.smul_mem_iff (by exact_mod_cast h)] at hsmul
 
+/-- The spans of coroots of nonzero weights generate `H` (as a submodule). -/
+private lemma biSup_span_coroot_eq_top :
+    ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero), (K ∙ coroot α : Submodule K H) = ⊤ := by
+  have h1 : (⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
+      (corootSpace (⇑α) : LieIdeal K H)) = ⊤ := by simp
+  have h2 : ∀ α : Weight K H L,
+      (corootSpace (⇑α) : LieIdeal K H).toSubmodule = K ∙ coroot α :=
+    coe_corootSpace_eq_span_singleton
+  simp_rw [← h2, ← LieSubmodule.iSup_toSubmodule, h1, LieSubmodule.top_toSubmodule]
+
+/-- An element of `H` that is trace-form orthogonal to all nonzero coroots is zero. -/
+private lemma eq_zero_of_traceForm_coroot_eq_zero (h : H)
+    (horth : ∀ α : Weight K H L, α.IsNonZero → traceForm K H L h (coroot α) = 0) :
+    h = 0 := by
+  have : (⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
+      (K ∙ coroot α : Submodule K H)) ≤ LinearMap.ker (traceForm K H L h) := by
+    apply iSup_le; intro α; apply iSup_le; intro hα
+    apply Submodule.span_le.mpr
+    simp only [Set.singleton_subset_iff, SetLike.mem_coe, LinearMap.mem_ker]
+    exact horth α hα
+  rw [biSup_span_coroot_eq_top] at this
+  have hzero : traceForm K H L h = 0 := LinearMap.ker_eq_top.mp (eq_top_iff.mpr this)
+  have hzero' : cartanEquivDual H h = 0 := by
+    ext y; simp only [cartanEquivDual_apply_apply, LinearMap.zero_apply]
+    exact DFunLike.congr_fun hzero y
+  exact (cartanEquivDual H).injective (by rw [hzero', map_zero])
+
+/-- For `α ∈ Φ_I` and nonzero `β ∉ Φ_I`, the coroots are trace-form orthogonal. -/
+private lemma traceForm_coroot_eq_zero_of_ideal_complement (I : LieIdeal K L)
+    {α : Weight K H L}
+    (hαI : (rootSpace H α).toSubmodule ≤ I.toSubmodule)
+    {β : Weight K H L} (_hβ_nz : β.IsNonZero)
+    (hβI : ¬ (rootSpace H β).toSubmodule ≤ I.toSubmodule) :
+    traceForm K H L (coroot α) (coroot β) = 0 := by
+  apply traceForm_eq_zero_of_mem_ker_of_mem_span_coroot (α := β)
+  · -- coroot α ∈ β.ker: β(coroot α) = 0 since coroot α ∈ I ∩ H and g_β ⊄ I
+    change (β : H → K) (coroot α) = 0
+    have hmI : (coroot α : L) ∈ I.toSubmodule := by
+      apply corootSubmodule_le_lieIdeal I hαI
+      rw [LieSubmodule.mem_toSubmodule]
+      exact (LieSubmodule.mem_map _).mpr
+        ⟨⟨coroot α, (coroot α).property⟩, coroot_mem_corootSpace α, rfl⟩
+    have hmH : (coroot α : L) ∈ H.toSubmodule := (coroot α).property
+    exact weight_apply_eq_zero_of_not_mem_lieIdealRootSet I hmI hmH hβI
+  · exact Submodule.mem_span_singleton_self _
+
 /-- ⊆ direction: `I ∩ H` is contained in the coroot span of roots in `Φ_I`.
 
-Proof sketch: For `h ∈ I ∩ H`:
-1. `β(h) = 0` for all roots `β ∉ Φ_I` (by `weight_apply_eq_zero_of_not_mem_lieIdealRootSet`)
-2. The coroots span `H` (by `biSup_corootSubmodule_eq_cartan`)
-3. `cartanEquivDual` maps `K ∙ coroot α` isomorphically to `K ∙ α` (`orthogonal_span_coroot_eq_ker`)
-4. The conditions `β(h) = 0` for `β ∉ Φ_I` force `h` into the Φ_I-coroot span by the
-   non-degeneracy of the root-coroot pairing. -/
+The proof uses trace form non-degeneracy. For `h ∈ I ∩ H`, we decompose `h = a + b` using the
+coroot decomposition of `H`, where `a` is in the Φ_I-coroot span and `b` is in the complement
+coroot span. Since `a ∈ I` (coroots of Φ_I are in I) and `h ∈ I`, we get `b ∈ I ∩ H`.
+Then `β(b) = 0` for all `β ∉ Φ_I` forces `b` to be trace-form orthogonal to all complement
+coroots. The orthogonality between ideal and complement coroots (from the same vanishing argument
+applied to the coroots of Φ_I) gives trace-form orthogonality to all coroots. By non-degeneracy
+of the trace form, `b = 0`, so `h = a` lies in the Φ_I-coroot span. -/
 lemma inf_cartan_le_coroot_span (I : LieIdeal K L) :
     I.toSubmodule ⊓ H.toSubmodule ≤
-      ⨆ α ∈ lieIdealRootSet (H := H) I, (corootSubmodule α.1).toSubmodule :=
-  sorry
+      ⨆ α ∈ lieIdealRootSet (H := H) I, (corootSubmodule α.1).toSubmodule := by
+  intro x hx
+  obtain ⟨hxI, hxH⟩ := Submodule.mem_inf.mp hx
+  -- Work in H: define the complement coroot span
+  set h : H := ⟨x, hxH⟩
+  set S_I : Submodule K H :=
+    ⨆ α ∈ lieIdealRootSet (H := H) I, (K ∙ coroot (α.1 : Weight K H L))
+  set S_c : Submodule K H :=
+    ⨆ (β : Weight K H L) (_ : β.IsNonZero)
+      (_ : ¬(rootSpace H β).toSubmodule ≤ I.toSubmodule), (K ∙ coroot β)
+  -- Step 1: S_I ⊔ S_c = ⊤
+  have h_sup : S_I ⊔ S_c = ⊤ := by
+    rw [eq_top_iff, ← biSup_span_coroot_eq_top (K := K) (L := L) (H := H)]
+    apply iSup_le; intro α; apply iSup_le; intro hα
+    by_cases hαI : (rootSpace H α).toSubmodule ≤ I.toSubmodule
+    · apply le_sup_of_le_left
+      have hα_root : α ∈ H.root := by
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and]; exact hα
+      exact le_iSup₂_of_le ⟨α, hα_root⟩ hαI le_rfl
+    · exact le_sup_of_le_right (le_iSup₂_of_le α hα (le_iSup_of_le hαI le_rfl))
+  -- Step 2: Decompose h = a + b
+  have hh_top : h ∈ (⊤ : Submodule K H) := Submodule.mem_top
+  rw [← h_sup] at hh_top
+  obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp hh_top
+  -- Step 3: a ∈ I (the ideal coroot span maps into I)
+  have haI : (a : L) ∈ I.toSubmodule := by
+    suffices hle : S_I ≤ Submodule.comap H.toSubmodule.subtype I.toSubmodule from hle ha
+    apply iSup₂_le; intro α hα z hz
+    rw [Submodule.mem_comap]
+    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
+    simp only [map_smul]
+    apply I.toSubmodule.smul_mem
+    apply corootSubmodule_le_lieIdeal I hα
+    exact (LieSubmodule.mem_map _).mpr
+      ⟨⟨coroot α.1, (coroot α.1).property⟩, coroot_mem_corootSpace α.1, rfl⟩
+  -- Step 4: b ∈ I ∩ H
+  have hbI : (b : L) ∈ I.toSubmodule := by
+    have : (b : L) = x - (a : L) := by
+      have h1 : (a : L) + (b : L) = x := congr_arg Subtype.val hab
+      rw [← h1, add_sub_cancel_left]
+    rw [this]; exact I.toSubmodule.sub_mem hxI haI
+  -- Step 5: b is trace-form orthogonal to ALL nonzero coroots, hence b = 0
+  have hb_zero : b = 0 := by
+    apply eq_zero_of_traceForm_coroot_eq_zero
+    intro μ hμ
+    by_cases hμI : (rootSpace H μ).toSubmodule ≤ I.toSubmodule
+    · -- μ ∈ Φ_I: use orthogonality of ideal coroots with complement coroot span
+      rw [traceForm_comm]
+      -- traceForm(coroot μ, b) = 0 since b ∈ S_c and coroot μ is orthogonal to S_c
+      have hker : S_c ≤ LinearMap.ker (traceForm K H L (coroot μ)) := by
+        apply iSup_le; intro γ; apply iSup_le; intro hγ_nz; apply iSup_le; intro hγI
+        apply Submodule.span_le.mpr
+        simp only [Set.singleton_subset_iff, SetLike.mem_coe, LinearMap.mem_ker]
+        exact traceForm_coroot_eq_zero_of_ideal_complement I hμI hγ_nz hγI
+      exact (LinearMap.mem_ker.mp (hker hb))
+    · -- μ ∉ Φ_I: μ(b) = 0 since b ∈ I ∩ H
+      apply traceForm_eq_zero_of_mem_ker_of_mem_span_coroot (α := μ)
+      · change (μ : H → K) b = 0
+        exact weight_apply_eq_zero_of_not_mem_lieIdealRootSet I hbI b.property hμI
+      · exact Submodule.mem_span_singleton_self _
+  -- Step 6: h = a ∈ S_I
+  have hha : h = a := by rw [← hab, hb_zero, add_zero]
+  -- Step 7: Transfer from H to L
+  change x ∈ ⨆ α ∈ lieIdealRootSet (H := H) I, (corootSubmodule α.1).toSubmodule
+  rw [show x = (a : L) from by rw [← hha]]
+  -- a ∈ S_I (in H) implies (a : L) ∈ ⨆ corootSubmodule (in L)
+  suffices hle : S_I ≤ Submodule.comap H.toSubmodule.subtype
+      (⨆ α ∈ lieIdealRootSet (H := H) I, (corootSubmodule α.1).toSubmodule) from hle ha
+  apply iSup₂_le; intro α hα z hz
+  rw [Submodule.mem_comap]
+  obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
+  simp only [map_smul]
+  apply Submodule.smul_mem
+  apply (le_iSup₂_of_le α hα le_rfl : (corootSubmodule α.1).toSubmodule ≤ _)
+  exact (LieSubmodule.mem_map _).mpr
+    ⟨⟨coroot α.1, (coroot α.1).property⟩, coroot_mem_corootSpace α.1, rfl⟩
 
 /-- The Cartan part `I ∩ H` is determined by the root set: it equals the span of the coroots
 corresponding to roots in `Φ_I`. This is the key fact that makes the forward map injective. -/
