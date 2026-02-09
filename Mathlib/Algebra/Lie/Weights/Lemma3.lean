@@ -383,7 +383,175 @@ lemma lieIdeal_inf_cartan_eq_coroot_span (I : LieIdeal K L) :
       ⨆ α ∈ lieIdealRootSet (H := H) I, (corootSubmodule α.1).toSubmodule :=
   le_antisymm (inf_cartan_le_coroot_span I) (coroot_span_le_inf_cartan I)
 
+/-! ### Key lemma: span membership implies root set membership -/
+
+omit [CharZero K] [IsTriangularizable K H L] in
+/-- Symmetry of `cartanEquivDual`: `f(h_g) = g(h_f)` where `h_f = (cartanEquivDual H).symm f`.
+This follows from the symmetry of the trace form. -/
+private lemma cartanEquivDual_symm_comm (f g : Dual K H) :
+    f ((cartanEquivDual H).symm g) = g ((cartanEquivDual H).symm f) := by
+  conv_lhs => rw [← LinearEquiv.apply_symm_apply (cartanEquivDual H) f]
+  conv_rhs => rw [← LinearEquiv.apply_symm_apply (cartanEquivDual H) g]
+  simp only [cartanEquivDual_apply_apply]
+  exact LieModule.traceForm_comm K H L _ _
+
+/-- If `α` is a root whose linear form lies in `lieIdealToSubmodule I`, then
+`α ∈ lieIdealRootSet I` (i.e., the root space `g_α ⊆ I`).
+
+The proof uses the symmetry of the trace form. For `α ∉ Φ_I`, the coroots of Φ_I lie in `I ∩ H`,
+so `α` vanishes on them. By trace form symmetry, this implies that each generator `↑γ ∈ Φ_I`
+vanishes at `(cartanEquivDual H).symm(↑α)`. Since `↑α` lies in their span, we get
+`α((cartanEquivDual H).symm α) = 0`, contradicting `root_apply_cartanEquivDual_symm_ne_zero`. -/
+private lemma mem_lieIdealRootSet_of_mem_lieIdealToSubmodule (I : LieIdeal K L)
+    {α : H.root} (hα_span : (↑α : Dual K H) ∈ lieIdealToSubmodule (H := H) I) :
+    α ∈ lieIdealRootSet (H := H) I := by
+  by_contra hα_not
+  simp only [lieIdealRootSet, Set.mem_setOf_eq] at hα_not
+  have hα_nz : (↑α : Weight K H L).IsNonZero := (Finset.mem_filter.mp α.property).2
+  -- Step 1: α vanishes on coroot γ for each γ ∈ Φ_I (since coroot γ ∈ I ∩ H and α ∉ Φ_I)
+  have h_vanish : ∀ γ ∈ lieIdealRootSet (H := H) I,
+      (↑α : Weight K H L) (coroot (↑γ : Weight K H L)) = 0 := by
+    intro γ hγ
+    have h_coroot_I : (coroot (↑γ : Weight K H L) : L) ∈ I.toSubmodule := by
+      apply corootSubmodule_le_lieIdeal' I hγ
+      exact (LieSubmodule.mem_map _).mpr
+        ⟨⟨coroot (↑γ : Weight K H L), (coroot (↑γ : Weight K H L)).property⟩,
+         coroot_mem_corootSpace (↑γ : Weight K H L), rfl⟩
+    exact weight_apply_eq_zero_of_not_mem_lieIdealRootSet I h_coroot_I
+      (coroot (↑γ : Weight K H L)).property hα_not
+  -- Step 2: Each generator ↑γ of the span vanishes at (cartanEquivDual H).symm α,
+  -- using trace form symmetry and the fact that (cartanEquivDual H).symm γ ∈ K ∙ coroot γ
+  have h_span_le : lieIdealToSubmodule (H := H) I ≤
+      LinearMap.ker (Module.Dual.eval K H ((cartanEquivDual H).symm (↑α : Dual K H))) := by
+    rw [lieIdealToSubmodule]
+    apply Submodule.span_le.mpr
+    rintro _ ⟨γ, hγ, rfl⟩
+    simp only [SetLike.mem_coe, LinearMap.mem_ker, Module.Dual.eval_apply]
+    -- By trace form symmetry: γ(h_α) = α(h_γ)
+    rw [cartanEquivDual_symm_comm]
+    -- α(h_γ) = 0 since h_γ ∈ K ∙ coroot γ and α(coroot γ) = 0
+    have h_mem := cartanEquivDual_symm_apply_mem_corootSpace (↑γ : Weight K H L)
+    rw [← LieSubmodule.mem_toSubmodule, coe_corootSpace_eq_span_singleton] at h_mem
+    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp h_mem
+    rw [← hc]
+    change (↑(↑α : Weight K H L) : H →ₗ[K] K) (c • coroot (↑γ : Weight K H L)) = 0
+    simp [h_vanish γ hγ]
+  -- Step 3: Since ↑α ∈ the span, α(h_α) = 0, contradicting root_apply_cartanEquivDual_symm_ne_zero
+  exact root_apply_cartanEquivDual_symm_ne_zero hα_nz
+    (by simpa [Module.Dual.eval_apply] using LinearMap.mem_ker.mp (h_span_le hα_span))
+
+/-- Variant with `Weight K H L` arguments: if a nonzero weight's linear functional
+lies in `lieIdealToSubmodule I`, then its root space is contained in `I`. -/
+private lemma rootSpace_le_ideal_of_mem_lieIdealToSubmodule (I : LieIdeal K L)
+    {α : Weight K H L} (hα_nz : α.IsNonZero)
+    (hα_span : Weight.toLinear K H L α ∈ lieIdealToSubmodule (H := H) I) :
+    (rootSpace H α).toSubmodule ≤ I.toSubmodule :=
+  mem_lieIdealRootSet_of_mem_lieIdealToSubmodule I
+    (α := ⟨α, by simpa [LieSubalgebra.root] using hα_nz⟩) hα_span
+
+/-- If `α` is a root in `lieIdealRootSet I`, then `sl2SubmoduleOfRoot(α) ≤ I`. -/
+private lemma sl2SubmoduleOfRoot_le_ideal (I : LieIdeal K L) {α : Weight K H L}
+    (hα_nz : α.IsNonZero)
+    (hα : (rootSpace H α).toSubmodule ≤ I.toSubmodule) :
+    (sl2SubmoduleOfRoot hα_nz).toSubmodule ≤ I.toSubmodule := by
+  rw [sl2SubmoduleOfRoot_eq_sup]
+  simp only [LieSubmodule.sup_toSubmodule]
+  apply sup_le (sup_le hα ?_) (corootSubmodule_le_lieIdeal I hα)
+  -- g_{-α} ≤ I: use coroot α ∈ I and (-α)(coroot α) = -2 ≠ 0
+  apply rootSpace_le_ideal_of_apply_coroot_ne_zero I hα
+  simp only [Pi.neg_apply, ne_eq, neg_eq_zero]
+  exact_mod_cast root_apply_coroot hα_nz ▸ two_ne_zero
+
 /-! ### Order isomorphism -/
+
+private lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
+    invtSubmoduleToLieIdeal (lieIdealToSubmodule (H := H) I)
+      ((rootSystem H).mem_invtRootSubmodule_iff.mp
+        (lieIdealToSubmodule_mem_invtRootSubmodule I)) = I := by
+  rw [← LieSubmodule.toSubmodule_inj, coe_invtSubmoduleToLieIdeal_eq_iSup]
+  refine le_antisymm ?_ ?_
+  · -- ≤: each sl2(α) ≤ I
+    rw [LieSubmodule.iSup_toSubmodule]
+    exact iSup_le fun ⟨α, hα_span, hα_nz⟩ ↦
+      sl2SubmoduleOfRoot_le_ideal I hα_nz
+        (rootSpace_le_ideal_of_mem_lieIdealToSubmodule I hα_nz hα_span)
+  · -- ≥: I ≤ ⨆ sl2(α), using weight space decomposition directly
+    rw [LieSubmodule.iSup_toSubmodule]
+    conv_lhs => rw [lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (H := H) I,
+                     lieIdeal_inf_cartan_eq_coroot_span I]
+    apply sup_le
+    · -- Coroot span ≤ ⨆ sl2(α): β ∈ lieIdealRootSet I directly
+      apply iSup₂_le; intro β hβ
+      have hβ_nz : (↑β : Weight K H L).IsNonZero := (Finset.mem_filter.mp β.property).2
+      apply le_iSup_of_le ⟨(↑β : Weight K H L), Submodule.subset_span ⟨β, hβ, rfl⟩, hβ_nz⟩
+      rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
+      exact le_sup_right
+    · -- ⨆ (α nonzero) I ∩ rootSpace α ≤ ⨆ sl2(α)
+      apply iSup₂_le; intro α hα
+      by_cases hαI : I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥
+      · simp [hαI]
+      · -- I ∩ rootSpace α ≠ 0 implies rootSpace α ≤ I (1-dim), so α is in lieIdealRootSet
+        have h_eq : I.toSubmodule ⊓ (rootSpace H α).toSubmodule =
+            (rootSpace H α).toSubmodule :=
+          Submodule.eq_of_le_of_finrank_le inf_le_right
+            ((finrank_rootSpace_eq_one α hα).symm ▸ Submodule.one_le_finrank_iff.mpr hαI)
+        rw [h_eq]
+        have hα_root : (⟨α, by simpa [LieSubalgebra.root] using hα⟩ : H.root) ∈
+            lieIdealRootSet (H := H) I := inf_eq_right.mp h_eq
+        apply le_iSup_of_le ⟨α, Submodule.subset_span ⟨_, hα_root, rfl⟩, hα⟩
+        rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
+        exact le_sup_of_le_left le_sup_left
+
+private lemma invtSubmoduleToLieIdeal_mono {q₁ q₂ : Submodule K (Dual K H)}
+    (hq₁ : ∀ i, q₁ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
+    (hq₂ : ∀ i, q₂ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
+    (h : q₁ ≤ q₂) :
+    invtSubmoduleToLieIdeal q₁ hq₁ ≤ invtSubmoduleToLieIdeal q₂ hq₂ := by
+  rw [← LieSubmodule.toSubmodule_le_toSubmodule,
+      coe_invtSubmoduleToLieIdeal_eq_iSup, coe_invtSubmoduleToLieIdeal_eq_iSup,
+      LieSubmodule.iSup_toSubmodule, LieSubmodule.iSup_toSubmodule]
+  exact iSup_le fun ⟨α, hα_mem, hα_nz⟩ ↦ le_iSup_of_le ⟨α, h hα_mem, hα_nz⟩ le_rfl
+
+private lemma lieIdealOrderIso_map_rel_iff {I J : LieIdeal K L} :
+    lieIdealToInvtRootSubmodule (H := H) I ≤ lieIdealToInvtRootSubmodule J ↔ I ≤ J := by
+  constructor
+  · -- → direction: use left_inv + monotonicity of invtSubmoduleToLieIdeal
+    intro h
+    rw [← lieIdealOrderIso_left_inv (H := H) I, ← lieIdealOrderIso_left_inv (H := H) J]
+    exact invtSubmoduleToLieIdeal_mono _ _ h
+  · intro h; exact lieIdealToInvtRootSubmodule_mono h
+
+/-- If `rootSpace α ≤ invtSubmoduleToLieIdeal q`, then `↑α ∈ q`.
+Proof: if `↑α ∉ q`, then `(α : H → K) ≠ (β : H → K)` and `≠ -(β : H → K)` for all `β`
+with `↑β ∈ q`. Since each sl₂(β) ≤ genWeightSpace β ⊔ genWeightSpace (-β) ⊔ genWeightSpace 0
+and rootSpace α = genWeightSpace α, weight space independence gives
+rootSpace α ⊓ sl₂(β) = ⊥ for each β. Then rootSpace α ⊓ I = ⊥, contradicting dim = 1. -/
+private lemma mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal
+    (q : (rootSystem H).invtRootSubmodule)
+    {α : H.root} (hα : (rootSpace H (↑α : Weight K H L)).toSubmodule ≤
+      (invtSubmoduleToLieIdeal q.1
+        ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)).toSubmodule) :
+    (rootSystem H).root α ∈ (q : Submodule K (Dual K H)) := by
+  by_contra hα_not
+  set I := invtSubmoduleToLieIdeal q.1 ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)
+  have hα_nz : (↑α : Weight K H L).IsNonZero := (Finset.mem_filter.mp α.property).2
+  -- rootSpace α ⊓ I = ⊥ by weight space independence:
+  -- I = ⨆ sl2(β), and rootSpace α ⊓ sl2(β) = ⊥ for each β since α ≠ ±β, 0
+  have h_inter_bot : (rootSpace H (↑α : Weight K H L)).toSubmodule ⊓ I.toSubmodule = ⊥ := by
+    rw [coe_invtSubmoduleToLieIdeal_eq_iSup, LieSubmodule.iSup_toSubmodule]
+    -- intro β
+    -- sl2(β) ≤ genWeightSpace β ⊔ genWeightSpace (-β) ⊔ genWeightSpace 0
+    -- have h_sl2 : (sl2SubmoduleOfRoot β.2.2 : LieSubmodule K H L) ≤
+        -- genWeightSpace L β ⊔ genWeightSpace L (-β) ⊔
+          -- (rootSpace_zero_eq K L H ▸ H.toLieSubmodule) := by
+      -- rw [sl2SubmoduleOfRoot_eq_sup]
+      -- exact sup_le_sup_right (sup_le_sup_left le_rfl _) _
+    sorry
+  -- But rootSpace α has dimension 1 and rootSpace α ≤ I, so rootSpace α ⊓ I = rootSpace α ≠ ⊥
+  rw [inf_eq_left.mpr hα] at h_inter_bot
+  --exact absurd (finrank_rootSpace_eq_one (↑α : Weight K H L) hα_nz)
+    -- (by rw [h_inter_bot, finrank_bot]; omega)
+  sorry
 
 /-- The lattice of Lie ideals of a Killing Lie algebra is order-isomorphic to the lattice of
 invariant root submodules of the associated root system. -/
@@ -392,9 +560,12 @@ def lieIdealOrderIso :
   toFun := lieIdealToInvtRootSubmodule
   invFun q := invtSubmoduleToLieIdeal q.1
     ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)
-  left_inv := sorry
-  right_inv := sorry
-  map_rel_iff' := sorry
+  left_inv I := lieIdealOrderIso_left_inv I
+  right_inv := by
+    intro q
+    simp only [lieIdealToInvtRootSubmodule, lieIdealToSubmodule, lieIdealRootSet]
+    sorry
+  map_rel_iff' := lieIdealOrderIso_map_rel_iff
 
 end
 
