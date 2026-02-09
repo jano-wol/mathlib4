@@ -5,7 +5,7 @@ of a Killing Lie algebra and invariant root submodules of the associated root sy
 The main construction is `lieIdealToInvtRootSubmodule`, which maps a Lie ideal `I` to
 the submodule of `Dual K H` spanned by the roots whose root spaces lie in `I`.
 
-The full order isomorphism `lieIdealOrderIso` is sketched with sorry'd proofs.
+The full order isomorphism `lieIdealOrderIso` is proved.
 -/
 
 import Mathlib.Algebra.Lie.Weights.IsSimple
@@ -34,12 +34,12 @@ and takes their span. -/
 def lieIdealToSubmodule (I : LieIdeal K L) : Submodule K (Dual K H) :=
   Submodule.span K ((↑) '' lieIdealRootSet (H := H) I)
 
-/-! ### Coroot lemmas (needed for reflection invariance) -/
+/-! ### Weyl reflection invariance -/
 
 omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
 /-- If `g_α ⊆ I`, then the coroot submodule of `α` is contained in `I`.
 This uses that `I` is a Lie ideal: brackets `⁅g_{-α}, g_α⁆ ⊆ I` since `g_α ⊆ I`. -/
-private lemma corootSubmodule_le_lieIdeal' (I : LieIdeal K L) {α : Weight K H L}
+lemma corootSubmodule_le_lieIdeal (I : LieIdeal K L) {α : Weight K H L}
     (hα : (rootSpace H α).toSubmodule ≤ I.toSubmodule) :
     (corootSubmodule α).toSubmodule ≤ I.toSubmodule := by
   intro x hx
@@ -49,79 +49,6 @@ private lemma corootSubmodule_le_lieIdeal' (I : LieIdeal K L) {α : Weight K H L
   rintro _ ⟨y, hy, _, -, rfl⟩
   exact lie_mem_left K L I y _ (hα hy)
 
-/-! ### Weyl reflection invariance -/
-
-/-- In a root chain, bracketing with `g_{-β}` maps `g_{k•β + α}` to a nonzero subspace of
-`g_{(k-1)•β + α}` when `k` is strictly above the chain bottom.
-
-The chain `⨁_{-b ≤ k ≤ t} g_{k•β+α}` is an irreducible sl₂(β)-module because
-each weight space is 1-dimensional and the weights form a consecutive string. The lowering
-operator (bracket with `f_β`) is therefore nonzero on all weight spaces except the lowest. -/
-lemma exists_bracket_ne_zero_of_neg_lt_chainBotCoeff
-    {α β : Weight K H L} (hβ : β.IsNonZero)
-    {k : ℤ} (hk_top : k ≤ chainTopCoeff β α) (hk_bot : -k < chainBotCoeff β α) :
-    ∃ x ∈ rootSpace H (-β), ∃ y ∈ rootSpace H (k • β + α),
-      ⁅(x : L), (y : L)⁆ ≠ 0 := by
-  -- Get sl₂ triple for β
-  obtain ⟨_, e, f, isSl2, he, hf⟩ := exists_isSl2Triple_of_weight_isNonZero hβ
-  obtain rfl := isSl2.h_eq_coroot hβ he hf
-  -- Get primitive vector at chain top
-  obtain ⟨v, hv, v_ne0⟩ := (chainTop β α).exists_ne_zero
-  have prim : isSl2.HasPrimitiveVectorWith v (chainLength β α : K) :=
-    have := lie_mem_genWeightSpace_of_mem_genWeightSpace he hv
-    ⟨v_ne0, (chainLength_smul _ _ hv).symm, by rwa [genWeightSpace_add_chainTop _ _ hβ] at this⟩
-  -- Define chain index n = chainTopCoeff β α - k (as ℕ)
-  have h_nn : (0 : ℤ) ≤ chainTopCoeff β α - k := by omega
-  set n := (chainTopCoeff β α - k).toNat with hn_def
-  have hn : (n : ℤ) = chainTopCoeff β α - k := Int.toNat_of_nonneg h_nn
-  -- f^n v is in the root space g_{k•β+α}
-  have hfnv_mem : ((toEnd K L L f) ^ n) v ∈
-      genWeightSpace L (k • (β : H → K) + (α : H → K)) := by
-    have h1 := toEnd_pow_apply_mem hf hv n
-    suffices n • (-(β : H → K)) + (chainTop (β : H → K) α : H → K) =
-        k • (β : H → K) + (α : H → K) by rwa [this] at h1
-    rw [← Nat.cast_smul_eq_nsmul ℤ, smul_neg, coe_chainTop, hn]
-    simp [sub_eq_add_neg]
-    grind
-  -- f^n v is nonzero
-  have hn_le : n ≤ chainLength β α := by
-    suffices (n : ℤ) ≤ chainLength β α by exact Int.le_of_ofNat_le_ofNat this
-    rw [← chainBotCoeff_add_chainTopCoeff]; push_cast; omega
-  -- ⁅f, f^n v⁆ = f^(n+1) v is nonzero since n+1 ≤ chainLength
-  have hn1_le : n + 1 ≤ chainLength β α := by
-    suffices (n : ℤ) + 1 ≤ chainLength β α by exact Int.le_of_ofNat_le_ofNat this
-    rw [← chainBotCoeff_add_chainTopCoeff]; push_cast; omega
-  refine ⟨f, hf, _, hfnv_mem, ?_⟩
-  rw [prim.lie_f_pow_toEnd_f n]
-  exact prim.pow_toEnd_f_ne_zero_of_eq_nat rfl hn1_le
-
-/-- In a root chain, bracketing with `g_β` maps `g_{k•β + α}` to a nonzero subspace of
-`g_{(k+1)•β + α}` when `k` is strictly below the chain top. This follows from
-`exists_bracket_ne_zero_of_neg_lt_chainBotCoeff` by the symmetry `β ↦ -β`. -/
-lemma exists_bracket_ne_zero_of_lt_chainTopCoeff
-    {α β : Weight K H L} (hβ : β.IsNonZero)
-    {k : ℤ} (hk_bot : -k ≤ chainBotCoeff β α) (hk_top : k < chainTopCoeff β α) :
-    ∃ x ∈ rootSpace H β, ∃ y ∈ rootSpace H (k • β + α),
-      ⁅(x : L), (y : L)⁆ ≠ 0 := by
-  have h := exists_bracket_ne_zero_of_neg_lt_chainBotCoeff (α := α) (β := -β) hβ.neg
-    (k := -k) (by simp [chainTopCoeff_neg]; omega) (by simp [chainBotCoeff_neg]; omega)
-  convert h using 2
-  simp
-
-/-- If `g_α ⊆ I` and there exists a nonzero element of `g_γ ∩ I` where `γ` is a nonzero
-weight, then `g_γ ⊆ I` (since `g_γ` is 1-dimensional). -/
-private lemma rootSpace_le_ideal_of_ne_zero_mem (I : LieIdeal K L)
-    {γ : Weight K H L} (hγ : γ.IsNonZero) {z : L}
-    (hz_mem : z ∈ (rootSpace H γ).toSubmodule) (hz_I : z ∈ I.toSubmodule)
-    (hz_ne : z ≠ 0) :
-    (rootSpace H γ).toSubmodule ≤ I.toSubmodule := by
-  have h_inf_ne : I.toSubmodule ⊓ (rootSpace H γ).toSubmodule ≠ ⊥ :=
-    fun h_eq ↦ hz_ne ((Submodule.mem_bot K).mp
-      (h_eq ▸ Submodule.mem_inf.mpr ⟨hz_I, hz_mem⟩))
-  exact Submodule.eq_of_le_of_finrank_le inf_le_right
-    ((finrank_rootSpace_eq_one γ hγ).symm ▸
-      Submodule.one_le_finrank_iff.mpr h_inf_ne) ▸ inf_le_left
-
 /-- If `g_α ⊆ I` and `γ(coroot α) ≠ 0`, then `g_γ ⊆ I`.
 Proof: `coroot α ∈ I` (from `corootSubmodule_le_lieIdeal`), and for `y ∈ g_γ`,
 `[coroot α, y] = γ(coroot α) • y ∈ I`, so `y ∈ I`. -/
@@ -130,7 +57,7 @@ private lemma rootSpace_le_ideal_of_apply_coroot_ne_zero (I : LieIdeal K L)
     {γ : H → K} (hγ_ne : γ (coroot α) ≠ 0) :
     (rootSpace H γ).toSubmodule ≤ I.toSubmodule := by
   have h_coroot_I : (coroot α : L) ∈ I.toSubmodule := by
-    apply corootSubmodule_le_lieIdeal' I hI
+    apply corootSubmodule_le_lieIdeal I hI
     exact (LieSubmodule.mem_map _).mpr
       ⟨⟨coroot α, (coroot α).property⟩, coroot_mem_corootSpace α, rfl⟩
   intro y hy
@@ -206,19 +133,6 @@ omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
 lemma corootSubmodule_le_cartan (α : Weight K H L) :
     (corootSubmodule α).toSubmodule ≤ H.toSubmodule :=
   LieSubmodule.map_incl_le
-
-omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
-/-- If `g_α ⊆ I`, then the coroot submodule of `α` is contained in `I`.
-This uses that `I` is a Lie ideal: brackets `⁅g_{-α}, g_α⁆ ⊆ I` since `g_α ⊆ I`. -/
-lemma corootSubmodule_le_lieIdeal (I : LieIdeal K L) {α : Weight K H L}
-    (hα : (rootSpace H α).toSubmodule ≤ I.toSubmodule) :
-    (corootSubmodule α).toSubmodule ≤ I.toSubmodule := by
-  intro x hx
-  obtain ⟨h, hh, rfl⟩ := (LieSubmodule.mem_map _).mp hx
-  rw [mem_corootSpace] at hh
-  refine (Submodule.span_le.mpr ?_) hh
-  rintro _ ⟨y, hy, _, -, rfl⟩
-  exact lie_mem_left K L I y _ (hα hy)
 
 omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
 /-- ⊇ direction: the coroot span of roots in `Φ_I` is contained in `I ∩ H`. -/
@@ -413,7 +327,7 @@ private lemma mem_lieIdealRootSet_of_mem_lieIdealToSubmodule (I : LieIdeal K L)
       (↑α : Weight K H L) (coroot (↑γ : Weight K H L)) = 0 := by
     intro γ hγ
     have h_coroot_I : (coroot (↑γ : Weight K H L) : L) ∈ I.toSubmodule := by
-      apply corootSubmodule_le_lieIdeal' I hγ
+      apply corootSubmodule_le_lieIdeal I hγ
       exact (LieSubmodule.mem_map _).mpr
         ⟨⟨coroot (↑γ : Weight K H L), (coroot (↑γ : Weight K H L)).property⟩,
          coroot_mem_corootSpace (↑γ : Weight K H L), rfl⟩
