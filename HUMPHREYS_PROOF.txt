@@ -1,23 +1,31 @@
 Let V be a finite-dimensional vector space over a field F of characteristic zero.
-Let A ⊂ B be subspaces of gl(V). Define M = {x ∈ gl(V) : [x, B] ⊂ A}. Suppose x ∈ M satisfies tr(xy) = 0 for all y ∈ M. 
+Let A ⊂ B be subspaces of gl(V). Define M = {x ∈ gl(V) : [x, B] ⊂ A}. Suppose x ∈ M satisfies tr(xy) = 0 for all y ∈ M.
 Then x is nilpotent.
 ----
 Proof
 
+We may assume F is algebraically closed: extend scalars to the algebraic closure F̄;
+the subspaces A, B, M extend by base change, and both the trace condition and
+nilpotency are preserved. Over an algebraically closed field, semisimple and
+diagonalizable coincide, which we use below.
+
 Let x = s + n (s = x_s, n = x_n) be the Jordan decomposition of x.
-Fix a basis v_1, v_2, ..., v_m relative to s, so that it has matrix diag(a_1, a_2, ..., a_m).
-Let E be a vectors subspace of F (over the prime field Q) spanned by the eigenvalues a_1, a_2, ..., a_m.
+Since F is algebraically closed, s is diagonalizable.
+Fix a basis v_1, v_2, ..., v_m that diagonalizes s, so that it has matrix diag(a_1, a_2, ..., a_m).
+Let E be a vector subspace of F (over the prime field Q) spanned by the eigenvalues a_1, a_2, ..., a_m.
 We have to show that s = 0 or equivalently that E = 0. Since E has finite dimension over Q (by construction) it will suffice to
-show that the dual space of E^* is 0, that any linear function f: E->Q is zero.
+show that the dual space E^* is 0, i.e. that any linear function f: E->Q is zero.
 
 Given f, let y be that element of gl(V) whose matrix relative to our given basis is diag(f(a_1), f(a_2), ..., f(a_m)).
 If e_{ij} is the corresponding basis of gl(V) we saw in (4.2) that (ad s)(e_{ij}) = (a_i-a_j)e_{ij} and (ad y)(e_{ij}) = (f(a_i) - f(a_j))e_{ij}.
-Now let r(T) \in F[T] be a polynomial without constant term satisfying r(a_i - a_j) = f(a_i) - f(a_j) for all i, j pairs. The existance of such r(T) follows
-from Lagrange interpolation, there is no ambiguity in the assigned values, since a_i - a_j = a_k - a_l implies by tle linearity of f f(a_i) - f(a_j) = f(a_k) - f(a_l).
-Evidently ad y = r (ad s).
+Now let r(T) \in F[T] be a polynomial without constant term satisfying r(a_i - a_j) = f(a_i) - f(a_j) for all i, j pairs. The existence of such r(T) follows
+from Lagrange interpolation; there is no ambiguity in the assigned values, since a_i - a_j = a_k - a_l implies by the linearity of f that f(a_i) - f(a_j) = f(a_k) - f(a_l).
+Evidently ad y = r(ad s).
 
 Now ad s is the semisimple part of ad x, by Lemma A of 4.2, so it can be written as a polynomial in ad x without constant term. Therefore, ad y is also a polynomial in ad x
-without constant term. By hypothesis, ad x maps B into A, so we also have ad y(B) \subset A, i.e. y ∈ M. Using the hypothesis of the lemma, tr(xy) = 0, we get, 
-\sum (a_i f(a_i)) = 0. The left side is a Q-linear combination of elmeent in E, applying f, we obtain 
+without constant term. By hypothesis, ad x maps B into A; since A ⊂ B, it follows that (ad x)^k maps B into A for all k ≥ 1
+(inductively: (ad x)^{k+1}(B) = (ad x)((ad x)^k(B)) ⊂ (ad x)(A) ⊂ (ad x)(B) ⊂ A).
+Hence any polynomial in ad x without constant term maps B into A, so ad y(B) ⊂ A, i.e. y ∈ M. Using the hypothesis of the lemma, tr(xy) = 0, we get
+\sum (a_i f(a_i)) = 0. The left side is a Q-linear combination of elements in E; applying f, we obtain
 \sum f(a_i)^2 = 0.
 But the numbers f(a_i) are rational, so this forces all of them to be zero. Finally, f must be identically zero, because a_i span E.
