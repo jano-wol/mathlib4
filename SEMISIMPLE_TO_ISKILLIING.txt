@@ -1,0 +1,360 @@
+================================================================================
+  PROOF ARC: IsSemisimple K L → IsKilling K L  (CharZero K, FiniteDimensional K L)
+================================================================================
+
+GOAL
+----
+  instance [Field K] [CharZero K] [LieRing L] [LieAlgebra K L] [FiniteDimensional K L]
+      [IsSemisimple K L] : IsKilling K L
+
+  i.e., the Killing form κ_L is non-degenerate.
+
+  This is the converse of the existing IsKilling.instSemisimple (Killing.lean:79)
+  and resolves the TODO at Killing.lean:37-39 and GitHub issue #10068.
+
+
+================================================================================
+PART I: AVAILABLE THEOREMS
+================================================================================
+
+--- A. IsKilling / Killing form ---
+
+A1. killingCompl is a Lie ideal
+    LieIdeal.killingCompl R L I : LieIdeal R L
+    [TraceForm.lean:363]
+
+A2. IsKilling ↔ killingCompl ⊤ = ⊥
+    class IsKilling : killingCompl_top_eq_bot : killingCompl R L ⊤ = ⊥
+    [Killing.lean:53]
+
+A3. Abelian ideals are in the Killing kernel
+    le_killingCompl_top_of_isLieAbelian : I ≤ killingCompl R L ⊤
+    [TraceForm.lean:390]
+
+A4. Killing form is Lie-invariant, symmetric
+    traceForm_lieInvariant R L L      [TraceForm.lean:91]
+    traceForm_isSymm R L L            [TraceForm.lean:58]
+
+A5. IsKilling → IsSemisimple (already proved, the easy direction)
+    IsKilling.instSemisimple           [Killing.lean:79]
+
+--- B. IsSemisimple ---
+
+B1. Definition: sSup{atoms} = ⊤, atoms independent, atoms non-abelian
+    [Semisimple/Defs.lean:105]
+
+B2. IsSemisimple → BooleanAlgebra (LieIdeal R L)
+    [Semisimple/Basic.lean:266]
+
+B3. IsSemisimple → HasTrivialRadical
+    [Semisimple/Basic.lean:270]
+
+B4. HasTrivialRadical ↔ no nontrivial abelian ideals
+    [Semisimple/Basic.lean:71]
+
+B5. HasTrivialRadical ↔ no nontrivial solvable ideals
+    [Semisimple/Basic.lean:67]
+
+B6. Atoms are simple Lie algebras
+    isSimple_of_isAtom                 [Semisimple/Basic.lean:115]
+
+B7. Atomistic: every ideal is sup of atoms below it
+    atomistic                          [Semisimple/Basic.lean:159]
+
+--- C. Engel's theorem ---
+
+C1. Lie algebra nilpotent ↔ every ad(x) nilpotent (Noetherian case)
+    LieAlgebra.isNilpotent_iff_forall
+    [Engel.lean:273]
+
+C2. Module nilpotent ↔ every toEnd(x) nilpotent
+    LieModule.isNilpotent_iff_forall   [Engel.lean:262]
+
+--- D. Solvability ---
+
+D1. Nilpotent → solvable
+    isSolvable_of_isNilpotent          [Solvable.lean:738]
+
+D2. Extension of solvable by solvable is solvable
+    (various results in Solvable.lean)
+
+D3. radical definition: sSup{solvable ideals}
+    [Solvable.lean:357]
+
+--- E. Jordan-Chevalley decomposition ---
+
+E1. Over a perfect field, f = n + s with n nilpotent, s semisimple,
+    both in Algebra.adjoin K {f}
+    Module.End.exists_isNilpotent_isSemisimple
+    [JordanChevalley.lean:78]
+
+E2. Uniqueness: nilpotent + semisimple = 0
+    eq_zero_of_isNilpotent_isSemisimple
+    [Semisimple.lean:130]
+
+E3. CharZero K → PerfectField K (standard instance)
+
+--- F. Trace ---
+
+F1. Trace of nilpotent endomorphism is nilpotent (hence 0 in a field)
+    isNilpotent_trace_of_isNilpotent   [Trace.lean:334]
+
+F2. tr(f ∘ g) = μ * tr(f) when g - μ is nilpotent and f, g commute
+    trace_comp_eq_mul_of_commute_of_isNilpotent
+    [Trace.lean:346]
+
+F3. Trace base change
+    trace_baseChange                   [Trace.lean:361]
+
+--- G. Weight spaces ---
+
+G1. traceForm = Σ dim(M_χ) • χ(x) * χ(y)   (nilpotent L, LinearWeights)
+    traceForm_eq_sum_finrank_nsmul_mul [TraceForm.lean:408]
+
+G2. Weights vanish on brackets (LinearWeights)
+    Weight.apply_lie                   [Linear.lean:81]
+
+--- H. Adjoint representation ---
+
+H1. ad : L →ₗ⁅R⁆ End R L             [OfAssociative.lean:186]
+
+H2. ker(ad) = center(L)               (standard)
+
+H3. If a ∈ End(V) is nilpotent, then ad_{End(V)}(a) is nilpotent
+    LieAlgebra.ad_nilpotent_of_nilpotent
+    [Nilpotent.lean:927]
+
+
+================================================================================
+PART II: MISSING THEOREMS
+================================================================================
+
+--- MISSING 1: Killing form restricts to ideals ---
+
+Statement:
+  For I an ideal of L and x, y ∈ I:
+    killingForm R L x y = killingForm R I x y
+
+  (Or more generally: tr_L(ad_L(x) ∘ ad_L(y)) = tr_I(ad_I(x) ∘ ad_I(y)) for x, y ∈ I.)
+
+Proof idea:
+  For x, y ∈ I (ideal), ad_L(x) and ad_L(y) both map L into I.
+  Pick a complement V: L = I ⊕ V. In the block decomposition:
+    ad_L(x) ∘ ad_L(y) = [A  B]
+                         [0  0]
+  where A = ad_I(x) ∘ ad_I(y). So tr_L = tr(A) + 0 = tr_I.
+
+Difficulty: LOW. This is a standard trace decomposition argument.
+May need a lemma about trace of block-triangular endomorphisms.
+
+--- MISSING 2: Jordan decomposition commutes with ad ---
+
+Statement:
+  For x ∈ End(V) with Jordan decomposition x = s + n:
+    ad_{End(V)}(s) is the semisimple part of ad_{End(V)}(x)
+    ad_{End(V)}(n) is the nilpotent part of ad_{End(V)}(x)
+
+Proof idea:
+  ad(x) = ad(s) + ad(n). Since [s, n] = 0, [ad(s), ad(n)] = 0.
+  ad(s) is semisimple because s = diag(a_1,...,a_m) implies
+    ad(s)(E_{ij}) = (a_i - a_j) E_{ij}   (diagonalizable on End(V)).
+  ad(n) is nilpotent since n is nilpotent (HAVE: H3).
+  By uniqueness of Jordan decomposition (HAVE: E2), done.
+
+Difficulty: MEDIUM. Need that ad(s) is semisimple (diagonalizable).
+Key sub-lemma: ad(diag(a_1,...,a_m)) is diag with eigenvalues a_i - a_j.
+This requires working with matrices or the eigenspace structure of End(V).
+
+--- MISSING 3: Semisimple part of a derivation is a derivation ---
+
+Statement:
+  If D ∈ End(A) is a derivation of a Lie algebra A, and D = D_s + D_n
+  is the Jordan decomposition, then D_s is also a derivation of A.
+
+Proof idea:
+  D_s is diagonal over the algebraic closure. On generalized eigenspaces
+  V_λ of D, the Leibniz rule gives [V_λ, V_μ] ⊆ V_{λ+μ}.
+  Since D_s acts as scalar λ on V_λ:
+    D_s([x, y]) = (λ + μ)[x, y] = [D_s(x), y] + [x, D_s(y)]
+  for x ∈ V_λ, y ∈ V_μ. Extends by linearity.
+
+  Alternative (via MISSING 2): For D = ad_L(x), we have D_s = ad_L(x)_s.
+  By MISSING 2, ad(x)_s in End(End(V)) = ad(x_s) where x = x_s + x_n.
+  Not quite the same (works in gl(V), need it for abstract L).
+  But for the concrete Cartan criterion in gl(V), MISSING 2 suffices.
+
+Difficulty: MEDIUM. The eigenspace argument is clean but needs formalization
+of the interaction between generalized eigenspaces and Lie brackets.
+If we work concretely in gl(V), MISSING 2 provides this.
+
+--- MISSING 4: The Q-linear algebra argument ---
+
+Statement:
+  If a_1, ..., a_r ∈ K (algebraically closed, char 0) and n_1,...,n_r ∈ ℤ_{>0}
+  satisfy: for every f ∈ Hom_Q(Q-span{a_1,...,a_r}, Q),
+    Σ_k n_k · f(a_k) · a_k = 0 in K,
+  then a_k = 0 for all k.
+
+Proof idea:
+  Let E = Q-span{a_1,...,a_r}. Write a_k = Σ_j c_{kj} b_j for a Q-basis {b_j}.
+  The condition gives: the matrix M_{jl} = Σ_k n_k c_{kj} c_{kl} is zero.
+  Taking w^T M w = 0: Σ_k n_k (v_k · w)² = 0 for all w ∈ Q^d,
+  where v_k = (c_{k1},...,c_{kd}).
+  Since Q is an ordered field and n_k > 0: each v_k · w = 0 for all w,
+  so v_k = 0, hence a_k = 0.
+
+Difficulty: LOW-MEDIUM. The core is: sum of positive multiples of squares
+of rationals equals zero implies each term is zero. This is elementary
+but needs Q-vector space structure inside K (CharZero gives Q ↪ K).
+
+--- MISSING 5: Scalar extension for solvability ---
+
+Statement:
+  L is solvable over K iff L ⊗_K K̄ is solvable over K̄.
+
+Proof idea:
+  Derived series commutes with base change:
+    derivedSeries(L ⊗ K̄) = derivedSeries(L) ⊗ K̄
+  (since [I ⊗ K̄, J ⊗ K̄] = [I,J] ⊗ K̄ for ideals I, J).
+
+Difficulty: LOW. May already be partially available in Mathlib.
+
+--- MISSING 6: Lagrange interpolation / polynomial on eigenvalues ---
+
+Statement:
+  Given distinct eigenvalues a_1,...,a_r of a semisimple s ∈ End(V) and
+  target values b_1,...,b_r, there exists p ∈ K[X] with p(0) = 0 such that
+  the endomorphism p(s) satisfies p(s)|_{V_{a_k}} = b_k · id.
+
+Difficulty: LOW. Standard Lagrange interpolation, likely available.
+
+
+================================================================================
+PART III: PROOF ARC
+================================================================================
+
+The proof proceeds in two main stages:
+
+  STAGE A: Cartan's Criterion for Solvability (the hard part)
+  STAGE B: IsSemisimple → IsKilling (using Stage A)
+
+
+--- STAGE B: IsSemisimple → IsKilling ---
+    (assuming Cartan's criterion from Stage A)
+
+STEP B1. Define I := killingCompl K L ⊤ (the kernel of κ_L).
+         I is a Lie ideal.                                          [HAVE: A1]
+
+STEP B2. Show κ_L(x, y) = κ_I(x, y) for x, y ∈ I.                [MISSING 1]
+         Hence κ_I = 0 on I × I.
+
+STEP B3. In particular, κ_I(x, y) = 0 for x ∈ I, y ∈ [I, I].     [trivial from B2]
+
+STEP B4. By Cartan's criterion, I is solvable.                     [STAGE A]
+
+STEP B5. IsSemisimple → HasTrivialRadical.                         [HAVE: B3]
+         Every solvable ideal is zero.                              [HAVE: B5]
+         So I = ⊥.
+
+STEP B6. killingCompl K L ⊤ = ⊥, i.e., IsKilling K L.             [HAVE: A2]
+
+
+  Alternative for B2-B3 (avoiding MISSING 1):
+
+STEP B2'. For x ∈ I and any y ∈ L: κ_L(x, y) = 0 by definition.
+          In particular, for x ∈ [I,I] ⊆ I and y ∈ I ⊆ L: κ_L(x, y) = 0.
+
+STEP B3'. Apply the CONCRETE Cartan criterion to ad(I) ⊆ gl(L):
+          tr_L(ad(x) ∘ ad(y)) = κ_L(x, y) = 0 for x ∈ [I,I], y ∈ I.
+          Conclude: ad(I) is solvable, hence I is solvable
+          (since I/Z(I) ≅ ad(I) and Z(I) is abelian).
+
+  This alternative avoids MISSING 1 entirely.
+
+
+--- STAGE A: Cartan's Criterion (Concrete Version) ---
+
+THEOREM (Cartan's Criterion):
+  Let V be finite-dimensional over K (char 0). Let L ⊆ gl(V) be a Lie
+  subalgebra. If tr(x ∘ y) = 0 for all x ∈ [L,L], y ∈ L, then L is solvable.
+
+PROOF:
+
+STEP A1. WLOG K is algebraically closed.                           [MISSING 5]
+         (Extend scalars to algebraic closure K̄.
+          CharZero K → PerfectField K → exists K̄.                  [HAVE: E3]
+          L solvable ↔ L ⊗ K̄ solvable.
+          Trace hypothesis is preserved by base change.             [HAVE: F3])
+
+STEP A2. It suffices to show: every x ∈ [L,L] is nilpotent.
+         Then [L,L] is nilpotent by Engel's theorem.               [HAVE: C1]
+         Then L is solvable.                                        [HAVE: D1, D2]
+
+STEP A3. Take x ∈ [L,L]. Jordan decompose x = s + n in End(V).    [HAVE: E1]
+         s semisimple, n nilpotent, both ∈ Algebra.adjoin K {x}.
+         Goal: s = 0.
+
+STEP A4. Establish: ad_{gl(V)}(s) is the semisimple part of        [MISSING 2]
+         ad_{gl(V)}(x).
+         Key consequence: ad(s) = polynomial in ad(x).
+         Since ad(x) preserves L and [L,L], so does ad(s):
+           [s, L] ⊆ L  and  [s, L] ⊆ [L,L].
+
+STEP A5. For any function g on the eigenvalues {a_1,...,a_r} of s   [MISSING 6]
+         with g(0) = 0, construct y_g ∈ End(V) via Lagrange
+         interpolation: y_g = p(s) for some p ∈ K[X] with p(0) = 0.
+         Then y_g ∈ Algebra.adjoin K {s} ⊆ Algebra.adjoin K {x}.
+         So ad(y_g) is a polynomial in ad(s), hence in ad(x).
+         Therefore [y_g, L] ⊆ [L,L].
+
+STEP A6. Since [y_g, L] ⊆ [L,L], the trace hypothesis gives:
+           tr(y_g ∘ z) = 0  for all z ∈ [L,L].
+         In particular: tr(y_g ∘ x) = 0.
+
+STEP A7. Compute tr(y_g ∘ x):
+         y_g commutes with s (both polynomials in s).
+         y_g commutes with n (since y_g = p(s) and n commutes with s).
+         So y_g ∘ n is nilpotent (commuting with nilpotent).
+         tr(y_g ∘ n) = 0.                                          [HAVE: F1]
+         tr(y_g ∘ x) = tr(y_g ∘ s) + tr(y_g ∘ n) = tr(y_g ∘ s).
+         tr(y_g ∘ s) = Σ_k dim(V_{a_k}) · g(a_k) · a_k.
+         So: Σ_k dim(V_{a_k}) · g(a_k) · a_k = 0.
+
+STEP A8. Apply the Q-linear algebra argument:                      [MISSING 4]
+         Since g is arbitrary (on the Q-span of {a_1,...,a_r}),
+         conclude a_k = 0 for all k. Hence s = 0.                  QED
+
+
+================================================================================
+PART IV: DEPENDENCY GRAPH
+================================================================================
+
+  IsSemisimple → IsKilling
+    ├── B1: killingCompl is Lie ideal                    [HAVE]
+    ├── B5: HasTrivialRadical → solvable ideal = ⊥      [HAVE]
+    └── Cartan's Criterion (Stage A)
+          ├── A1: Scalar extension for solvability       [MISSING 5]  (LOW)
+          ├── A2: Engel's theorem                        [HAVE]
+          ├── A3: Jordan-Chevalley decomposition         [HAVE]
+          ├── A4: JC commutes with ad on gl(V)           [MISSING 2]  (MEDIUM)
+          ├── A5: Lagrange interpolation on eigenvalues  [MISSING 6]  (LOW)
+          ├── A6: (just logic)
+          ├── A7: Trace of nilpotent = 0                 [HAVE]
+          └── A8: Q-positivity argument                  [MISSING 4]  (LOW-MEDIUM)
+
+
+================================================================================
+PART V: EFFORT ESTIMATE
+================================================================================
+
+  MISSING 1: Killing form on ideals                  — LOW (avoidable via B2'-B3')
+  MISSING 2: JC commutes with ad on gl(V)            — MEDIUM (key structural lemma)
+  MISSING 3: Semisim. part of derivation is derivation — MEDIUM (subsumed by 2 for gl(V))
+  MISSING 4: Q-linear algebra / positivity           — LOW-MEDIUM
+  MISSING 5: Scalar extension for solvability         — LOW
+  MISSING 6: Lagrange interpolation on eigenvalues    — LOW
+
+  The critical path goes through MISSING 2 (Jordan commutes with ad).
+  Everything else is either available or straightforward.
+
+  Total missing lemma count: 4 essential (2, 4, 5, 6), 2 optional (1, 3).
