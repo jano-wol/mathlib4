@@ -538,20 +538,32 @@ private lemma mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal
   -- rootSpace α ⊓ I = ⊥ by weight space independence:
   -- I = ⨆ sl2(β), and rootSpace α ⊓ sl2(β) = ⊥ for each β since α ≠ ±β, 0
   have h_inter_bot : (rootSpace H (↑α : Weight K H L)).toSubmodule ⊓ I.toSubmodule = ⊥ := by
-    rw [coe_invtSubmoduleToLieIdeal_eq_iSup, LieSubmodule.iSup_toSubmodule]
-    -- intro β
-    -- sl2(β) ≤ genWeightSpace β ⊔ genWeightSpace (-β) ⊔ genWeightSpace 0
-    -- have h_sl2 : (sl2SubmoduleOfRoot β.2.2 : LieSubmodule K H L) ≤
-        -- genWeightSpace L β ⊔ genWeightSpace L (-β) ⊔
-          -- (rootSpace_zero_eq K L H ▸ H.toLieSubmodule) := by
-      -- rw [sl2SubmoduleOfRoot_eq_sup]
-      -- exact sup_le_sup_right (sup_le_sup_left le_rfl _) _
-    sorry
-  -- But rootSpace α has dimension 1 and rootSpace α ≤ I, so rootSpace α ⊓ I = rootSpace α ≠ ⊥
+    rw [coe_invtSubmoduleToLieIdeal_eq_iSup, ← disjoint_iff, LieSubmodule.disjoint_toSubmodule]
+    -- Use weight space independence indexed by H → K (avoids needing 0 : Weight)
+    apply Disjoint.mono_right _ (iSupIndep_genWeightSpace K H L (↑(↑α : Weight K H L)))
+    -- It suffices to show each sl₂(β) ≤ ⨆ φ ≠ ↑α, genWeightSpace φ
+    apply iSup_le; intro ⟨β, hβ_mem, hβ_nz⟩
+    -- β ≠ α (else α ∈ q), -β ≠ α (else -α ∈ q so α ∈ q), 0 ≠ α (since α nonzero)
+    have hβ_ne : (β : H → K) ≠ ((↑α : Weight K H L) : H → K) := by
+      intro heq; have h_eq := DFunLike.coe_injective heq; subst h_eq
+      exact hα_not (by simpa [rootSystem_root_apply] using hβ_mem)
+    have hnβ_ne : ((-β : Weight K H L) : H → K) ≠ ((↑α : Weight K H L) : H → K) := by
+      intro heq; apply hα_not; rw [rootSystem_root_apply]
+      have h_neg : Weight.toLinear K H L (-β) ∈ q.1 := by
+        rw [Weight.toLinear_neg]; exact q.1.neg_mem hβ_mem
+      rwa [show (-β : Weight K H L) = (↑α : Weight K H L) from DFunLike.coe_injective heq]
+        at h_neg
+    have h0_ne : (0 : H → K) ≠ ((↑α : Weight K H L) : H → K) := fun h => hα_nz h.symm
+    rw [sl2SubmoduleOfRoot_eq_sup]
+    apply sup_le (sup_le _ _) _
+    · exact le_iSup₂_of_le (↑β : H → K) hβ_ne le_rfl
+    · exact le_iSup₂_of_le (↑(-β : Weight K H L) : H → K) hnβ_ne le_rfl
+    · exact (LieSubmodule.map_incl_le.trans (rootSpace_zero_eq K L H).symm.le).trans
+        (le_iSup₂_of_le (0 : H → K) h0_ne le_rfl)
+  -- But rootSpace α ≤ I, so rootSpace α = ⊥, contradicting nonzero weight
   rw [inf_eq_left.mpr hα] at h_inter_bot
-  --exact absurd (finrank_rootSpace_eq_one (↑α : Weight K H L) hα_nz)
-    -- (by rw [h_inter_bot, finrank_bot]; omega)
-  sorry
+  exact Weight.genWeightSpace_ne_bot L (↑α : Weight K H L)
+    ((LieSubmodule.toSubmodule_eq_bot _).mp h_inter_bot)
 
 /-- The lattice of Lie ideals of a Killing Lie algebra is order-isomorphic to the lattice of
 invariant root submodules of the associated root system. -/
