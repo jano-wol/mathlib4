@@ -565,6 +565,68 @@ private lemma mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal
   exact Weight.genWeightSpace_ne_bot L (↑α : Weight K H L)
     ((LieSubmodule.toSubmodule_eq_bot _).mp h_inter_bot)
 
+/-- An invariant root submodule is spanned by the roots it contains.
+The proof uses the block-diagonal structure of the pairing matrix:
+if `P(i,j) = 0` for roots `i ∈ q` and `j ∉ q` (from invariance),
+then `P(j,i) = 0` by `pairing_eq_zero_iff'`, so any element of `q`
+decomposes as a sum of roots in `q` (the complement part vanishes
+because it lies in the kernel of all `coroot'`). -/
+private lemma invtSubmodule_le_span_roots (q : (rootSystem H).invtRootSubmodule) :
+    (q : Submodule K (Dual K H)) ≤
+      Submodule.span K ((rootSystem H).root ''
+        {i | (rootSystem H).root i ∈ (q : Submodule K _)}) := by
+  -- Key: coroot' ℓ vanishes on q when root ℓ ∉ q
+  have hq_ker : ∀ ℓ, (rootSystem H).root ℓ ∉ (q : Submodule K _) →
+      (q : Submodule K _) ≤ LinearMap.ker ((rootSystem H).coroot' ℓ) := by
+    intro ℓ hℓ w hw
+    rw [LinearMap.mem_ker]; by_contra h; apply hℓ
+    have h_refl : ((rootSystem H).reflection ℓ) w ∈ (q : Submodule K _) :=
+      (rootSystem H).mem_invtRootSubmodule_iff.mp q.property ℓ hw
+    rw [(rootSystem H).reflection_apply] at h_refl
+    have h_smul : ((rootSystem H).coroot' ℓ w) • (rootSystem H).root ℓ ∈
+        (q : Submodule K _) := by
+      have h_sub := sub_mem hw h_refl; rwa [sub_sub_cancel] at h_sub
+    exact (Submodule.smul_mem_iff _ h).mp h_smul
+  -- Abbreviations for the two spans
+  set S := Submodule.span K ((rootSystem H).root ''
+    {i | (rootSystem H).root i ∈ (q : Submodule K _)})
+  set T := Submodule.span K ((rootSystem H).root ''
+    {i | (rootSystem H).root i ∉ (q : Submodule K _)})
+  -- coroot' ℓ vanishes on S when root ℓ ∉ q
+  have hS_ker : ∀ ℓ, (rootSystem H).root ℓ ∉ (q : Submodule K _) →
+      S ≤ LinearMap.ker ((rootSystem H).coroot' ℓ) := by
+    intro ℓ hℓ; apply Submodule.span_le.mpr; rintro _ ⟨i, hi, rfl⟩
+    exact hq_ker ℓ hℓ hi
+  -- coroot' i vanishes on T when root i ∈ q (by pairing symmetry)
+  have hT_ker : ∀ i, (rootSystem H).root i ∈ (q : Submodule K _) →
+      T ≤ LinearMap.ker ((rootSystem H).coroot' i) := by
+    intro i hi; apply Submodule.span_le.mpr; rintro _ ⟨j, hj, rfl⟩
+    rw [SetLike.mem_coe, LinearMap.mem_ker, (rootSystem H).root_coroot'_eq_pairing]
+    have h₁ := LinearMap.mem_ker.mp (hq_ker j hj hi)
+    rw [(rootSystem H).root_coroot'_eq_pairing] at h₁
+    exact (rootSystem H).pairing_eq_zero_iff'.mpr h₁
+  -- S ⊔ T = ⊤
+  have h_sup : S ⊔ T = ⊤ := by
+    rw [← Submodule.span_union, ← Set.image_union]
+    have : {i | (rootSystem H).root i ∈ (q : Submodule K _)} ∪
+        {i | (rootSystem H).root i ∉ (q : Submodule K _)} = Set.univ := by
+      ext; exact ⟨fun _ => trivial, fun _ => em _⟩
+    rw [this, Set.image_univ]; simp
+  -- Main: decompose v = s + t and show t = 0
+  intro v hv
+  obtain ⟨s, hs, t, ht, rfl⟩ := Submodule.mem_sup.mp (h_sup ▸ Submodule.mem_top (x := v))
+  suffices t = 0 by rw [this, add_zero]; exact hs
+  have h_ker : ∀ ℓ, (rootSystem H).coroot' ℓ t = 0 := by
+    intro ℓ; by_cases hℓ : (rootSystem H).root ℓ ∈ (q : Submodule K _)
+    · exact LinearMap.mem_ker.mp (hT_ker ℓ hℓ ht)
+    · have h1 := LinearMap.mem_ker.mp (hq_ker ℓ hℓ hv)
+      have h2 := LinearMap.mem_ker.mp (hS_ker ℓ hℓ hs)
+      rw [map_add, h2, zero_add] at h1; exact h1
+  have : IsReflexive K (Dual K H) := .of_isPerfPair (rootSystem H).toLinearMap
+  exact ((Module.Dual.eval K _).map_eq_zero_iff
+    (bijective_dual_eval K _).injective).mp
+    (LinearMap.ext_on_range (rootSystem H).span_coroot'_eq_top h_ker)
+
 /-- The lattice of Lie ideals of a Killing Lie algebra is order-isomorphic to the lattice of
 invariant root submodules of the associated root system. -/
 def lieIdealOrderIso :
@@ -575,8 +637,27 @@ def lieIdealOrderIso :
   left_inv I := lieIdealOrderIso_left_inv I
   right_inv := by
     intro q
+    apply Subtype.ext
     simp only [lieIdealToInvtRootSubmodule, lieIdealToSubmodule, lieIdealRootSet]
-    sorry
+    apply le_antisymm
+    · -- ≤: each root whose rootSpace ≤ g(q) is in q
+      apply Submodule.span_le.mpr
+      rintro _ ⟨α, hα, rfl⟩
+      exact mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal q hα
+    · -- ≥: q ≤ span (by invtSubmodule_le_span_roots + set inclusion)
+      apply (invtSubmodule_le_span_roots q).trans
+      apply Submodule.span_mono; apply Set.image_mono
+      intro i hi
+      -- root i ∈ q and i.IsNonZero → rootSpace H ↑i ≤ invtSubmoduleToLieIdeal q
+      have hi_nz : (↑i : Weight K H L).IsNonZero := (Finset.mem_filter.mp i.property).2
+      rw [Set.mem_setOf_eq, rootSystem_root_apply] at hi
+      change (rootSpace H (↑i : Weight K H L)).toSubmodule ≤
+        (invtSubmoduleToLieIdeal q.1
+          ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)).toSubmodule
+      rw [coe_invtSubmoduleToLieIdeal_eq_iSup, LieSubmodule.iSup_toSubmodule]
+      apply le_iSup_of_le ⟨(↑i : Weight K H L), hi, hi_nz⟩
+      rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
+      exact le_sup_of_le_left le_sup_left
   map_rel_iff' := lieIdealOrderIso_map_rel_iff
 
 end
