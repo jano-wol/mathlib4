@@ -357,5 +357,19 @@ theorem humphreys_lemma_algClosed
     exact congr_arg Subtype.val hμ_zero
   -- Humphreys: "Given f, ..."
   intro f
-  -- Paragraphs 2–4: construct y, show y ∈ M, trace argument, f = 0
+  -- Each eigenvalue aᵢ is in E (since eigenvalues span E).
+  have ha : ∀ i, a i ∈ E := fun i => Submodule.subset_span (Set.mem_range_self i)
+  -- Humphreys: "Given f, let y be that element of gl(V) whose matrix relative to
+  -- our given basis is diag(f(a₁), f(a₂), ..., f(aₘ))."
+  let y := diagEnd v (fun i => algebraMap ℚ K (f ⟨a i, ha i⟩))
+  -- Humphreys: "If e_{ij} is the corresponding basis of gl(V) we saw in (4.2) that
+  -- (ad s)(e_{ij}) = (aᵢ − aⱼ)e_{ij}"
+  have had_s : ∀ i j, ⁅s, eij v i j⁆ = (a i - a j) • eij v i j :=
+    ad_diag_eij v a s hv_diag
+  -- "and (ad y)(e_{ij}) = (f(aᵢ) − f(aⱼ))e_{ij}."
+  have had_y : ∀ i j, ⁅y, eij v i j⁆ =
+      (algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) •
+        eij v i j :=
+    fun i j => ad_diagEnd_eij v _ i j
+  -- Paragraphs 2–4 continued: Lagrange interpolation, y ∈ M, trace argument, f = 0
   sorry
