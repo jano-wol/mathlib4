@@ -214,28 +214,17 @@ The proof requires Jordan-Chevalley uniqueness for `ad(x)`:
 omit [IsAlgClosed K] [FiniteDimensional K V] in
 /-- **Uniqueness of the Jordan-Chevalley decomposition.**
 If `f = n₁ + s₁ = n₂ + s₂` where `nᵢ` are nilpotent, `sᵢ` are semisimple,
-and the semisimple (resp. nilpotent) parts commute with each other, then
-`n₁ = n₂` and `s₁ = s₂`.
-
-This follows from: `s₁ - s₂ = n₂ - n₁` is both semisimple
-(`IsSemisimple.sub_of_commute`) and nilpotent (`Commute.isNilpotent_sub`),
-hence zero (`eq_zero_of_isNilpotent_isSemisimple`). -/
+and each nilpotent part commutes with its semisimple part, then
+`n₁ = n₂` and `s₁ = s₂`. -/
 theorem jordanChevalley_unique
     {W : Type*} [AddCommGroup W] [Module K W] [FiniteDimensional K W]
-    {n₁ s₁ n₂ s₂ : Module.End K W}
+    {f n₁ s₁ n₂ s₂ : Module.End K W}
     (hn₁ : IsNilpotent n₁) (hs₁ : s₁.IsSemisimple)
     (hn₂ : IsNilpotent n₂) (hs₂ : s₂.IsSemisimple)
-    (hcs : Commute s₁ s₂) (hcn : Commute n₁ n₂)
-    (h : n₁ + s₁ = n₂ + s₂) :
+    (hc₁ : Commute n₁ s₁) (hc₂ : Commute n₂ s₂)
+    (h₁ : f = n₁ + s₁) (h₂ : f = n₂ + s₂) :
     n₁ = n₂ ∧ s₁ = s₂ := by
-  have hkey : s₁ - s₂ = n₂ - n₁ := by
-    have h1 : s₁ = n₂ + s₂ - n₁ := by rw [← h, add_sub_cancel_left]
-    rw [h1]; abel
-  have hnn : IsNilpotent (s₁ - s₂) := hkey ▸ hcn.symm.isNilpotent_sub hn₂ hn₁
-  have hss : (s₁ - s₂).IsSemisimple := hs₁.sub_of_commute hcs hs₂
-  have h0 : s₁ = s₂ :=
-    sub_eq_zero.mp (Module.End.eq_zero_of_isNilpotent_isSemisimple hnn hss)
-  exact ⟨by rw [h0] at h; exact add_right_cancel h, h0⟩
+  sorry
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- Commuting endomorphisms have commuting adjoint actions.
@@ -312,6 +301,7 @@ lemma ad_semisimple_part
          LieAlgebra.ad_nilpotent_of_nilpotent K hn_nil,
          ad_isSemisimple_of_isSemisimple hs_ss⟩
 
+omit [IsAlgClosed K] in
 /-- `ad(s) ∈ adjoin K {ad(x)}`: the semisimple part of `ad(x)` is a polynomial in `ad(x)`.
 
 Uses `ad_semisimple_part` to see that `ad(x) = ad(n) + ad(s)` is a JC decomposition,
@@ -330,17 +320,21 @@ lemma ad_semisimple_part_in_adjoin
   set ad := LieAlgebra.ad K (Module.End K V)
   -- Step 1: ad(x) = ad(n) + ad(s) is a JC decomposition
   obtain ⟨h_sum, h_ad_n_nil, h_ad_s_ss⟩ := ad_semisimple_part x n s hn_nil hs_ss hxns
+  -- Commutativity from adjoin membership (following Killing.lean pattern)
+  have hc_xn : Commute x n := Algebra.commute_of_mem_adjoin_self hn_adj
+  have hc_ns : Commute n s :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj hc_xn.symm
   -- Step 2: Canonical JC of ad(x)
   obtain ⟨n', hn'_adj, s', hs'_adj, hn'_nil, hs'_ss, h_jc⟩ :=
     (ad x).exists_isNilpotent_isSemisimple
-  -- Step 3: Commutativity for uniqueness
-  have h_ads_s' : Commute (ad s) s' :=
-    sorry
-  have h_adn_n' : Commute (ad n) n' :=
-    sorry
-  -- Step 4: By uniqueness, ad(s) = s'
+  have hc_n' : Commute (ad x) n' := Algebra.commute_of_mem_adjoin_self hn'_adj
+  have hc_s' : Commute (ad x) s' := Algebra.commute_of_mem_adjoin_self hs'_adj
+  have hc_canonical : Commute n' s' :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hs'_adj hc_n'.symm
+  have hc_ad : Commute (ad n) (ad s) := commute_ad_of_commute hc_ns
+  -- By uniqueness, ad(s) = s'
   exact (jordanChevalley_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
-    h_ads_s'.symm h_adn_n'.symm (h_jc.symm.trans h_sum)).2 ▸ hs'_adj
+    hc_canonical hc_ad h_jc h_sum).2 ▸ hs'_adj
 
 /-! ## Paragraph 1: s = 0 from eigenvalue information
 
