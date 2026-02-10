@@ -236,6 +236,18 @@ theorem jordanChevalley_unique
     sub_eq_zero.mp (Module.End.eq_zero_of_isNilpotent_isSemisimple hnn hss)
   exact ⟨by rw [h0] at h; exact add_right_cancel h, h0⟩
 
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- Commuting endomorphisms have commuting adjoint actions.
+
+Follows from the Jacobi identity: `⁅ad(a), ad(b)⁆ = ad(⁅a, b⁆)`, so if
+`⁅a, b⁆ = 0` (i.e., `Commute a b`) then `ad(a)` and `ad(b)` commute. -/
+theorem commute_ad_of_commute {R : Type*} [CommRing R]
+    {A : Type*} [Ring A] [Algebra R A] {a b : A}
+    (h : Commute a b) :
+    Commute (LieAlgebra.ad R A a) (LieAlgebra.ad R A b) := by
+  rw [Commute, SemiconjBy, ← sub_eq_zero, ← Ring.lie_def,
+      ← (LieAlgebra.ad R A).map_lie, Ring.lie_def, sub_eq_zero.mpr h, map_zero]
+
 lemma ad_semisimple_part_maps_to
     (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
     (x s : Module.End K V)
