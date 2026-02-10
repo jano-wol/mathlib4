@@ -138,6 +138,27 @@ theorem ad_diagEnd_eij {ι : Type*}
   ad_diag_eij b c (diagEnd b c) (diagEnd_apply_basis b c) i j
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- The matrix of a diagonal endomorphism is a diagonal matrix. -/
+theorem toMatrix_diagEnd {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (b : Module.Basis ι K V) (c : ι → K) :
+    LinearMap.toMatrix b b (diagEnd b c) = Matrix.diagonal c := by
+  ext i j
+  rw [LinearMap.toMatrix_apply, diagEnd_apply_basis]
+  simp only [map_smul, Module.Basis.repr_self, Finsupp.smul_single, smul_eq_mul, mul_one,
+    Matrix.diagonal_apply]
+  by_cases h : i = j
+  · subst h; simp [Finsupp.single_eq_same]
+  · simp [h]
+
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- The trace of a diagonal endomorphism is the sum of its diagonal entries. -/
+theorem trace_diagEnd {ι : Type*} [Fintype ι]
+    (b : Module.Basis ι K V) (c : ι → K) :
+    trace K V (diagEnd b c) = ∑ i, c i := by
+  classical
+  rw [trace_eq_matrix_trace K b, toMatrix_diagEnd, Matrix.trace_diagonal]
+
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 open Classical in
 /-- The `eij` elementary endomorphisms form a basis of `End K V`, obtained by
 transporting the standard matrix basis `Matrix.stdBasis` along `LinearMap.toMatrix`. -/
@@ -509,82 +530,6 @@ lemma eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero
   rw [eigenspace_zero] at h_ker
   exact ker_eq_top.mp h_ker
 
-/-! ## Paragraphs 2–4: The dual-space trace argument
-
-This section formalizes the core of Humphreys' proof, showing each eigenvalue
-of `s` is zero using the full trace orthogonality hypothesis.
-
-The concrete approach uses the eigenbasis `b` and elementary endomorphisms
-`e_{ij}` throughout.
-
-**Paragraph 2** — Constructing y:
-
-"Given f, let y be that element of gl(V) whose matrix relative to our given
-basis is diag(f(a₁), f(a₂), ..., f(aₘ))."
-
-→ `y = diagEnd b (fun σ => algebraMap ℚ K (f (σ.1)))`
-  where `b = eigenbasis s hs` and `f : E →ₗ[ℚ] ℚ` with
-  `E = Submodule.span ℚ {eigenvalues}`.
-
-"Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
-r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs."
-
-→ Lagrange interpolation on the finite set of eigenvalue differences
-  (`Lagrange.interpolate`). Well-defined because `f` is ℚ-linear.
-
-"Evidently ad y = r(ad s)."
-
-→ Both sides agree on every `e_{ij}`:
-  `ad(y)(e_{ij}) = (f(aᵢ) − f(aⱼ)) e_{ij}` (from `ad_diagEnd_eij`)
-  `r(ad s)(e_{ij}) = r(aᵢ − aⱼ) e_{ij}` (from `aeval_apply_of_hasEigenvector`)
-
-**Paragraph 3** — y ∈ M:
-
-"Now ad s is the semisimple part of ad x [...] so it can be written as a
-polynomial in ad x without constant term. Therefore, ad y is also a
-polynomial in ad x without constant term."
-
-→ Uses `ad_semisimple_part_maps_to` and the composition `ad(y) = r(p(ad(x)))`.
-
-"Hence any polynomial in ad x without constant term maps B into A,
-so ad y(B) ⊂ A, i.e. y ∈ M."
-
-→ Uses `ad_pow_maps_to`.
-
-**Paragraph 4** — The trace argument:
-
-"Using the hypothesis of the lemma, tr(xy) = 0, we get ∑(aᵢf(aᵢ)) = 0."
-
-→ `tr(xy) = tr(sy) + tr(ny)`.
-  `tr(ny) = 0` since `ny` is nilpotent (n commutes with y, both in adjoin K {x}).
-  `tr(sy) = ∑_σ a(σ) · algebraMap ℚ K (f(a(σ)))` (trace of product of
-  commuting diagonal endomorphisms).
-
-"The left side is a Q-linear combination of elements in E; applying f,
-we obtain ∑f(aᵢ)² = 0."
-
-→ The identity `∑ f(aᵢ) · aᵢ = 0` holds in `E ⊆ K`. Applying f gives
-  `∑ f(aᵢ)² = 0` in ℚ.
-
-"But the numbers f(aᵢ) are rational, so this forces all of them to be zero.
-Finally, f must be identically zero, because aᵢ span E."
-
-→ `Finset.sum_eq_zero_iff_of_nonneg` gives each `f(aᵢ)² = 0` hence
-  `f(aᵢ) = 0`. Since eigenvalues span E, f = 0, contradicting the choice
-  of f with `f(μ) ≠ 0`. -/
-lemma eigenvalues_eq_zero
-    (A B : Submodule K (Module.End K V))
-    (hAB : A ≤ B)
-    (x s : Module.End K V)
-    (hs_adj : s ∈ Algebra.adjoin K {x})
-    (hs_ss : s.IsSemisimple)
-    (n : Module.End K V)
-    (hn_nil : IsNilpotent n)
-    (hxns : x = n + s)
-    (hxM : x ∈ M A B)
-    (htr : ∀ z ∈ M A B, trace K V (x * z) = 0)
-    (μ : K) (hμ : s.HasEigenvalue μ) : μ = 0 := by
-  sorry
 
 omit [IsAlgClosed K] in
 /-- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
@@ -742,7 +687,57 @@ theorem humphreys_lemma_algClosed
   -- tr(ny) = 0 (nilpotent). tr(sy) = ∑ aᵢ · algebraMap(f(aᵢ)) (diagonal).
   have htr_sum : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       a i * algebraMap ℚ K (f ⟨a i, ha i⟩) = 0 := by
-    sorry
+    classical
+    -- Step 1: y ∈ adjoin K {s} via Lagrange interpolation
+    -- Construct polynomial g with g(μ) = algebraMap ℚ K (f(μ)) for each eigenvalue μ
+    let eigenvals : Finset K := Finset.univ.image a
+    let c_val : K → K := fun μ => if hμ : μ ∈ E then algebraMap ℚ K (f ⟨μ, hμ⟩) else 0
+    let g := Lagrange.interpolate eigenvals id c_val
+    have hg_eval : ∀ i, Polynomial.eval (a i) g = algebraMap ℚ K (f ⟨a i, ha i⟩) := by
+      intro i
+      have h_mem : a i ∈ eigenvals := Finset.mem_image.mpr ⟨i, Finset.mem_univ _, rfl⟩
+      exact (Lagrange.eval_interpolate_at_node c_val
+        (fun _ _ _ _ h => h) h_mem).trans (dif_pos (ha i))
+    -- aeval s g = y (both agree on eigenbasis)
+    have hy_eq : Polynomial.aeval s g = y := by
+      apply v.ext; intro i
+      rw [aeval_apply_of_eigenvalue (hv_diag i) g, hg_eval i, diagEnd_apply_basis]
+    -- y ∈ adjoin K {s}
+    have hy_adj_s : y ∈ Algebra.adjoin K {s} := by
+      rw [Algebra.adjoin_singleton_eq_range_aeval]
+      exact ⟨g, hy_eq⟩
+    -- y ∈ adjoin K {x} (since s ∈ adjoin K {x})
+    have hy_adj_x : y ∈ Algebra.adjoin K {x} :=
+      Algebra.adjoin_singleton_le hs_adj hy_adj_s
+    -- Commute n y (from y ∈ adjoin K {x} and Commute n x)
+    have hc_nx : Commute n x := (Algebra.commute_of_mem_adjoin_self hn_adj).symm
+    have hcommute_ny : Commute n y :=
+      Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x hc_nx
+    -- Step 2: tr(n * y) = 0 (n * y is nilpotent since n nilpotent and Commute n y)
+    have htr_ny : trace K V (n * y) = 0 := by
+      have h_nil : IsNilpotent (n * y) := hcommute_ny.isNilpotent_mul_right hn_nil
+      exact (LinearMap.isNilpotent_trace_of_isNilpotent h_nil).eq_zero
+    -- Step 3: s * y is diagonal with entries a_i * c_i
+    have hsy_diag : s * y =
+        diagEnd v (fun i => a i * algebraMap ℚ K (f ⟨a i, ha i⟩)) := by
+      apply v.ext; intro i
+      change s (y (v i)) = _
+      rw [show y (v i) = algebraMap ℚ K (f ⟨a i, ha i⟩) • v i from diagEnd_apply_basis v _ i,
+        diagEnd_apply_basis, map_smul, hv_diag i, smul_smul, mul_comm]
+    -- Step 4: tr(s * y) = ∑ a_i * c_i
+    have htr_sy : trace K V (s * y) =
+        ∑ i, a i * algebraMap ℚ K (f ⟨a i, ha i⟩) :=
+      hsy_diag ▸ trace_diagEnd v _
+    -- Step 5: tr(x * y) = tr(n * y) + tr(s * y)
+    have htr_split : trace K V (x * y) =
+        trace K V (n * y) + trace K V (s * y) := by
+      conv_lhs => rw [hxns, add_mul]
+      exact map_add (trace K V) (n * y) (s * y)
+    -- Combine: 0 = tr(xy) = tr(ny) + tr(sy) = 0 + ∑ a_i * c_i
+    rw [← htr_sy]
+    have h := htr_split.symm.trans htr_xy
+    rw [htr_ny, zero_add] at h
+    exact h
   -- Humphreys: "The left side is a ℚ-linear combination of elements in E;
   -- applying f, we obtain ∑f(aᵢ)² = 0."
   have h_sum_E : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
