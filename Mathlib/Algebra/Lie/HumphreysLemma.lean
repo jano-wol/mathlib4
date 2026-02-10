@@ -194,6 +194,41 @@ lemma ad_pow_maps_to
     · rw [pow_zero, Module.End.one_apply]; exact had
     · exact ih hn _ (hAB had)
 
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- Humphreys §4.3: any polynomial in `ad(x)` without constant term maps `B` into `A`.
+
+If `x ∈ M(A, B)` (meaning `[x, B] ⊆ A`) and `q(0) = 0`, then `q(ad x)` also
+maps `B` into `A`. The proof factors `q = X · q'` (since `q(0) = 0`), shows any
+polynomial in `ad(x)` preserves `B` (since `A ≤ B`), and applies `hxM`. -/
+lemma aeval_ad_maps_to
+    (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
+    (x : Module.End K V) (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
+    (q : Polynomial K) (hq : Polynomial.eval 0 q = 0) :
+    ∀ b ∈ B, (Polynomial.aeval (LieAlgebra.ad K (Module.End K V) x) q) b ∈ A := by
+  set ad_x := LieAlgebra.ad K (Module.End K V) x
+  have hdvd : Polynomial.X ∣ q := by
+    have h := Polynomial.dvd_iff_isRoot.mpr (show q.IsRoot 0 from hq)
+    simpa using h
+  obtain ⟨q', rfl⟩ := hdvd
+  have had_B : ∀ b ∈ B, ad_x b ∈ B := fun b hb => hAB (hxM b hb)
+  have hpow_B : ∀ (n : ℕ) (b : Module.End K V), b ∈ B → (ad_x ^ n) b ∈ B := by
+    intro n; induction n with
+    | zero => intro b hb; simpa using hb
+    | succ n ih => intro b hb; rw [pow_succ', Module.End.mul_apply]; exact had_B _ (ih b hb)
+  have hpoly_B : ∀ (p : Polynomial K) (b : Module.End K V), b ∈ B →
+      (Polynomial.aeval ad_x p) b ∈ B := by
+    intro p; induction p using Polynomial.induction_on' with
+    | add p q ihp ihq =>
+      intro b hb; simp only [map_add, LinearMap.add_apply]; exact B.add_mem (ihp b hb) (ihq b hb)
+    | monomial n c =>
+      intro b hb
+      simp only [Polynomial.aeval_monomial, Algebra.smul_def, Module.End.mul_apply,
+        Module.algebraMap_end_apply]
+      exact B.smul_mem c (hpow_B n b hb)
+  intro b hb
+  rw [map_mul, Polynomial.aeval_X, Module.End.mul_apply]
+  exact hxM _ (hpoly_B q' b hb)
+
 /-! ## Paragraph 3: ad(s) maps B into A
 
 Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2,
@@ -696,7 +731,10 @@ theorem humphreys_lemma_algClosed
   -- Humphreys: "Hence any polynomial in ad x without constant term maps B into A,
   -- so ad y(B) ⊂ A, i.e. y ∈ M."
   have hyM : y ∈ M A B := by
-    sorry
+    intro b hb
+    change (LieAlgebra.ad K (Module.End K V) y) b ∈ A
+    rw [had_y_adx]
+    exact aeval_ad_maps_to A B hAB x hxM (r.comp p) hcomp_zero b hb
   -- Humphreys: "Using the hypothesis of the lemma, tr(xy) = 0"
   have htr_xy : trace K V (x * y) = 0 := htr y hyM
   -- Humphreys: "we get ∑(aᵢ f(aᵢ)) = 0."
