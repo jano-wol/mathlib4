@@ -196,24 +196,8 @@ abbrev M (A B : Submodule K (Module.End K V)) : Set (Module.End K V) :=
 
 Humphreys: "By hypothesis, ad x maps B into A; since A ⊂ B, it follows that
 (ad x)^k maps B into A for all k ≥ 1
-(inductively: (ad x)^{k+1}(B) = (ad x)((ad x)^k(B)) ⊂ (ad x)(A) ⊂ (ad x)(B) ⊂ A)." -/
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- `(ad x)^k` maps `B` into `A` for all `k ≥ 1`. -/
-lemma ad_pow_maps_to
-    (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
-    (x : Module.End K V) (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
-    (k : ℕ) (hk : 0 < k) :
-    ∀ b ∈ B, ((LieAlgebra.ad K (Module.End K V) x) ^ k) b ∈ A := by
-  induction k with
-  | zero => omega
-  | succ n ih =>
-    intro b hb
-    rw [pow_succ, Module.End.mul_apply]
-    have had : (LieAlgebra.ad K (Module.End K V) x) b ∈ A := hxM b hb
-    rcases n.eq_zero_or_pos with rfl | hn
-    · rw [pow_zero, Module.End.one_apply]; exact had
-    · exact ih hn _ (hAB had)
+(inductively: (ad x)^{k+1}(B) = (ad x)((ad x)^k(B)) ⊂ (ad x)(A) ⊂ (ad x)(B) ⊂ A).
+Hence any polynomial in ad x without constant term maps B into A." -/
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- Humphreys §4.3: any polynomial in `ad(x)` without constant term maps `B` into `A`.
@@ -265,7 +249,7 @@ The proof requires Jordan-Chevalley uniqueness for `ad(x)`:
   the semisimple part of `ad(x)`
 - The semisimple part lies in `adjoin K {ad(x)}`, i.e., is `p(ad(x))`
   for some polynomial `p` with `p(0) = 0` (since `ad(x)(x) = [x,x] = 0`)
-- Apply `ad_pow_maps_to` to conclude `p(ad(x))` maps `B` into `A` -/
+- Apply `aeval_ad_maps_to` to conclude `p(ad(x))` maps `B` into `A` -/
 
 omit [IsAlgClosed K] [FiniteDimensional K V] in
 /-- **Uniqueness of the Jordan-Chevalley decomposition.**
