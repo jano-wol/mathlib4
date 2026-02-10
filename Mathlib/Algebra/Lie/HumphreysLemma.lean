@@ -16,6 +16,8 @@ import Mathlib.LinearAlgebra.JordanChevalley
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 import Mathlib.LinearAlgebra.Eigenspace.Semisimple
 import Mathlib.Algebra.DirectSum.Module
+import Mathlib.Algebra.Algebra.Rat
+import Mathlib.LinearAlgebra.Dual.Lemmas
 
 open LinearMap Module.End
 
@@ -331,8 +333,29 @@ theorem humphreys_lemma_algClosed
   let v := eigenbasis s hs_ss
   let a : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) → K := fun i => i.1
   have hv_diag : ∀ i, s (v i) = a i • v i := eigenbasis_eigenvalue s hs_ss
+  -- Humphreys: "Let E be a vector subspace of F (over the prime field ℚ) spanned
+  -- by the eigenvalues a₁, a₂, ..., aₘ."
+  let E : Submodule ℚ K := Submodule.span ℚ (Set.range a)
   -- Humphreys: "We have to show that s = 0 or equivalently that E = 0."
   suffices hs_zero : s = 0 by rw [hxns, hs_zero, add_zero]; exact hn_nil
-  apply eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero s hs_ss
-  -- Humphreys, Paragraphs 2–4: show each eigenvalue μ is zero
-  exact eigenvalues_eq_zero A B hAB x s hs_adj hs_ss n hn_nil hxns hxM htr
+  -- Humphreys: "Since E has finite dimension over ℚ (by construction) it will suffice
+  -- to show that the dual space E* is 0, i.e. that any linear function f: E→ℚ is zero."
+  suffices h_f_zero : ∀ f : E →ₗ[ℚ] ℚ, f = 0 by
+    -- E* = 0 → all eigenvalues are 0 → s = 0
+    apply eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero s hs_ss
+    intro μ hμ
+    -- μ is an eigenvalue, so μ ∈ range(a) ⊆ E
+    have hpos : 0 < Module.finrank K (s.eigenspace μ) := by
+      haveI : Nontrivial (s.eigenspace μ) :=
+        Submodule.nontrivial_iff_ne_bot.mpr (hasEigenvalue_iff.mp hμ)
+      exact Module.finrank_pos
+    have hμ_E : μ ∈ E := Submodule.subset_span ⟨⟨μ, ⟨0, hpos⟩⟩, rfl⟩
+    -- By dual separation (Module.forall_dual_apply_eq_zero_iff): since every
+    -- f ∈ E* is zero, every element of E is zero; in particular μ = 0.
+    have hμ_zero : (⟨μ, hμ_E⟩ : E) = 0 :=
+      (Module.forall_dual_apply_eq_zero_iff ℚ _).mp (fun φ => by simp [h_f_zero φ])
+    exact congr_arg Subtype.val hμ_zero
+  -- Humphreys: "Given f, ..."
+  intro f
+  -- Paragraphs 2–4: construct y, show y ∈ M, trace argument, f = 0
+  sorry
