@@ -224,7 +224,45 @@ theorem jordanChevalley_unique
     (hc₁ : Commute n₁ s₁) (hc₂ : Commute n₂ s₂)
     (h₁ : f = n₁ + s₁) (h₂ : f = n₂ + s₂) :
     n₁ = n₂ ∧ s₁ = s₂ := by
-  sorry
+  haveI : PerfectField K := inferInstance
+  -- Canonical JC: f = n_c + s_c with n_c, s_c ∈ adjoin K {f}
+  obtain ⟨n_c, hn_c_adj, s_c, hs_c_adj, hn_c_nil, hs_c_ss, h_c⟩ :=
+    f.exists_isNilpotent_isSemisimple
+  -- Within-commutativity → commutativity with f
+  have hc₁f : Commute s₁ f := h₁ ▸ hc₁.symm.add_right (Commute.refl s₁)
+  have hc₂f : Commute s₂ f := h₂ ▸ hc₂.symm.add_right (Commute.refl s₂)
+  have hn₁f : Commute n₁ f := h₁ ▸ (Commute.refl n₁).add_right hc₁
+  have hn₂f : Commute n₂ f := h₂ ▸ (Commute.refl n₂).add_right hc₂
+  -- Cross-commutativity with canonical parts (via adjoin membership)
+  have hcs₁ : Commute s₁ s_c :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hs_c_adj hc₁f
+  have hcn₁ : Commute n₁ n_c :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hn_c_adj hn₁f
+  have hcs₂ : Commute s₂ s_c :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hs_c_adj hc₂f
+  have hcn₂ : Commute n₂ n_c :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hn_c_adj hn₂f
+  -- Algebraic uniqueness: each decomposition equals the canonical one
+  -- s₁ - s_c = n_c - n₁ is both semisimple and nilpotent, hence zero
+  have heq₁ : s₁ - s_c = n_c - n₁ := by
+    have h := h₁.symm.trans h_c
+    have : s₁ = n_c + s_c - n₁ := by rw [← h]; abel
+    rw [this]; abel
+  have h_s₁ : s₁ = s_c := by
+    have hnil : IsNilpotent (s₁ - s_c) := heq₁ ▸ hcn₁.symm.isNilpotent_sub hn_c_nil hn₁
+    have hss : (s₁ - s_c).IsSemisimple := hs₁.sub_of_commute hcs₁ hs_c_ss
+    exact sub_eq_zero.mp (Module.End.eq_zero_of_isNilpotent_isSemisimple hnil hss)
+  have heq₂ : s₂ - s_c = n_c - n₂ := by
+    have h := h₂.symm.trans h_c
+    have : s₂ = n_c + s_c - n₂ := by rw [← h]; abel
+    rw [this]; abel
+  have h_s₂ : s₂ = s_c := by
+    have hnil : IsNilpotent (s₂ - s_c) := heq₂ ▸ hcn₂.symm.isNilpotent_sub hn_c_nil hn₂
+    have hss : (s₂ - s_c).IsSemisimple := hs₂.sub_of_commute hcs₂ hs_c_ss
+    exact sub_eq_zero.mp (Module.End.eq_zero_of_isNilpotent_isSemisimple hnil hss)
+  constructor
+  · rw [h_s₁] at h₁; rw [h_s₂] at h₂; exact add_right_cancel (h₁.symm.trans h₂)
+  · exact h_s₁.trans h_s₂.symm
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- Commuting endomorphisms have commuting adjoint actions.
