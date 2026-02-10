@@ -209,6 +209,33 @@ The proof requires Jordan-Chevalley uniqueness for `ad(x)`:
 - The semisimple part lies in `adjoin K {ad(x)}`, i.e., is `p(ad(x))`
   for some polynomial `p` with `p(0) = 0` (since `ad(x)(x) = [x,x] = 0`)
 - Apply `ad_pow_maps_to` to conclude `p(ad(x))` maps `B` into `A` -/
+
+omit [IsAlgClosed K] [FiniteDimensional K V] in
+/-- **Uniqueness of the Jordan-Chevalley decomposition.**
+If `f = n₁ + s₁ = n₂ + s₂` where `nᵢ` are nilpotent, `sᵢ` are semisimple,
+and the semisimple (resp. nilpotent) parts commute with each other, then
+`n₁ = n₂` and `s₁ = s₂`.
+
+This follows from: `s₁ - s₂ = n₂ - n₁` is both semisimple
+(`IsSemisimple.sub_of_commute`) and nilpotent (`Commute.isNilpotent_sub`),
+hence zero (`eq_zero_of_isNilpotent_isSemisimple`). -/
+theorem jordanChevalley_unique
+    {W : Type*} [AddCommGroup W] [Module K W] [FiniteDimensional K W]
+    {n₁ s₁ n₂ s₂ : Module.End K W}
+    (hn₁ : IsNilpotent n₁) (hs₁ : s₁.IsSemisimple)
+    (hn₂ : IsNilpotent n₂) (hs₂ : s₂.IsSemisimple)
+    (hcs : Commute s₁ s₂) (hcn : Commute n₁ n₂)
+    (h : n₁ + s₁ = n₂ + s₂) :
+    n₁ = n₂ ∧ s₁ = s₂ := by
+  have hkey : s₁ - s₂ = n₂ - n₁ := by
+    have h1 : s₁ = n₂ + s₂ - n₁ := by rw [← h, add_sub_cancel_left]
+    rw [h1]; abel
+  have hnn : IsNilpotent (s₁ - s₂) := hkey ▸ hcn.symm.isNilpotent_sub hn₂ hn₁
+  have hss : (s₁ - s₂).IsSemisimple := hs₁.sub_of_commute hcs hs₂
+  have h0 : s₁ = s₂ :=
+    sub_eq_zero.mp (Module.End.eq_zero_of_isNilpotent_isSemisimple hnn hss)
+  exact ⟨by rw [h0] at h; exact add_right_cancel h, h0⟩
+
 lemma ad_semisimple_part_maps_to
     (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
     (x s : Module.End K V)
