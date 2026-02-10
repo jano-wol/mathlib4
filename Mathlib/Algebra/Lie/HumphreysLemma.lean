@@ -374,6 +374,75 @@ lemma ad_semisimple_part_in_adjoin
   exact (jordanChevalley_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
     hc_canonical hc_ad h_jc h_sum).2 ▸ hs'_adj
 
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- If `f x = μ • x`, then `(aeval f p) x = (eval μ p) • x`.
+
+This is a generalization of `Module.End.aeval_apply_of_hasEigenvector` that does not require
+`x ≠ 0`. -/
+theorem aeval_apply_of_eigenvalue {R : Type*} {M : Type*}
+    [CommRing R] [AddCommGroup M] [Module R M]
+    {f : Module.End R M} {μ : R} {x : M} (hx : f x = μ • x) (p : Polynomial R) :
+    (Polynomial.aeval f p) x = (Polynomial.eval μ p) • x := by
+  refine p.induction_on ?_ ?_ ?_
+  · intro a; simp [Module.algebraMap_end_apply]
+  · intro p q hp hq; simp [hp, hq, add_smul]
+  · intro n a hna
+    rw [mul_comm, pow_succ', mul_assoc, map_mul, Module.End.mul_apply, mul_comm, hna]
+    simp only [hx, smul_smul, Polynomial.aeval_X, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_pow, Polynomial.eval_X, map_smulₛₗ, RingHom.id_apply, mul_comm]
+
+omit [IsAlgClosed K] in
+/-- Humphreys: "ad s ... can be written as a polynomial in ad x without constant term."
+
+From `ad_semisimple_part_in_adjoin`, `ad(s) ∈ adjoin K {ad(x)}`, so `ad(s) = p(ad(x))`
+for some polynomial `p`. The constant term is zero because `ad(x)(x) = [x,x] = 0` and
+`ad(s)(x) = [s,x] = 0` (since `s` commutes with `x`). -/
+lemma ad_semisimple_part_polynomial
+    (x n s : Module.End K V)
+    (hn_adj : n ∈ Algebra.adjoin K {x})
+    (hs_adj : s ∈ Algebra.adjoin K {x})
+    (hn_nil : IsNilpotent n) (hs_ss : s.IsSemisimple)
+    (hxns : x = n + s) :
+    ∃ p : Polynomial K, Polynomial.eval 0 p = 0 ∧
+      LieAlgebra.ad K (Module.End K V) s =
+        Polynomial.aeval (LieAlgebra.ad K (Module.End K V) x) p := by
+  set ad := LieAlgebra.ad K (Module.End K V)
+  -- Step 1: ad(s) ∈ adjoin K {ad(x)}, hence ad(s) = q(ad(x)) for some q
+  have h_mem := ad_semisimple_part_in_adjoin x n s hn_adj hs_adj hn_nil hs_ss hxns
+  rw [Algebra.adjoin_singleton_eq_range_aeval] at h_mem
+  obtain ⟨q, hq⟩ := h_mem
+  -- Step 2: Show q(0) = 0
+  -- Key facts: ad(x)(x) = [x,x] = 0 and ad(s)(x) = [s,x] = 0
+  have had_x_x : (ad x) x = 0 := by
+    change ⁅x, x⁆ = 0; exact lie_self x
+  have had_s_x : (ad s) x = 0 := by
+    change ⁅s, x⁆ = 0
+    have : Commute x s := Algebra.commute_of_mem_adjoin_self hs_adj
+    rw [Ring.lie_def, this.eq, sub_self]
+  -- Evaluate at x: ad(s)(x) = (aeval (ad x) q)(x) = q(0) • x
+  have hq' : ad s = Polynomial.aeval (ad x) q := hq.symm
+  have h_eval : (Polynomial.aeval (ad x) q) x = Polynomial.eval 0 q • x :=
+    aeval_apply_of_eigenvalue (by rw [zero_smul]; exact had_x_x) q
+  rw [← hq'] at h_eval
+  rw [had_s_x] at h_eval
+  -- So q(0) • x = 0
+  by_cases hx : x = 0
+  · -- If x = 0, then n + s = 0, so s = -n is nilpotent, hence s = 0
+    have h0 : n + s = 0 := by rw [← hxns]; exact hx
+    have hs0 : s = 0 := by
+      have : IsNilpotent s := by
+        have hs_neg : s = -n := by
+          have : s = -n + (n + s) := by abel
+          rw [h0, add_zero] at this; exact this
+        rw [hs_neg]; exact hn_nil.neg
+      exact Module.End.eq_zero_of_isNilpotent_isSemisimple this hs_ss
+    exact ⟨0, by simp, by simp [hs0, map_zero]⟩
+  · -- If x ≠ 0, then q(0) = 0 from q(0) • x = 0
+    have hq0 : Polynomial.eval 0 q = 0 := by
+      by_contra h
+      exact hx (smul_eq_zero.mp h_eval.symm |>.resolve_left h)
+    exact ⟨q, hq0, hq'⟩
+
 /-! ## Paragraph 1: s = 0 from eigenvalue information
 
 Humphreys: "We have to show that s = 0 or equivalently that E = 0." -/
@@ -481,23 +550,6 @@ lemma eigenvalues_eq_zero
     (htr : ∀ z ∈ M A B, trace K V (x * z) = 0)
     (μ : K) (hμ : s.HasEigenvalue μ) : μ = 0 := by
   sorry
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- If `f x = μ • x`, then `(aeval f p) x = (eval μ p) • x`.
-
-This is a generalization of `Module.End.aeval_apply_of_hasEigenvector` that does not require
-`x ≠ 0`. -/
-theorem aeval_apply_of_eigenvalue {R : Type*} {M : Type*}
-    [CommRing R] [AddCommGroup M] [Module R M]
-    {f : Module.End R M} {μ : R} {x : M} (hx : f x = μ • x) (p : Polynomial R) :
-    (Polynomial.aeval f p) x = (Polynomial.eval μ p) • x := by
-  refine p.induction_on ?_ ?_ ?_
-  · intro a; simp [Module.algebraMap_end_apply]
-  · intro p q hp hq; simp [hp, hq, add_smul]
-  · intro n a hna
-    rw [mul_comm, pow_succ', mul_assoc, map_mul, Module.End.mul_apply, mul_comm, hna]
-    simp only [hx, smul_smul, Polynomial.aeval_X, Polynomial.eval_mul, Polynomial.eval_C,
-      Polynomial.eval_pow, Polynomial.eval_X, map_smulₛₗ, RingHom.id_apply, mul_comm]
 
 omit [IsAlgClosed K] in
 /-- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
