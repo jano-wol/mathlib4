@@ -1,13 +1,8 @@
-Let V be a finite-dimensional vector space over a field F of characteristic zero.
+Let V be a finite-dimensional vector space over a field F of characteristic zero which is algebrically closed.
 Let A ⊂ B be subspaces of gl(V). Define M = {x ∈ gl(V) : [x, B] ⊂ A}. Suppose x ∈ M satisfies tr(xy) = 0 for all y ∈ M.
 Then x is nilpotent.
 ----
 Proof
-
-We may assume F is algebraically closed: extend scalars to the algebraic closure F̄;
-the subspaces A, B, M extend by base change, and both the trace condition and
-nilpotency are preserved. Over an algebraically closed field, semisimple and
-diagonalizable coincide, which we use below.
 
 Let x = s + n (s = x_s, n = x_n) be the Jordan decomposition of x.
 Since F is algebraically closed, s is diagonalizable.
