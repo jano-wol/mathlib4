@@ -11,6 +11,7 @@ The general characteristic zero version (by scalar extension) is in
 -/
 import Mathlib.LinearAlgebra.Trace
 import Mathlib.Algebra.Lie.OfAssociative
+import Mathlib.Algebra.Lie.Nilpotent
 import Mathlib.FieldTheory.IsAlgClosed.Basic
 import Mathlib.LinearAlgebra.JordanChevalley
 import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
@@ -291,17 +292,26 @@ theorem ad_isSemisimple_of_isSemisimple [PerfectField K]
     (LinearMap.commute_mulLeft_right a a)
     (isSemisimple_mulRight_of_isSemisimple ha)
 
-lemma ad_semisimple_part_maps_to
-    (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
-    (x s : Module.End K V)
-    (hs_adj : s ∈ Algebra.adjoin K {x})
-    (hs_ss : s.IsSemisimple)
-    (n : Module.End K V)
-    (hn_nil : IsNilpotent n)
-    (hxns : x = n + s)
-    (hxM : x ∈ M A B) :
-    s ∈ M A B := by
-  sorry
+omit [IsAlgClosed K] in
+/-- Humphreys §4.2, Lemma A: `ad(s)` is the semisimple part of `ad(x)`.
+
+If `x = n + s` with `n` nilpotent and `s` semisimple, then `ad(x) = ad(n) + ad(s)`
+is the Jordan-Chevalley decomposition of `ad(x)`: `ad(n)` is nilpotent and
+`ad(s)` is semisimple. -/
+lemma ad_semisimple_part
+    (x n s : Module.End K V)
+    (hn_nil : IsNilpotent n) (hs_ss : s.IsSemisimple)
+    (hxns : x = n + s) :
+    LieAlgebra.ad K (Module.End K V) x =
+      LieAlgebra.ad K (Module.End K V) n + LieAlgebra.ad K (Module.End K V) s ∧
+    IsNilpotent (LieAlgebra.ad K (Module.End K V) n) ∧
+    (LieAlgebra.ad K (Module.End K V) s).IsSemisimple := by
+  haveI : PerfectField K := inferInstance
+  haveI : FiniteDimensional K (Module.End K V) := inferInstance
+  exact ⟨by rw [hxns, map_add],
+         LieAlgebra.ad_nilpotent_of_nilpotent K hn_nil,
+         ad_isSemisimple_of_isSemisimple hs_ss⟩
+
 
 /-! ## Paragraph 1: s = 0 from eigenvalue information
 
