@@ -106,9 +106,8 @@ theorem humphreys_lemma
     (A B : Submodule K (Module.End K V))
     (hAB : A ≤ B)
     (x : Module.End K V)
-    (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
-    (htr : ∀ z : Module.End K V, (∀ b ∈ B, ⁅z, b⁆ ∈ A) →
-           trace K V (x * z) = 0) :
+    (hxM : x ∈ HumphreysLemma.M A B)
+    (htr : ∀ z ∈ HumphreysLemma.M A B, trace K V (x * z) = 0) :
     IsNilpotent x := by
   -- Set up the algebraic closure
   let Kbar := AlgebraicClosure K
