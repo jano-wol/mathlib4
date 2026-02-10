@@ -305,6 +305,23 @@ lemma eigenvalues_eq_zero
     (μ : K) (hμ : s.HasEigenvalue μ) : μ = 0 := by
   sorry
 
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- If `f x = μ • x`, then `(aeval f p) x = (eval μ p) • x`.
+
+This is a generalization of `Module.End.aeval_apply_of_hasEigenvector` that does not require
+`x ≠ 0`. -/
+theorem aeval_apply_of_eigenvalue {R : Type*} {M : Type*}
+    [CommRing R] [AddCommGroup M] [Module R M]
+    {f : Module.End R M} {μ : R} {x : M} (hx : f x = μ • x) (p : Polynomial R) :
+    (Polynomial.aeval f p) x = (Polynomial.eval μ p) • x := by
+  refine p.induction_on ?_ ?_ ?_
+  · intro a; simp [Module.algebraMap_end_apply]
+  · intro p q hp hq; simp [hp, hq, add_smul]
+  · intro n a hna
+    rw [mul_comm, pow_succ', mul_assoc, map_mul, Module.End.mul_apply, mul_comm, hna]
+    simp only [hx, smul_smul, Polynomial.aeval_X, Polynomial.eval_mul, Polynomial.eval_C,
+      Polynomial.eval_pow, Polynomial.eval_X, map_smulₛₗ, RingHom.id_apply, mul_comm]
+
 omit [IsAlgClosed K] in
 /-- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
 r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs. The existence of such r(T) follows
@@ -423,7 +440,15 @@ theorem humphreys_lemma_algClosed
     eigenbasisFintype s hs_ss
   obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
   -- Humphreys: "Evidently ad y = r(ad s)."
-  -- (Both sides agree on every e_{ij} since r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ).)
+  -- Both sides agree on every e_{ij}:
+  --   r(ad s)(e_{ij}) = r(aᵢ − aⱼ) • e_{ij}     (polynomial on eigenvector)
+  --                    = (f(aᵢ) − f(aⱼ)) • e_{ij} (by hr_eval)
+  --                    = ⁅y, e_{ij}⁆               (by had_y)
+  let ad_s := LieAlgebra.ad K (Module.End K V) s
+  have had_y_eq : ∀ i j,
+      (Polynomial.aeval ad_s r) (eij v i j) = ⁅y, eij v i j⁆ := by
+    intro i j
+    rw [aeval_apply_of_eigenvalue (had_s i j) r, hr_eval i j, had_y i j]
   -- Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2, so it can
   -- be written as a polynomial in ad x without constant term. Therefore, ad y is also a
   -- polynomial in ad x without constant term."
