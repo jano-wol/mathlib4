@@ -133,6 +133,16 @@ theorem ad_diagEnd_eij {ι : Type*}
     ⁅diagEnd b c, eij b i j⁆ = (c i - c j) • eij b i j :=
   ad_diag_eij b c (diagEnd b c) (diagEnd_apply_basis b c) i j
 
+/-! ## The set M
+
+Humphreys: "Let A ⊂ B be subspaces of gl(V).
+Define M = {x ∈ gl(V) : [x, B] ⊂ A}." -/
+
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+/-- Humphreys' set `M = {x ∈ gl(V) : [x, B] ⊂ A}`. -/
+abbrev M (A B : Submodule K (Module.End K V)) : Set (Module.End K V) :=
+  {x | ∀ b ∈ B, ⁅x, b⁆ ∈ A}
+
 /-! ## Paragraph 3 helpers
 
 Humphreys: "By hypothesis, ad x maps B into A; since A ⊂ B, it follows that
@@ -180,8 +190,8 @@ lemma ad_semisimple_part_maps_to
     (n : Module.End K V)
     (hn_nil : IsNilpotent n)
     (hxns : x = n + s)
-    (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A) :
-    ∀ b ∈ B, ⁅s, b⁆ ∈ A := by
+    (hxM : x ∈ M A B) :
+    s ∈ M A B := by
   sorry
 
 /-! ## Paragraph 1: s = 0 from eigenvalue information
@@ -287,8 +297,8 @@ lemma eigenvalues_eq_zero
     (n : Module.End K V)
     (hn_nil : IsNilpotent n)
     (hxns : x = n + s)
-    (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
-    (htr : ∀ z : Module.End K V, (∀ b ∈ B, ⁅z, b⁆ ∈ A) → trace K V (x * z) = 0)
+    (hxM : x ∈ M A B)
+    (htr : ∀ z ∈ M A B, trace K V (x * z) = 0)
     (μ : K) (hμ : s.HasEigenvalue μ) : μ = 0 := by
   sorry
 
@@ -309,16 +319,20 @@ theorem humphreys_lemma_algClosed
     (A B : Submodule K (Module.End K V))
     (hAB : A ≤ B)
     (x : Module.End K V)
-    (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
-    (htr : ∀ z : Module.End K V, (∀ b ∈ B, ⁅z, b⁆ ∈ A) →
-           trace K V (x * z) = 0) :
+    (hxM : x ∈ M A B)
+    (htr : ∀ y ∈ M A B, trace K V (x * y) = 0) :
     IsNilpotent x := by
-  -- Humphreys: "Let x = s + n be the Jordan decomposition of x."
+  -- Humphreys: "Let x = s + n (s = x_s, n = x_n) be the Jordan decomposition of x."
   obtain ⟨n, hn_adj, s, hs_adj, hn_nil, hs_ss, hxns⟩ :=
     x.exists_isNilpotent_isSemisimple
-  -- Humphreys: "We have to show that s = 0"
+  -- Humphreys: "Since F is algebraically closed, s is diagonalizable.
+  -- Fix a basis v₁, v₂, ..., vₘ that diagonalizes s, so that it has matrix
+  -- diag(a₁, a₂, ..., aₘ)."
+  let v := eigenbasis s hs_ss
+  let a : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) → K := fun i => i.1
+  have hv_diag : ∀ i, s (v i) = a i • v i := eigenbasis_eigenvalue s hs_ss
+  -- Humphreys: "We have to show that s = 0 or equivalently that E = 0."
   suffices hs_zero : s = 0 by rw [hxns, hs_zero, add_zero]; exact hn_nil
-  -- s = 0 iff all eigenvalues of s are 0
   apply eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero s hs_ss
   -- Humphreys, Paragraphs 2–4: show each eigenvalue μ is zero
   exact eigenvalues_eq_zero A B hAB x s hs_adj hs_ss n hn_nil hxns hxM htr
