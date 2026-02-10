@@ -136,6 +136,30 @@ theorem ad_diagEnd_eij {ι : Type*}
     ⁅diagEnd b c, eij b i j⁆ = (c i - c j) • eij b i j :=
   ad_diag_eij b c (diagEnd b c) (diagEnd_apply_basis b c) i j
 
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+open Classical in
+/-- The `eij` elementary endomorphisms form a basis of `End K V`, obtained by
+transporting the standard matrix basis `Matrix.stdBasis` along `LinearMap.toMatrix`. -/
+noncomputable def eijBasis {ι : Type*} [Fintype ι]
+    (b : Module.Basis ι K V) : Module.Basis (ι × ι) K (Module.End K V) :=
+  (Matrix.stdBasis K ι ι).map (LinearMap.toMatrix b b).symm
+
+omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
+open Classical in
+/-- The `eijBasis` at `(i, j)` equals `eij b i j`. -/
+theorem eijBasis_eq {ι : Type*} [Fintype ι]
+    (b : Module.Basis ι K V) (i j : ι) :
+    eijBasis b (i, j) = eij b i j := by
+  apply b.ext; intro k
+  simp only [eijBasis, eij, Module.Basis.map_apply, LinearMap.smulRight_apply,
+    Module.Basis.coord_apply, Matrix.stdBasis_eq_single]
+  change (Matrix.toLin b b (Matrix.single i j 1)) (b k) = _
+  rw [Matrix.toLin_self]
+  simp only [Matrix.single_apply, Module.Basis.repr_self, Finsupp.single_apply]
+  by_cases hjk : j = k
+  · subst hjk; simp
+  · simp [hjk, eq_comm]
+
 /-! ## The set M
 
 Humphreys: "Let A ⊂ B be subspaces of gl(V).
@@ -440,14 +464,15 @@ theorem humphreys_lemma_algClosed
     eigenbasisFintype s hs_ss
   obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
   -- Humphreys: "Evidently ad y = r(ad s)."
-  -- Both sides agree on every e_{ij}:
+  -- Both sides agree on every e_{ij} (which form a basis of gl(V)):
   --   r(ad s)(e_{ij}) = r(aᵢ − aⱼ) • e_{ij}     (polynomial on eigenvector)
   --                    = (f(aᵢ) − f(aⱼ)) • e_{ij} (by hr_eval)
   --                    = ⁅y, e_{ij}⁆               (by had_y)
   let ad_s := LieAlgebra.ad K (Module.End K V) s
-  have had_y_eq : ∀ i j,
-      (Polynomial.aeval ad_s r) (eij v i j) = ⁅y, eij v i j⁆ := by
-    intro i j
+  have had_y_eq : LieAlgebra.ad K (Module.End K V) y = Polynomial.aeval ad_s r := by
+    apply (eijBasis v).ext; intro ⟨i, j⟩
+    rw [eijBasis_eq]
+    change ⁅y, eij v i j⁆ = (Polynomial.aeval ad_s r) (eij v i j)
     rw [aeval_apply_of_eigenvalue (had_s i j) r, hr_eval i j, had_y i j]
   -- Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2, so it can
   -- be written as a polynomial in ad x without constant term. Therefore, ad y is also a
