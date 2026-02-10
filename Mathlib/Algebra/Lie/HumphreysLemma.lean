@@ -312,6 +312,35 @@ lemma ad_semisimple_part
          LieAlgebra.ad_nilpotent_of_nilpotent K hn_nil,
          ad_isSemisimple_of_isSemisimple hs_ss⟩
 
+/-- `ad(s) ∈ adjoin K {ad(x)}`: the semisimple part of `ad(x)` is a polynomial in `ad(x)`.
+
+Uses `ad_semisimple_part` to see that `ad(x) = ad(n) + ad(s)` is a JC decomposition,
+then the canonical JC of `ad(x)` (from `exists_isNilpotent_isSemisimple`) places
+its semisimple part in `adjoin K {ad(x)}`, and uniqueness identifies it with `ad(s)`. -/
+lemma ad_semisimple_part_in_adjoin
+    (x n s : Module.End K V)
+    (hn_adj : n ∈ Algebra.adjoin K {x})
+    (hs_adj : s ∈ Algebra.adjoin K {x})
+    (hn_nil : IsNilpotent n) (hs_ss : s.IsSemisimple)
+    (hxns : x = n + s) :
+    LieAlgebra.ad K (Module.End K V) s ∈
+      Algebra.adjoin K {LieAlgebra.ad K (Module.End K V) x} := by
+  haveI : PerfectField K := inferInstance
+  haveI : FiniteDimensional K (Module.End K V) := inferInstance
+  set ad := LieAlgebra.ad K (Module.End K V)
+  -- Step 1: ad(x) = ad(n) + ad(s) is a JC decomposition
+  obtain ⟨h_sum, h_ad_n_nil, h_ad_s_ss⟩ := ad_semisimple_part x n s hn_nil hs_ss hxns
+  -- Step 2: Canonical JC of ad(x)
+  obtain ⟨n', hn'_adj, s', hs'_adj, hn'_nil, hs'_ss, h_jc⟩ :=
+    (ad x).exists_isNilpotent_isSemisimple
+  -- Step 3: Commutativity for uniqueness
+  have h_ads_s' : Commute (ad s) s' :=
+    sorry
+  have h_adn_n' : Commute (ad n) n' :=
+    sorry
+  -- Step 4: By uniqueness, ad(s) = s'
+  exact (jordanChevalley_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
+    h_ads_s'.symm h_adn_n'.symm (h_jc.symm.trans h_sum)).2 ▸ hs'_adj
 
 /-! ## Paragraph 1: s = 0 from eigenvalue information
 
