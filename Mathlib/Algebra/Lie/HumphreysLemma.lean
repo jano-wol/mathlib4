@@ -680,8 +680,19 @@ theorem humphreys_lemma_algClosed
     change ⁅y, eij v i j⁆ = (Polynomial.aeval ad_s r) (eij v i j)
     rw [aeval_apply_of_eigenvalue (had_s i j) r, hr_eval i j, had_y i j]
   -- Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2, so it can
-  -- be written as a polynomial in ad x without constant term. Therefore, ad y is also a
-  -- polynomial in ad x without constant term."
+  -- be written as a polynomial in ad x without constant term."
+  obtain ⟨p, hp_zero, hp_eq⟩ :=
+    ad_semisimple_part_polynomial x n s hn_adj hs_adj hn_nil hs_ss hxns
+  -- "Therefore, ad y is also a polynomial in ad x without constant term."
+  -- ad(y) = r(ad(s)) = r(p(ad(x))) = (r.comp p)(ad(x))
+  let ad_x := LieAlgebra.ad K (Module.End K V) x
+  have had_y_adx : LieAlgebra.ad K (Module.End K V) y =
+      Polynomial.aeval ad_x (r.comp p) := by
+    rw [had_y_eq]
+    have : ad_s = Polynomial.aeval ad_x p := hp_eq
+    rw [this, ← Polynomial.aeval_comp]
+  have hcomp_zero : Polynomial.eval 0 (r.comp p) = 0 := by
+    simp [Polynomial.eval_comp, hp_zero, hr_zero]
   -- Humphreys: "Hence any polynomial in ad x without constant term maps B into A,
   -- so ad y(B) ⊂ A, i.e. y ∈ M."
   have hyM : y ∈ M A B := by
