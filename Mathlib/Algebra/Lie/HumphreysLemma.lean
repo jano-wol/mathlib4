@@ -18,6 +18,7 @@ import Mathlib.LinearAlgebra.Eigenspace.Semisimple
 import Mathlib.Algebra.DirectSum.Module
 import Mathlib.Algebra.Algebra.Rat
 import Mathlib.LinearAlgebra.Dual.Lemmas
+import Mathlib.LinearAlgebra.Lagrange
 
 open LinearMap Module.End
 
@@ -304,6 +305,49 @@ lemma eigenvalues_eq_zero
     (μ : K) (hμ : s.HasEigenvalue μ) : μ = 0 := by
   sorry
 
+omit [IsAlgClosed K] in
+/-- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
+r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs. The existence of such r(T) follows
+from Lagrange interpolation; there is no ambiguity in the assigned values, since
+aᵢ − aⱼ = aₖ − aₗ implies by the linearity of f that f(aᵢ) − f(aⱼ) = f(aₖ) − f(aₗ)." -/
+lemma exists_lagrange_polynomial
+    {ι : Type*} [Fintype ι]
+    (a : ι → K) (E : Submodule ℚ K) (f : E →ₗ[ℚ] ℚ)
+    (ha : ∀ i, a i ∈ E) :
+    ∃ r : Polynomial K,
+      (∀ i j, Polynomial.eval (a i - a j) r =
+        algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) ∧
+      Polynomial.eval 0 r = 0 := by
+  classical
+  -- Eigenvalue differences form a finite set
+  let diffs : Finset K := Finset.univ.image (fun p : ι × ι => a p.1 - a p.2)
+  have ha_diff : ∀ i j, a i - a j ∈ E := fun i j => E.sub_mem (ha i) (ha j)
+  -- Lagrange interpolation: r(d) = g(d) for each d ∈ diffs
+  let g : K → K := fun d => if hd : d ∈ E then algebraMap ℚ K (f ⟨d, hd⟩) else 0
+  let v : K → K := fun x => x
+  refine ⟨Lagrange.interpolate diffs v g, fun i j => ?_, ?_⟩
+  · -- r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ)
+    have h_mem : a i - a j ∈ diffs :=
+      Finset.mem_image.mpr ⟨(i, j), Finset.mem_univ _, rfl⟩
+    rw [Lagrange.eval_interpolate_at_node g (fun _ _ _ _ h => h) h_mem,
+      show g (a i - a j) = algebraMap ℚ K (f ⟨a i - a j, ha_diff i j⟩) from
+        dif_pos (ha_diff i j)]
+    have : (⟨a i - a j, ha_diff i j⟩ : E) = ⟨a i, ha i⟩ - ⟨a j, ha j⟩ := rfl
+    rw [this, map_sub, map_sub]
+  · -- r(0) = 0
+    by_cases h_ne : Nonempty ι
+    · obtain ⟨i⟩ := h_ne
+      have h_mem : (0 : K) ∈ diffs :=
+        Finset.mem_image.mpr ⟨(i, i), Finset.mem_univ _, sub_self _⟩
+      rw [Lagrange.eval_interpolate_at_node g (fun _ _ _ _ h => h) h_mem,
+        show g 0 = algebraMap ℚ K (f ⟨0, E.zero_mem⟩) from dif_pos E.zero_mem]
+      have : (⟨(0 : K), E.zero_mem⟩ : E) = 0 := rfl
+      rw [this, map_zero, map_zero]
+    · rw [not_nonempty_iff] at h_ne
+      have h_empty : diffs = ∅ := by
+        simp only [diffs, Finset.image_eq_empty]; exact Finset.univ_eq_empty
+      simp [Lagrange.interpolate_apply, h_empty]
+
 end HumphreysLemma
 
 open HumphreysLemma in
@@ -371,5 +415,64 @@ theorem humphreys_lemma_algClosed
       (algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) •
         eij v i j :=
     fun i j => ad_diagEnd_eij v _ i j
-  -- Paragraphs 2–4 continued: Lagrange interpolation, y ∈ M, trace argument, f = 0
-  sorry
+  -- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
+  -- r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs.
+  -- The existence of such r(T) follows from Lagrange interpolation."
+  haveI : Fintype (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :=
+    eigenbasisFintype s hs_ss
+  obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
+  -- Humphreys: "Evidently ad y = r(ad s)."
+  -- (Both sides agree on every e_{ij} since r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ).)
+  -- Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2, so it can
+  -- be written as a polynomial in ad x without constant term. Therefore, ad y is also a
+  -- polynomial in ad x without constant term."
+  -- Humphreys: "Hence any polynomial in ad x without constant term maps B into A,
+  -- so ad y(B) ⊂ A, i.e. y ∈ M."
+  have hyM : y ∈ M A B := by
+    sorry
+  -- Humphreys: "Using the hypothesis of the lemma, tr(xy) = 0"
+  have htr_xy : trace K V (x * y) = 0 := htr y hyM
+  -- Humphreys: "we get ∑(aᵢ f(aᵢ)) = 0."
+  -- tr(xy) = tr((n+s)y) = tr(ny) + tr(sy).
+  -- tr(ny) = 0 (nilpotent). tr(sy) = ∑ aᵢ · algebraMap(f(aᵢ)) (diagonal).
+  have htr_sum : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
+      a i * algebraMap ℚ K (f ⟨a i, ha i⟩) = 0 := by
+    sorry
+  -- Humphreys: "The left side is a ℚ-linear combination of elements in E;
+  -- applying f, we obtain ∑f(aᵢ)² = 0."
+  have h_sum_E : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
+      (f ⟨a i, ha i⟩) • (⟨a i, ha i⟩ : E) = 0 := by
+    -- The sum ∑ f(aᵢ) • aᵢ = 0 in K (from htr_sum), and each term is in E, so sum is 0 in E
+    apply_fun E.subtype using Subtype.val_injective
+    simp only [map_sum, map_smul, map_zero, Submodule.subtype_apply]
+    -- ∑ f(aᵢ) • aᵢ = ∑ algebraMap(f(aᵢ)) * aᵢ in K
+    convert htr_sum using 1
+    congr 1; ext i
+    rw [Algebra.smul_def, mul_comm]
+  -- Apply f: ∑ f(aᵢ) · f(aᵢ) = f(∑ f(aᵢ) • aᵢ) = f(0) = 0
+  have h_sum_sq : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
+      f ⟨a i, ha i⟩ ^ 2 = (0 : ℚ) := by
+    have := congr_arg f h_sum_E
+    simp only [map_sum, map_smul, smul_eq_mul, map_zero] at this
+    convert this using 1
+    congr 1; ext i; ring
+  -- Humphreys: "But the numbers f(aᵢ) are rational, so this forces all of them to be zero."
+  have h_f_zero_all : ∀ i, f ⟨a i, ha i⟩ = 0 := by
+    intro i
+    have h_nonneg : ∀ j ∈ Finset.univ,
+        (0 : ℚ) ≤ (fun j => f ⟨a j, ha j⟩ ^ 2) j := fun j _ => sq_nonneg _
+    have := (Finset.sum_eq_zero_iff_of_nonneg h_nonneg).mp h_sum_sq i (Finset.mem_univ _)
+    exact eq_zero_of_pow_eq_zero this
+  -- Humphreys: "Finally, f must be identically zero, because aᵢ span E."
+  ext ⟨e, he⟩
+  simp only [LinearMap.zero_apply]
+  refine Submodule.span_induction
+    (p := fun e he => f ⟨e, he⟩ = 0)
+    (fun k hk => ?_) (map_zero f) (fun x y hx hy ihx ihy => ?_)
+    (fun q x hx ih => ?_) he
+  · obtain ⟨i, rfl⟩ := hk
+    exact h_f_zero_all i
+  · change f (⟨x, hx⟩ + ⟨y, hy⟩) = 0
+    rw [map_add, ihx, ihy, add_zero]
+  · change f (q • ⟨x, hx⟩) = 0
+    rw [map_smul, ih, smul_zero]
