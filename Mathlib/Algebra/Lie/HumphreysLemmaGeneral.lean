@@ -1,9 +1,9 @@
 /-
-Humphreys' Lemma (Introduction to Lie Algebras, §4.3)
+Humphreys' Lemma — General case (Introduction to Lie Algebras, §4.3)
 
-This file states Humphreys' lemma over algebraically closed fields (with sorry),
-then proves the general characteristic zero version by scalar extension to the
-algebraic closure.
+This file proves Humphreys' lemma over arbitrary fields of characteristic zero
+by scalar extension to the algebraic closure, reducing to the algebraically closed
+version stated in `Mathlib.HumphreysLemma`.
 -/
 import Mathlib.LinearAlgebra.Trace
 import Mathlib.Algebra.Lie.OfAssociative
@@ -15,25 +15,11 @@ import Mathlib.RingTheory.TensorProduct.IsBaseChangeHom
 import Mathlib.RingTheory.IsTensorProduct
 import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.LinearAlgebra.TensorProduct.Pi
+import Mathlib.Algebra.Lie.HumphreysLemma
 
 open scoped TensorProduct
 open LinearMap
 
-/-- Humphreys' Lemma over algebraically closed fields of characteristic zero.
-
-Given subspaces `A ≤ B` of `gl(V)` and `M = {z ∈ gl(V) : [z, B] ⊆ A}`,
-if `x ∈ M` satisfies `tr(xz) = 0` for all `z ∈ M`, then `x` is nilpotent. -/
-theorem humphreys_lemma_algClosed
-    {K : Type*} [Field K] [IsAlgClosed K] [CharZero K]
-    {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
-    (A B : Submodule K (Module.End K V))
-    (hAB : A ≤ B)
-    (x : Module.End K V)
-    (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
-    (htr : ∀ z : Module.End K V, (∀ b ∈ B, ⁅z, b⁆ ∈ A) →
-           trace K V (x * z) = 0) :
-    IsNilpotent x := by
-  sorry
 
 -- Obstacle 1: baseChangeHom is injective for field extensions.
 -- This follows from: over a field, v ↦ 1 ⊗ v is injective (free modules).
@@ -69,7 +55,7 @@ private lemma isBaseChange_end_equiv_tmul_one (f : Module.End K V) :
   apply (TensorProduct.isBaseChange K V Kbar).algHom_ext
   intro v
   rw [IsBaseChange.endHom_comp_apply]
-  show (1 : Kbar) ⊗ₜ[K] f v = f.baseChange Kbar ((1 : Kbar) ⊗ₜ[K] v)
+  change (1 : Kbar) ⊗ₜ[K] f v = f.baseChange Kbar ((1 : Kbar) ⊗ₜ[K] v)
   simp [baseChange_tmul]
 
 /-- For flat `Kbar/K`, `ker(f.baseChange Kbar) = (ker f).baseChange Kbar`. -/
@@ -95,11 +81,13 @@ private lemma piRight_baseChange_component {N : Type*} [AddCommGroup N] [Module 
 
 /-- If each Pi component of `Φ.baseChange` vanishes, then `Φ.baseChange` vanishes. -/
 private lemma baseChange_pi_eq_zero {N : Type*} [AddCommGroup N] [Module K N]
-    {ι : Type*} [Fintype ι] [DecidableEq ι]
+    {ι : Type*} [Finite ι]
     {Q : Type*} [AddCommGroup Q] [Module K Q]
     (Φ : N →ₗ[K] (ι → Q)) (w : Kbar ⊗[K] N)
     (h : ∀ i, ((LinearMap.proj i).comp Φ).baseChange Kbar w = 0) :
     Φ.baseChange Kbar w = 0 := by
+  have := Fintype.ofFinite ι
+  classical
   let e := TensorProduct.piRight K Kbar Kbar (fun _ : ι => Q)
   suffices e (Φ.baseChange Kbar w) = 0 from
     e.injective.eq_iff.mp (this.trans e.map_zero.symm)
@@ -123,13 +111,13 @@ theorem humphreys_lemma
            trace K V (x * z) = 0) :
     IsNilpotent x := by
   -- Set up the algebraic closure
-  set Kbar := AlgebraicClosure K
+  let Kbar := AlgebraicClosure K
   -- Step 1: x is nilpotent iff x.baseChange Kbar is nilpotent
   rw [show IsNilpotent x ↔ IsNilpotent (Module.End.baseChangeHom K Kbar V x) from
     (IsNilpotent.map_iff (Module.End.baseChangeHom_injective K Kbar V)).symm]
   -- Now our goal is: IsNilpotent (x.baseChange Kbar)
   -- Step 2: Define A', B' as Kbar-submodules of End Kbar Vbar via base change
-  set Vbar := Kbar ⊗[K] V
+  let Vbar := Kbar ⊗[K] V
   let bc : Module.End K V → Module.End Kbar Vbar := fun f => f.baseChange Kbar
   let A' : Submodule Kbar (Module.End Kbar Vbar) := Submodule.span Kbar (bc '' ↑A)
   let B' : Submodule Kbar (Module.End Kbar Vbar) := Submodule.span Kbar (bc '' ↑B)
@@ -149,7 +137,7 @@ theorem humphreys_lemma
                (Module.End.baseChangeHom K Kbar V) b⁆ = _
         simp only [Ring.lie_def, map_sub, map_mul]]
       exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
-    | zero => simp only [lie_zero]; exact A'.zero_mem
+    | zero => rw [lie_zero]; exact A'.zero_mem
     | add _ _ _ _ ha hb => rw [lie_add]; exact A'.add_mem ha hb
     | smul c _ _ hb => rw [lie_smul]; exact A'.smul_mem c hb
   -- Subgoal 3: trace condition on the algebraic closure
@@ -185,7 +173,7 @@ theorem humphreys_lemma
         zero_mem' := fun _ _ => by simp [A.zero_mem]
         add_mem' := fun ha hb c hc => by rw [add_lie]; exact A.add_mem (ha c hc) (hb c hc)
         smul_mem' := fun c _ ha b hb => by rw [smul_lie]; exact A.smul_mem c (ha b hb) }
-    show z ∈ Submodule.span Kbar (bc '' ↑M_sub)
+    change z ∈ Submodule.span Kbar (bc '' ↑M_sub)
     -- Step 1: Rewrite span(bc '' M_sub) = map e (M_sub.baseChange)
     have hbc_eq : (bc '' ↑M_sub : Set _) =
         e '' (TensorProduct.mk K Kbar (Module.End K V) 1 '' ↑M_sub) := by
@@ -196,7 +184,7 @@ theorem humphreys_lemma
         exact ⟨f, hf, (isBaseChange_end_equiv_tmul_one f).symm⟩
     rw [hbc_eq]
     -- Convert ⇑e to ⇑e.toLinearMap (defeq but syntactically different for rw)
-    show z ∈ Submodule.span Kbar (e.toLinearMap ''
+    change z ∈ Submodule.span Kbar (e.toLinearMap ''
       (⇑(TensorProduct.mk K Kbar (Module.End K V) 1) '' ↑M_sub))
     rw [Submodule.span_image, ← Submodule.baseChange_span, Submodule.span_eq,
         Submodule.mem_map_equiv]
@@ -236,7 +224,7 @@ theorem humphreys_lemma
         rw [LinearMap.mem_ker]; ext i
         simp only [Φ, LinearMap.pi_apply, φ, LinearMap.comp_apply, Submodule.mkQ_apply,
           Pi.zero_apply, Submodule.Quotient.mk_eq_zero]
-        show (lieR i) w ∈ A
+        change (lieR i) w ∈ A
         have : (lieR i) w = ⁅w, (bB i).1⁆ := by
           simp [lieR, Ring.lie_def]
         rw [this]; exact hw (bB i).1 (bB i).2
@@ -265,7 +253,7 @@ theorem humphreys_lemma
         e ((lieR i).baseChange Kbar w) = ⁅e w, bc (bB i).1⁆ := by
       intro w
       induction w using TensorProduct.induction_on with
-      | zero => simp
+      | zero => rw [map_zero, map_zero, zero_lie]
       | tmul a f =>
         simp only [LinearMap.baseChange_tmul, lieR, LinearMap.sub_apply,
           LinearMap.mulRight_apply, LinearMap.mulLeft_apply]
@@ -274,14 +262,14 @@ theorem humphreys_lemma
           have hbc : bc = ⇑(Module.End.baseChangeHom K Kbar V) := rfl
           simp only [hbc, map_sub, map_mul]
         rw [this, Ring.lie_def, smul_sub, smul_mul_assoc, mul_smul_comm]
-      | add x y hx hy => simp [map_add, hx, hy]
+      | add x y hx hy => rw [map_add, map_add, map_add, add_lie, hx, hy]
     -- Step 9: A' = map e (A.baseChange)
     have hA'_eq : A' = Submodule.map e.toLinearMap (A.baseChange Kbar) := by
       apply le_antisymm
       · -- A' ≤ map e (A.baseChange)
         apply Submodule.span_le.mpr
         rintro _ ⟨a, ha, rfl⟩
-        show bc a ∈ Submodule.map e.toLinearMap (A.baseChange Kbar)
+        change bc a ∈ Submodule.map e.toLinearMap (A.baseChange Kbar)
         exact ⟨1 ⊗ₜ a, Submodule.tmul_mem_baseChange_of_mem 1 ha,
           isBaseChange_end_equiv_tmul_one a⟩
       · -- map e (A.baseChange) ≤ A'
