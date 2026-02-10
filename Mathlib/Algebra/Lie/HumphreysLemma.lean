@@ -311,7 +311,7 @@ r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs. The existence of such
 from Lagrange interpolation; there is no ambiguity in the assigned values, since
 aᵢ − aⱼ = aₖ − aₗ implies by the linearity of f that f(aᵢ) − f(aⱼ) = f(aₖ) − f(aₗ)." -/
 lemma exists_lagrange_polynomial
-    {ι : Type*} [Fintype ι]
+    {ι : Type*} [Finite ι]
     (a : ι → K) (E : Submodule ℚ K) (f : E →ₗ[ℚ] ℚ)
     (ha : ∀ i, a i ∈ E) :
     ∃ r : Polynomial K,
@@ -319,6 +319,7 @@ lemma exists_lagrange_polynomial
         algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) ∧
       Polynomial.eval 0 r = 0 := by
   classical
+  haveI : Fintype ι := Fintype.ofFinite ι
   -- Eigenvalue differences form a finite set
   let diffs : Finset K := Finset.univ.image (fun p : ι × ι => a p.1 - a p.2)
   have ha_diff : ∀ i j, a i - a j ∈ E := fun i j => E.sub_mem (ha i) (ha j)
