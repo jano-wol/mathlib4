@@ -4,8 +4,6 @@ Cartan's Criterion: IsSemisimple → IsKilling in characteristic zero.
 This file proves that in characteristic zero, any semisimple Lie algebra has
 non-degenerate Killing form (i.e., is a "Killing Lie algebra").
 
-This addresses mathlib4 GitHub issue #10068 and fills the TODO in Killing.lean.
-
 The proof uses Humphreys' lemma (from HumphreysLemmaGeneral.lean) together with
 Engel's theorem to show the kernel of the Killing form is a solvable ideal,
 hence trivial in a semisimple Lie algebra.
