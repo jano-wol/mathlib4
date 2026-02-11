@@ -34,9 +34,10 @@ This file contains basic definitions and results for such Lie algebras.
 * `LieAlgebra.IsKilling.instHasTrivialRadical`: if a Lie algebra over a PID
   has non-singular Killing form then it has trivial radical.
 
-## TODO
+## See also
 
-* Prove that in characteristic zero, a semisimple Lie algebra has non-singular Killing form.
+* `LieAlgebra.IsSemisimple.instIsKilling` in `Mathlib.Algebra.Lie.CartanCriterion` for the
+  converse in characteristic zero: a semisimple Lie algebra has non-singular Killing form.
 
 -/
 
