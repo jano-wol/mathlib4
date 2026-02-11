@@ -10,14 +10,15 @@ public import Mathlib.Algebra.Lie.HumphreysLemmaGeneral
 public import Mathlib.Algebra.Lie.Engel
 
 /-!
-# Cartan's Criterion: IsSemisimple implies IsKilling
+# Cartan's Criterion: HasTrivialRadical implies IsKilling
 
-This file proves that in characteristic zero, any semisimple Lie algebra has
-non-degenerate Killing form (i.e., is a "Killing Lie algebra").
+This file proves that in characteristic zero, any finite-dimensional Lie algebra with trivial
+radical has non-degenerate Killing form (i.e., is a "Killing Lie algebra"). In particular,
+this applies to semisimple Lie algebras.
 
 The proof uses Humphreys' lemma (from `Mathlib.Algebra.Lie.HumphreysLemmaGeneral`)
 together with Engel's theorem to show the kernel of the Killing form is a solvable
-ideal, hence trivial in a semisimple Lie algebra.
+ideal, hence trivial in a Lie algebra with trivial radical.
 -/
 
 @[expose] public section
@@ -29,8 +30,9 @@ namespace LieAlgebra
 variable (K L : Type*) [Field K] [CharZero K]
   [LieRing L] [LieAlgebra K L] [Module.Finite K L]
 
-/-- In characteristic zero, any semisimple Lie algebra has non-degenerate Killing form. -/
-instance IsSemisimple.instIsKilling [IsSemisimple K L] : IsKilling K L where
+/-- In characteristic zero, any finite-dimensional Lie algebra with trivial radical has
+non-degenerate Killing form. In particular, this applies to semisimple Lie algebras. -/
+instance HasTrivialRadical.instIsKilling [HasTrivialRadical K L] : IsKilling K L where
   killingCompl_top_eq_bot := by
     -- Let S = killingCompl K L ⊤ (kernel of the Killing form)
     set S := LieIdeal.killingCompl K L ⊤
