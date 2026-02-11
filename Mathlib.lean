@@ -666,6 +666,7 @@ public import Mathlib.Algebra.Jordan.Basic
 public import Mathlib.Algebra.Lie.Abelian
 public import Mathlib.Algebra.Lie.BaseChange
 public import Mathlib.Algebra.Lie.Basic
+public import Mathlib.Algebra.Lie.CartanCriterion
 public import Mathlib.Algebra.Lie.CartanExists
 public import Mathlib.Algebra.Lie.CartanMatrix
 public import Mathlib.Algebra.Lie.CartanSubalgebra
@@ -680,6 +681,8 @@ public import Mathlib.Algebra.Lie.Engel
 public import Mathlib.Algebra.Lie.EngelSubalgebra
 public import Mathlib.Algebra.Lie.Extension
 public import Mathlib.Algebra.Lie.Free
+public import Mathlib.Algebra.Lie.HumphreysLemma
+public import Mathlib.Algebra.Lie.HumphreysLemmaGeneral
 public import Mathlib.Algebra.Lie.Ideal
 public import Mathlib.Algebra.Lie.IdealOperations
 public import Mathlib.Algebra.Lie.InvariantForm
