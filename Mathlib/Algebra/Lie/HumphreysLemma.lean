@@ -20,13 +20,20 @@ public import Mathlib.LinearAlgebra.Lagrange
 /-!
 # Humphreys' Lemma (algebraically closed case)
 
-This file proves Humphreys' lemma over algebraically closed fields.
-The proof follows the textbook argument from Humphreys' "Introduction to
-Lie Algebras and Representation Theory", §4.3, sentence by sentence,
-using a concrete diagonalizing basis for the semisimple part.
+This file proves Humphreys' lemma over algebraically closed fields of characteristic zero,
+following Humphreys' *Introduction to Lie Algebras and Representation Theory*, §4.3.
 
 The general characteristic zero version (by scalar extension) is in
 `Mathlib.Algebra.Lie.HumphreysLemmaGeneral`.
+
+## Main definitions and results
+
+* `HumphreysLemma.M`: the set `{x ∈ gl(V) : [x, B] ⊆ A}`.
+* `humphreys_lemma_algClosed`: Humphreys' lemma for algebraically closed fields.
+
+## References
+
+* [J.E. Humphreys, *Introduction to Lie Algebras and Representation Theory*][humphreys1972], §4.3
 -/
 
 @[expose] public section
@@ -38,11 +45,7 @@ variable {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
 
 namespace HumphreysLemma
 
-/-! ## Setup: Diagonalizing basis
-
-Humphreys: "Since F is algebraically closed, s is diagonalizable.
-Fix a basis v₁, v₂, ..., vₘ that diagonalizes s, so that it has matrix
-diag(a₁, a₂, ..., aₘ)." -/
+/-! ## Eigenbasis for semisimple endomorphisms -/
 
 omit [CharZero K] in
 open Classical in
@@ -78,9 +81,7 @@ noncomputable instance eigenbasisFintype (s : Module.End K V) (hs : s.IsSemisimp
 
 omit [CharZero K] in
 open Classical in
-/-- Humphreys: "s has matrix diag(a₁, a₂, ..., aₘ)."
-
-Each eigenbasis vector is an eigenvector: `s(vσ) = σ.1 • vσ`. -/
+/-- Each eigenbasis vector is an eigenvector: `s(vσ) = σ.1 • vσ`. -/
 theorem eigenbasis_eigenvalue (s : Module.End K V) (hs : s.IsSemisimple)
     (σ : Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :
     s (eigenbasis s hs σ) = σ.1 • eigenbasis s hs σ := by
@@ -88,11 +89,7 @@ theorem eigenbasis_eigenvalue (s : Module.End K V) (hs : s.IsSemisimple)
     (fun μ => Module.finBasis K (s.eigenspace μ)) σ
   exact mem_eigenspace_iff.mp hmem
 
-/-! ## The elementary endomorphisms e_{ij}
-
-Humphreys: "If e_{ij} is the corresponding basis of gl(V) we saw in (4.2)
-that (ad s)(e_{ij}) = (aᵢ − aⱼ)e_{ij} and
-(ad y)(e_{ij}) = (f(aᵢ) − f(aⱼ))e_{ij}." -/
+/-! ## Elementary endomorphisms `e_{ij}` -/
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- The elementary endomorphism `e_{ij}`: sends `b j ↦ b i`, all other basis
@@ -102,8 +99,8 @@ noncomputable def eij {ι : Type*}
   (b.coord j).smulRight (b i)
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- Humphreys (4.2): `(ad s)(e_{ij}) = (aᵢ − aⱼ) e_{ij}` where `s` is diagonal
-with eigenvalues `a` in the basis `b`. -/
+/-- `⁅s, e_{ij}⁆ = (aᵢ − aⱼ) • e_{ij}` when `s` is diagonal with eigenvalues `a`
+in the basis `b`. -/
 theorem ad_diag_eij {ι : Type*}
     (b : Module.Basis ι K V) (a : ι → K) (s : Module.End K V)
     (hs : ∀ k, s (b k) = a k • b k)
@@ -120,10 +117,7 @@ theorem ad_diag_eij {ι : Type*}
   · simp only [Finsupp.single_apply, hjk, ↓reduceIte, zero_smul, smul_zero,
       sub_self]
 
-/-! ## Diagonal endomorphisms
-
-Humphreys: "Given f, let y be that element of gl(V) whose matrix relative to
-our given basis is diag(f(a₁), f(a₂), ..., f(aₘ))." -/
+/-! ## Diagonal endomorphisms -/
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- The diagonal endomorphism with entries `c` relative to basis `b`:
@@ -139,9 +133,8 @@ theorem diagEnd_apply_basis {ι : Type*}
   simp [diagEnd, Module.Basis.constr_basis]
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- Humphreys: "(ad y)(e_{ij}) = (f(aᵢ) − f(aⱼ))e_{ij}."
-
-The adjoint action of a diagonal endomorphism on `e_{ij}`. -/
+/-- The adjoint action of a diagonal endomorphism on `e_{ij}`:
+`⁅diagEnd b c, e_{ij}⁆ = (cᵢ − cⱼ) • e_{ij}`. -/
 theorem ad_diagEnd_eij {ι : Type*}
     (b : Module.Basis ι K V) (c : ι → K) (i j : ι) :
     ⁅diagEnd b c, eij b i j⁆ = (c i - c j) • eij b i j :=
@@ -192,29 +185,20 @@ theorem eijBasis_eq {ι : Type*} [Fintype ι]
   · subst hjk; simp
   · simp [hjk, eq_comm]
 
-/-! ## The set M
-
-Humphreys: "Let A ⊂ B be subspaces of gl(V).
-Define M = {x ∈ gl(V) : [x, B] ⊂ A}." -/
+/-! ## The set M -/
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- Humphreys' set `M = {x ∈ gl(V) : [x, B] ⊂ A}`. -/
+/-- The set `M = {x ∈ gl(V) : [x, B] ⊆ A}`. -/
 abbrev M (A B : Submodule K (Module.End K V)) : Set (Module.End K V) :=
   {x | ∀ b ∈ B, ⁅x, b⁆ ∈ A}
 
-/-! ## Paragraph 3 helpers
-
-Humphreys: "By hypothesis, ad x maps B into A; since A ⊂ B, it follows that
-(ad x)^k maps B into A for all k ≥ 1
-(inductively: (ad x)^{k+1}(B) = (ad x)((ad x)^k(B)) ⊂ (ad x)(A) ⊂ (ad x)(B) ⊂ A).
-Hence any polynomial in ad x without constant term maps B into A." -/
+/-! ## Polynomial-in-ad preserves the M condition -/
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- Humphreys §4.3: any polynomial in `ad(x)` without constant term maps `B` into `A`.
+/-- Any polynomial in `ad(x)` without constant term maps `B` into `A`.
 
 If `x ∈ M(A, B)` (meaning `[x, B] ⊆ A`) and `q(0) = 0`, then `q(ad x)` also
-maps `B` into `A`. The proof factors `q = X · q'` (since `q(0) = 0`), shows any
-polynomial in `ad(x)` preserves `B` (since `A ≤ B`), and applies `hxM`. -/
+maps `B` into `A`. -/
 lemma aeval_ad_maps_to
     (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
     (x : Module.End K V) (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
@@ -244,23 +228,11 @@ lemma aeval_ad_maps_to
   rw [map_mul, Polynomial.aeval_X, Module.End.mul_apply]
   exact hxM _ (hpoly_B q' b hb)
 
-/-! ## Paragraph 3: ad(s) maps B into A
+/-! ## Jordan-Chevalley uniqueness and ad-semisimplicity
 
-Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2,
-so it can be written as a polynomial in ad x without constant term.
-[...] Hence any polynomial in ad x without constant term maps B into A,
-so ad y(B) ⊂ A."
+These results should eventually move to their respective files. -/
 
-The proof requires Jordan-Chevalley uniqueness for `ad(x)`:
-- `ad(s)` is semisimple (`LieAlgebra.ad_isSemisimple_of_isSemisimple`)
-- `ad(n)` is nilpotent (`LieAlgebra.ad_nilpotent_of_nilpotent`)
-- `ad(x) = ad(n) + ad(s)`, they commute
-- By JC uniqueness (`eq_zero_of_isNilpotent_isSemisimple`), `ad(s)` equals
-  the semisimple part of `ad(x)`
-- The semisimple part lies in `adjoin K {ad(x)}`, i.e., is `p(ad(x))`
-  for some polynomial `p` with `p(0) = 0` (since `ad(x)(x) = [x,x] = 0`)
-- Apply `aeval_ad_maps_to` to conclude `p(ad(x))` maps `B` into `A` -/
-
+-- TODO: belongs in Mathlib/LinearAlgebra/JordanChevalley.lean (fills explicit TODO there)
 omit [IsAlgClosed K] [FiniteDimensional K V] in
 /-- **Uniqueness of the Jordan-Chevalley decomposition.**
 If `f = n₁ + s₁ = n₂ + s₂` where `nᵢ` are nilpotent, `sᵢ` are semisimple,
@@ -275,15 +247,12 @@ theorem jordanChevalley_unique
     (h₁ : f = n₁ + s₁) (h₂ : f = n₂ + s₂) :
     n₁ = n₂ ∧ s₁ = s₂ := by
   haveI : PerfectField K := inferInstance
-  -- Canonical JC: f = n_c + s_c with n_c, s_c ∈ adjoin K {f}
   obtain ⟨n_c, hn_c_adj, s_c, hs_c_adj, hn_c_nil, hs_c_ss, h_c⟩ :=
     f.exists_isNilpotent_isSemisimple
-  -- Within-commutativity → commutativity with f
   have hc₁f : Commute s₁ f := h₁ ▸ hc₁.symm.add_right (Commute.refl s₁)
   have hc₂f : Commute s₂ f := h₂ ▸ hc₂.symm.add_right (Commute.refl s₂)
   have hn₁f : Commute n₁ f := h₁ ▸ (Commute.refl n₁).add_right hc₁
   have hn₂f : Commute n₂ f := h₂ ▸ (Commute.refl n₂).add_right hc₂
-  -- Cross-commutativity with canonical parts (via adjoin membership)
   have hcs₁ : Commute s₁ s_c :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs_c_adj hc₁f
   have hcn₁ : Commute n₁ n_c :=
@@ -292,8 +261,6 @@ theorem jordanChevalley_unique
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs_c_adj hc₂f
   have hcn₂ : Commute n₂ n_c :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hn_c_adj hn₂f
-  -- Algebraic uniqueness: each decomposition equals the canonical one
-  -- s₁ - s_c = n_c - n₁ is both semisimple and nilpotent, hence zero
   have heq₁ : s₁ - s_c = n_c - n₁ := by
     have h := h₁.symm.trans h_c
     have : s₁ = n_c + s_c - n₁ := by rw [← h]; abel
@@ -314,6 +281,7 @@ theorem jordanChevalley_unique
   · rw [h_s₁] at h₁; rw [h_s₂] at h₂; exact add_right_cancel (h₁.symm.trans h₂)
   · exact h_s₁.trans h_s₂.symm
 
+-- TODO: belongs in Mathlib/Algebra/Lie/OfAssociative.lean
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- Commuting endomorphisms have commuting adjoint actions.
 
@@ -325,11 +293,6 @@ theorem commute_ad_of_commute {R : Type*} [CommRing R]
     Commute (LieAlgebra.ad R A a) (LieAlgebra.ad R A b) := by
   rw [Commute, SemiconjBy, ← sub_eq_zero, ← Ring.lie_def,
       ← (LieAlgebra.ad R A).map_lie, Ring.lie_def, sub_eq_zero.mpr h, map_zero]
-
-/-! ### Adjoint of semisimple is semisimple
-
-The adjoint of a semisimple element is semisimple. This is the semisimple
-analogue of `LieAlgebra.ad_nilpotent_of_nilpotent` (Humphreys §4.2). -/
 
 open Polynomial in
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
@@ -359,6 +322,7 @@ private theorem isSemisimple_mulRight_of_isSemisimple
   ext1 T
   simp only [LinearMap.zero_apply, aeval_mulRight_apply, minpoly.aeval, mul_zero]
 
+-- TODO: belongs in Mathlib/Algebra/Lie/Nilpotent.lean (next to ad_nilpotent_of_nilpotent)
 omit [IsAlgClosed K] [CharZero K] in
 /-- The adjoint of a semisimple element is semisimple. -/
 theorem ad_isSemisimple_of_isSemisimple [PerfectField K]
@@ -370,9 +334,7 @@ theorem ad_isSemisimple_of_isSemisimple [PerfectField K]
     (isSemisimple_mulRight_of_isSemisimple ha)
 
 omit [IsAlgClosed K] in
-/-- Humphreys §4.2, Lemma A: `ad(s)` is the semisimple part of `ad(x)`.
-
-If `x = n + s` with `n` nilpotent and `s` semisimple, then `ad(x) = ad(n) + ad(s)`
+/-- If `x = n + s` with `n` nilpotent and `s` semisimple, then `ad(x) = ad(n) + ad(s)`
 is the Jordan-Chevalley decomposition of `ad(x)`: `ad(n)` is nilpotent and
 `ad(s)` is semisimple. -/
 lemma ad_semisimple_part
@@ -406,13 +368,10 @@ lemma ad_semisimple_part_in_adjoin
   haveI : PerfectField K := inferInstance
   haveI : FiniteDimensional K (Module.End K V) := inferInstance
   set ad := LieAlgebra.ad K (Module.End K V)
-  -- Step 1: ad(x) = ad(n) + ad(s) is a JC decomposition
   obtain ⟨h_sum, h_ad_n_nil, h_ad_s_ss⟩ := ad_semisimple_part x n s hn_nil hs_ss hxns
-  -- Commutativity from adjoin membership (following Killing.lean pattern)
   have hc_xn : Commute x n := Algebra.commute_of_mem_adjoin_self hn_adj
   have hc_ns : Commute n s :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj hc_xn.symm
-  -- Step 2: Canonical JC of ad(x)
   obtain ⟨n', hn'_adj, s', hs'_adj, hn'_nil, hs'_ss, h_jc⟩ :=
     (ad x).exists_isNilpotent_isSemisimple
   have hc_n' : Commute (ad x) n' := Algebra.commute_of_mem_adjoin_self hn'_adj
@@ -420,10 +379,10 @@ lemma ad_semisimple_part_in_adjoin
   have hc_canonical : Commute n' s' :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs'_adj hc_n'.symm
   have hc_ad : Commute (ad n) (ad s) := commute_ad_of_commute hc_ns
-  -- By uniqueness, ad(s) = s'
   exact (jordanChevalley_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
     hc_canonical hc_ad h_jc h_sum).2 ▸ hs'_adj
 
+-- TODO: belongs in Mathlib/LinearAlgebra/Eigenspace/Semisimple.lean
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- If `f x = μ • x`, then `(aeval f p) x = (eval μ p) • x`.
 
@@ -442,11 +401,7 @@ theorem aeval_apply_of_eigenvalue {R : Type*} {M : Type*}
       Polynomial.eval_pow, Polynomial.eval_X, map_smulₛₗ, RingHom.id_apply, mul_comm]
 
 omit [IsAlgClosed K] in
-/-- Humphreys: "ad s ... can be written as a polynomial in ad x without constant term."
-
-From `ad_semisimple_part_in_adjoin`, `ad(s) ∈ adjoin K {ad(x)}`, so `ad(s) = p(ad(x))`
-for some polynomial `p`. The constant term is zero because `ad(x)(x) = [x,x] = 0` and
-`ad(s)(x) = [s,x] = 0` (since `s` commutes with `x`). -/
+/-- `ad(s)` can be written as a polynomial in `ad(x)` without constant term. -/
 lemma ad_semisimple_part_polynomial
     (x n s : Module.End K V)
     (hn_adj : n ∈ Algebra.adjoin K {x})
@@ -457,28 +412,23 @@ lemma ad_semisimple_part_polynomial
       LieAlgebra.ad K (Module.End K V) s =
         Polynomial.aeval (LieAlgebra.ad K (Module.End K V) x) p := by
   set ad := LieAlgebra.ad K (Module.End K V)
-  -- Step 1: ad(s) ∈ adjoin K {ad(x)}, hence ad(s) = q(ad(x)) for some q
   have h_mem := ad_semisimple_part_in_adjoin x n s hn_adj hs_adj hn_nil hs_ss hxns
   rw [Algebra.adjoin_singleton_eq_range_aeval] at h_mem
   obtain ⟨q, hq⟩ := h_mem
-  -- Step 2: Show q(0) = 0
-  -- Key facts: ad(x)(x) = [x,x] = 0 and ad(s)(x) = [s,x] = 0
   have had_x_x : (ad x) x = 0 := by
     change ⁅x, x⁆ = 0; exact lie_self x
   have had_s_x : (ad s) x = 0 := by
     change ⁅s, x⁆ = 0
     have : Commute x s := Algebra.commute_of_mem_adjoin_self hs_adj
     rw [Ring.lie_def, this.eq, sub_self]
-  -- Evaluate at x: ad(s)(x) = (aeval (ad x) q)(x) = q(0) • x
   have hq' : ad s = Polynomial.aeval (ad x) q := hq.symm
   have h_eval : (Polynomial.aeval (ad x) q) x = Polynomial.eval 0 q • x :=
     aeval_apply_of_eigenvalue (by rw [zero_smul]; exact had_x_x) q
   rw [← hq'] at h_eval
   rw [had_s_x] at h_eval
-  -- So q(0) • x = 0
+  -- SUSPICIOUS: awkward x=0 case; could potentially be simplified
   by_cases hx : x = 0
-  · -- If x = 0, then n + s = 0, so s = -n is nilpotent, hence s = 0
-    have h0 : n + s = 0 := by rw [← hxns]; exact hx
+  · have h0 : n + s = 0 := by rw [← hxns]; exact hx
     have hs0 : s = 0 := by
       have : IsNilpotent s := by
         have hs_neg : s = -n := by
@@ -487,22 +437,17 @@ lemma ad_semisimple_part_polynomial
         rw [hs_neg]; exact hn_nil.neg
       exact Module.End.eq_zero_of_isNilpotent_isSemisimple this hs_ss
     exact ⟨0, by simp, by simp [hs0, map_zero]⟩
-  · -- If x ≠ 0, then q(0) = 0 from q(0) • x = 0
-    have hq0 : Polynomial.eval 0 q = 0 := by
+  · have hq0 : Polynomial.eval 0 q = 0 := by
       by_contra h
       exact hx (smul_eq_zero.mp h_eval.symm |>.resolve_left h)
     exact ⟨q, hq0, hq'⟩
 
-/-! ## Paragraph 1: s = 0 from eigenvalue information
+/-! ## Semisimple with zero eigenvalues is zero -/
 
-Humphreys: "We have to show that s = 0 or equivalently that E = 0." -/
-
+-- TODO: belongs in Mathlib/LinearAlgebra/Eigenspace/Semisimple.lean
 omit [CharZero K] in
 /-- A semisimple endomorphism over an algebraically closed field with all eigenvalues
-equal to zero must be zero.
-
-Proof: `V = ⨁ eigenspace(s, μ)`. If all eigenvalues are zero, then
-`V = ker(s)`, so `s = 0`. -/
+equal to zero must be zero. -/
 lemma eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero
     (s : Module.End K V) (hs : s.IsSemisimple)
     (h : ∀ μ : K, s.HasEigenvalue μ → μ = 0) : s = 0 := by
@@ -525,11 +470,11 @@ lemma eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero
   exact ker_eq_top.mp h_ker
 
 
+/-! ## Lagrange interpolation for eigenvalue differences -/
+
 omit [IsAlgClosed K] in
-/-- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
-r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs. The existence of such r(T) follows
-from Lagrange interpolation; there is no ambiguity in the assigned values, since
-aᵢ − aⱼ = aₖ − aₗ implies by the linearity of f that f(aᵢ) − f(aⱼ) = f(aₖ) − f(aₗ)." -/
+/-- Lagrange interpolation produces a polynomial `r` with `r(0) = 0` and
+`r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ)` for all index pairs `(i, j)`. -/
 lemma exists_lagrange_polynomial
     {ι : Type*} [Finite ι]
     (a : ι → K) (E : Submodule ℚ K) (f : E →ₗ[ℚ] ℚ)
@@ -540,23 +485,19 @@ lemma exists_lagrange_polynomial
       Polynomial.eval 0 r = 0 := by
   classical
   haveI : Fintype ι := Fintype.ofFinite ι
-  -- Eigenvalue differences form a finite set
   let diffs : Finset K := Finset.univ.image (fun p : ι × ι => a p.1 - a p.2)
   have ha_diff : ∀ i j, a i - a j ∈ E := fun i j => E.sub_mem (ha i) (ha j)
-  -- Lagrange interpolation: r(d) = g(d) for each d ∈ diffs
   let g : K → K := fun d => if hd : d ∈ E then algebraMap ℚ K (f ⟨d, hd⟩) else 0
   let v : K → K := fun x => x
   refine ⟨Lagrange.interpolate diffs v g, fun i j => ?_, ?_⟩
-  · -- r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ)
-    have h_mem : a i - a j ∈ diffs :=
+  · have h_mem : a i - a j ∈ diffs :=
       Finset.mem_image.mpr ⟨(i, j), Finset.mem_univ _, rfl⟩
     rw [Lagrange.eval_interpolate_at_node g (fun _ _ _ _ h => h) h_mem,
       show g (a i - a j) = algebraMap ℚ K (f ⟨a i - a j, ha_diff i j⟩) from
         dif_pos (ha_diff i j)]
     have : (⟨a i - a j, ha_diff i j⟩ : E) = ⟨a i, ha i⟩ - ⟨a j, ha j⟩ := rfl
     rw [this, map_sub, map_sub]
-  · -- r(0) = 0
-    by_cases h_ne : Nonempty ι
+  · by_cases h_ne : Nonempty ι
     · obtain ⟨i⟩ := h_ne
       have h_mem : (0 : K) ∈ diffs :=
         Finset.mem_image.mpr ⟨(i, i), Finset.mem_univ _, sub_self _⟩
@@ -589,76 +530,44 @@ theorem humphreys_lemma_algClosed
     (hxM : x ∈ M A B)
     (htr : ∀ y ∈ M A B, trace K V (x * y) = 0) :
     IsNilpotent x := by
-  -- Humphreys: "Let x = s + n (s = x_s, n = x_n) be the Jordan decomposition of x."
   obtain ⟨n, hn_adj, s, hs_adj, hn_nil, hs_ss, hxns⟩ :=
     x.exists_isNilpotent_isSemisimple
-  -- Humphreys: "Since F is algebraically closed, s is diagonalizable.
-  -- Fix a basis v₁, v₂, ..., vₘ that diagonalizes s, so that it has matrix
-  -- diag(a₁, a₂, ..., aₘ)."
   let v := eigenbasis s hs_ss
   let a : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) → K := fun i => i.1
   have hv_diag : ∀ i, s (v i) = a i • v i := eigenbasis_eigenvalue s hs_ss
-  -- Humphreys: "Let E be a vector subspace of F (over the prime field ℚ) spanned
-  -- by the eigenvalues a₁, a₂, ..., aₘ."
   let E : Submodule ℚ K := Submodule.span ℚ (Set.range a)
-  -- Humphreys: "We have to show that s = 0 or equivalently that E = 0."
   suffices hs_zero : s = 0 by rw [hxns, hs_zero, add_zero]; exact hn_nil
-  -- Humphreys: "Since E has finite dimension over ℚ (by construction) it will suffice
-  -- to show that the dual space E* is 0, i.e. that any linear function f: E→ℚ is zero."
   suffices h_f_zero : ∀ f : E →ₗ[ℚ] ℚ, f = 0 by
-    -- E* = 0 → all eigenvalues are 0 → s = 0
     apply eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero s hs_ss
     intro μ hμ
-    -- μ is an eigenvalue, so μ ∈ range(a) ⊆ E
     have hpos : 0 < Module.finrank K (s.eigenspace μ) := by
       haveI : Nontrivial (s.eigenspace μ) :=
         Submodule.nontrivial_iff_ne_bot.mpr (hasEigenvalue_iff.mp hμ)
       exact Module.finrank_pos
     have hμ_E : μ ∈ E := Submodule.subset_span ⟨⟨μ, ⟨0, hpos⟩⟩, rfl⟩
-    -- By dual separation (Module.forall_dual_apply_eq_zero_iff): since every
-    -- f ∈ E* is zero, every element of E is zero; in particular μ = 0.
     have hμ_zero : (⟨μ, hμ_E⟩ : E) = 0 :=
       (Module.forall_dual_apply_eq_zero_iff ℚ _).mp (fun φ => by simp [h_f_zero φ])
     exact congr_arg Subtype.val hμ_zero
-  -- Humphreys: "Given f, ..."
   intro f
-  -- Each eigenvalue aᵢ is in E (since eigenvalues span E).
   have ha : ∀ i, a i ∈ E := fun i => Submodule.subset_span (Set.mem_range_self i)
-  -- Humphreys: "Given f, let y be that element of gl(V) whose matrix relative to
-  -- our given basis is diag(f(a₁), f(a₂), ..., f(aₘ))."
   let y := diagEnd v (fun i => algebraMap ℚ K (f ⟨a i, ha i⟩))
-  -- Humphreys: "If e_{ij} is the corresponding basis of gl(V) we saw in (4.2) that
-  -- (ad s)(e_{ij}) = (aᵢ − aⱼ)e_{ij}"
   have had_s : ∀ i j, ⁅s, eij v i j⁆ = (a i - a j) • eij v i j :=
     ad_diag_eij v a s hv_diag
-  -- "and (ad y)(e_{ij}) = (f(aᵢ) − f(aⱼ))e_{ij}."
   have had_y : ∀ i j, ⁅y, eij v i j⁆ =
       (algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) •
         eij v i j :=
     fun i j => ad_diagEnd_eij v _ i j
-  -- Humphreys: "Now let r(T) ∈ F[T] be a polynomial without constant term satisfying
-  -- r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ) for all i, j pairs.
-  -- The existence of such r(T) follows from Lagrange interpolation."
   haveI : Fintype (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :=
     eigenbasisFintype s hs_ss
   obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
-  -- Humphreys: "Evidently ad y = r(ad s)."
-  -- Both sides agree on every e_{ij} (which form a basis of gl(V)):
-  --   r(ad s)(e_{ij}) = r(aᵢ − aⱼ) • e_{ij}     (polynomial on eigenvector)
-  --                    = (f(aᵢ) − f(aⱼ)) • e_{ij} (by hr_eval)
-  --                    = ⁅y, e_{ij}⁆               (by had_y)
   let ad_s := LieAlgebra.ad K (Module.End K V) s
   have had_y_eq : LieAlgebra.ad K (Module.End K V) y = Polynomial.aeval ad_s r := by
     apply (eijBasis v).ext; intro ⟨i, j⟩
     rw [eijBasis_eq]
     change ⁅y, eij v i j⁆ = (Polynomial.aeval ad_s r) (eij v i j)
     rw [aeval_apply_of_eigenvalue (had_s i j) r, hr_eval i j, had_y i j]
-  -- Humphreys: "Now ad s is the semisimple part of ad x, by Lemma A of 4.2, so it can
-  -- be written as a polynomial in ad x without constant term."
   obtain ⟨p, hp_zero, hp_eq⟩ :=
     ad_semisimple_part_polynomial x n s hn_adj hs_adj hn_nil hs_ss hxns
-  -- "Therefore, ad y is also a polynomial in ad x without constant term."
-  -- ad(y) = r(ad(s)) = r(p(ad(x))) = (r.comp p)(ad(x))
   let ad_x := LieAlgebra.ad K (Module.End K V) x
   have had_y_adx : LieAlgebra.ad K (Module.End K V) y =
       Polynomial.aeval ad_x (r.comp p) := by
@@ -667,23 +576,15 @@ theorem humphreys_lemma_algClosed
     rw [this, ← Polynomial.aeval_comp]
   have hcomp_zero : Polynomial.eval 0 (r.comp p) = 0 := by
     simp [Polynomial.eval_comp, hp_zero, hr_zero]
-  -- Humphreys: "Hence any polynomial in ad x without constant term maps B into A,
-  -- so ad y(B) ⊂ A, i.e. y ∈ M."
   have hyM : y ∈ M A B := by
     intro b hb
     change (LieAlgebra.ad K (Module.End K V) y) b ∈ A
     rw [had_y_adx]
     exact aeval_ad_maps_to A B hAB x hxM (r.comp p) hcomp_zero b hb
-  -- Humphreys: "Using the hypothesis of the lemma, tr(xy) = 0"
   have htr_xy : trace K V (x * y) = 0 := htr y hyM
-  -- Humphreys: "we get ∑(aᵢ f(aᵢ)) = 0."
-  -- tr(xy) = tr((n+s)y) = tr(ny) + tr(sy).
-  -- tr(ny) = 0 (nilpotent). tr(sy) = ∑ aᵢ · algebraMap(f(aᵢ)) (diagonal).
   have htr_sum : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       a i * algebraMap ℚ K (f ⟨a i, ha i⟩) = 0 := by
     classical
-    -- Step 1: y ∈ adjoin K {s} via Lagrange interpolation
-    -- Construct polynomial g with g(μ) = algebraMap ℚ K (f(μ)) for each eigenvalue μ
     let eigenvals : Finset K := Finset.univ.image a
     let c_val : K → K := fun μ => if hμ : μ ∈ E then algebraMap ℚ K (f ⟨μ, hμ⟩) else 0
     let g := Lagrange.interpolate eigenvals id c_val
@@ -692,72 +593,56 @@ theorem humphreys_lemma_algClosed
       have h_mem : a i ∈ eigenvals := Finset.mem_image.mpr ⟨i, Finset.mem_univ _, rfl⟩
       exact (Lagrange.eval_interpolate_at_node c_val
         (fun _ _ _ _ h => h) h_mem).trans (dif_pos (ha i))
-    -- aeval s g = y (both agree on eigenbasis)
     have hy_eq : Polynomial.aeval s g = y := by
       apply v.ext; intro i
       rw [aeval_apply_of_eigenvalue (hv_diag i) g, hg_eval i, diagEnd_apply_basis]
-    -- y ∈ adjoin K {s}
     have hy_adj_s : y ∈ Algebra.adjoin K {s} := by
       rw [Algebra.adjoin_singleton_eq_range_aeval]
       exact ⟨g, hy_eq⟩
-    -- y ∈ adjoin K {x} (since s ∈ adjoin K {x})
     have hy_adj_x : y ∈ Algebra.adjoin K {x} :=
       Algebra.adjoin_singleton_le hs_adj hy_adj_s
-    -- Commute n y (from y ∈ adjoin K {x} and Commute n x)
     have hc_nx : Commute n x := (Algebra.commute_of_mem_adjoin_self hn_adj).symm
     have hcommute_ny : Commute n y :=
       Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x hc_nx
-    -- Step 2: tr(n * y) = 0 (n * y is nilpotent since n nilpotent and Commute n y)
     have htr_ny : trace K V (n * y) = 0 := by
       have h_nil : IsNilpotent (n * y) := hcommute_ny.isNilpotent_mul_right hn_nil
       exact (LinearMap.isNilpotent_trace_of_isNilpotent h_nil).eq_zero
-    -- Step 3: s * y is diagonal with entries a_i * c_i
     have hsy_diag : s * y =
         diagEnd v (fun i => a i * algebraMap ℚ K (f ⟨a i, ha i⟩)) := by
       apply v.ext; intro i
       change s (y (v i)) = _
       rw [show y (v i) = algebraMap ℚ K (f ⟨a i, ha i⟩) • v i from diagEnd_apply_basis v _ i,
         diagEnd_apply_basis, map_smul, hv_diag i, smul_smul, mul_comm]
-    -- Step 4: tr(s * y) = ∑ a_i * c_i
     have htr_sy : trace K V (s * y) =
         ∑ i, a i * algebraMap ℚ K (f ⟨a i, ha i⟩) :=
       hsy_diag ▸ trace_diagEnd v _
-    -- Step 5: tr(x * y) = tr(n * y) + tr(s * y)
     have htr_split : trace K V (x * y) =
         trace K V (n * y) + trace K V (s * y) := by
       conv_lhs => rw [hxns, add_mul]
       exact map_add (trace K V) (n * y) (s * y)
-    -- Combine: 0 = tr(xy) = tr(ny) + tr(sy) = 0 + ∑ a_i * c_i
     rw [← htr_sy]
     have h := htr_split.symm.trans htr_xy
     rw [htr_ny, zero_add] at h
     exact h
-  -- Humphreys: "The left side is a ℚ-linear combination of elements in E;
-  -- applying f, we obtain ∑f(aᵢ)² = 0."
   have h_sum_E : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       (f ⟨a i, ha i⟩) • (⟨a i, ha i⟩ : E) = 0 := by
-    -- The sum ∑ f(aᵢ) • aᵢ = 0 in K (from htr_sum), and each term is in E, so sum is 0 in E
     apply_fun E.subtype using Subtype.val_injective
     simp only [map_sum, map_smul, map_zero, Submodule.subtype_apply]
-    -- ∑ f(aᵢ) • aᵢ = ∑ algebraMap(f(aᵢ)) * aᵢ in K
     convert htr_sum using 1
     congr 1; ext i
     rw [Algebra.smul_def, mul_comm]
-  -- Apply f: ∑ f(aᵢ) · f(aᵢ) = f(∑ f(aᵢ) • aᵢ) = f(0) = 0
   have h_sum_sq : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       f ⟨a i, ha i⟩ ^ 2 = (0 : ℚ) := by
     have := congr_arg f h_sum_E
     simp only [map_sum, map_smul, smul_eq_mul, map_zero] at this
     convert this using 1
     congr 1; ext i; ring
-  -- Humphreys: "But the numbers f(aᵢ) are rational, so this forces all of them to be zero."
   have h_f_zero_all : ∀ i, f ⟨a i, ha i⟩ = 0 := by
     intro i
     have h_nonneg : ∀ j ∈ Finset.univ,
         (0 : ℚ) ≤ (fun j => f ⟨a j, ha j⟩ ^ 2) j := fun j _ => sq_nonneg _
     have := (Finset.sum_eq_zero_iff_of_nonneg h_nonneg).mp h_sum_sq i (Finset.mem_univ _)
     exact eq_zero_of_pow_eq_zero this
-  -- Humphreys: "Finally, f must be identically zero, because aᵢ span E."
   ext ⟨e, he⟩
   simp only [LinearMap.zero_apply]
   refine Submodule.span_induction

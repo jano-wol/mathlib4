@@ -18,6 +18,10 @@ public import Mathlib.LinearAlgebra.Basis.VectorSpace
 
 This file proves Humphreys' lemma over arbitrary fields of characteristic zero
 by scalar extension to the algebraic closure.
+
+## Main results
+
+* `humphreys_lemma`: Humphreys' lemma over arbitrary fields of characteristic zero.
 -/
 
 @[expose] public section
@@ -30,6 +34,7 @@ section BaseChange
 variable {K : Type*} [Field K] {Kbar : Type*} [Field Kbar] [Algebra K Kbar]
   {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
 
+-- TODO: belongs in Mathlib/LinearAlgebra/TensorProduct/Tower.lean or similar
 omit [FiniteDimensional K V] in
 /-- Base change of endomorphisms is injective for field extensions. -/
 lemma End.baseChangeHom_injective :
@@ -78,7 +83,8 @@ end BaseChange
 
 /-- **Humphreys' Lemma** over arbitrary fields of characteristic zero.
 
-Proved by scalar extension to the algebraic closure. -/
+Proved by scalar extension to the algebraic closure.
+See `humphreys_lemma_algClosed` for the algebraically closed case. -/
 theorem humphreys_lemma
     {K : Type*} [Field K] [CharZero K]
     {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
