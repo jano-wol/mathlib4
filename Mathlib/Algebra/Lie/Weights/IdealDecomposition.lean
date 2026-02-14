@@ -38,8 +38,8 @@ variable {K L : Type*} [Field K] [LieRing L] [LieAlgebra K L] [FiniteDimensional
   {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsTriangularizable K H L]
 
 instance instIsTriangularizableLieIdeal (I : LieIdeal K L) : IsTriangularizable K H I :=
-  (inferInstance : IsTriangularizable K H
-    ({ __ := I.toSubmodule, lie_mem := fun hm => I.lie_mem hm } : LieSubmodule K H L))
+  inferInstanceAs (IsTriangularizable K H
+    ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
 
 /-- A Lie ideal decomposes as the supremum of its intersections with the weight spaces. -/
 lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
