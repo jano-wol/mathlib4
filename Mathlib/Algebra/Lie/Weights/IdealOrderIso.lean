@@ -413,19 +413,14 @@ lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
       exact le_sup_right
     · -- ⨆ (α nonzero) I ∩ rootSpace α ≤ ⨆ sl2(α)
       apply iSup₂_le; intro α hα
-      by_cases hαI : I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥
-      · simp [hαI]
-      · -- I ∩ rootSpace α ≠ 0 implies rootSpace α ≤ I (1-dim), so α is in lieIdealRootSet
-        have h_eq : I.toSubmodule ⊓ (rootSpace H α).toSubmodule =
-            (rootSpace H α).toSubmodule :=
-          Submodule.eq_of_le_of_finrank_le inf_le_right
-            ((finrank_rootSpace_eq_one α hα).symm ▸ Submodule.one_le_finrank_iff.mpr hαI)
-        rw [h_eq]
-        have hα_root : (⟨α, by simpa [LieSubalgebra.root] using hα⟩ : H.root) ∈
-            lieIdealRootSet (H := H) I := inf_eq_right.mp h_eq
+      obtain h | h := rootSpace_le_or_disjoint I α hα
+      · have hα_root : (⟨α, by simpa [LieSubalgebra.root] using hα⟩ : H.root) ∈
+            lieIdealRootSet (H := H) I := h
+        apply inf_le_right.trans
         apply le_iSup_of_le ⟨α, Submodule.subset_span ⟨_, hα_root, rfl⟩, hα⟩
         rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
         exact le_sup_of_le_left le_sup_left
+      · simp [h]
 
 private lemma invtSubmoduleToLieIdeal_mono {q₁ q₂ : Submodule K (Dual K H)}
     (hq₁ : ∀ i, q₁ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)

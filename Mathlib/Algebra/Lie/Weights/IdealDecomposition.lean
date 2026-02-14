@@ -70,39 +70,39 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
   refine le_antisymm (le_trans h_iSup.le (iSup_le fun α ↦ ?_))
     (sup_le inf_le_left (iSup₂_le fun α _ ↦ inf_le_left))
   by_cases hα : α.IsZero
-  · -- Zero weight: genWeightSpace L 0 = H
-    have h0 : (genWeightSpace L (α : H → K)).toSubmodule = H.toSubmodule := by
+  · have h0 : (genWeightSpace L (α : H → K)).toSubmodule = H.toSubmodule := by
       have := congr_arg LieSubmodule.toSubmodule (rootSpace_zero_eq K L H)
       simp only [LieSubalgebra.coe_toLieSubmodule] at this
       rw [hα.eq]; exact this
     rw [h0]; exact le_sup_left
   · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
 
+/-- Root spaces are 1-dimensional, so a Lie ideal either contains a root space entirely or
+intersects it trivially. -/
+lemma rootSpace_le_or_disjoint (I : LieIdeal K L) (α : Weight K H L) (hα : α.IsNonZero) :
+    (rootSpace H α).toSubmodule ≤ I.toSubmodule ∨
+    I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥ := by
+  by_cases h : I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥
+  · exact Or.inr h
+  · exact Or.inl (inf_eq_right.mp (Submodule.eq_of_le_of_finrank_le inf_le_right
+      ((finrank_rootSpace_eq_one α hα).symm ▸ Submodule.one_le_finrank_iff.mpr h)))
+
 /-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a direct sum of
-root spaces corresponding to some subset Φ of roots. This follows from the fact that root spaces
-are 1-dimensional, so the intersection of I with each root space is either trivial or the full
-root space. -/
+root spaces corresponding to some subset Φ of roots. -/
 lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
     ∃ Φ : Set H.root, I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
       ⨆ α ∈ Φ, (rootSpace H α.1).toSubmodule := by
   refine ⟨{ α | (rootSpace H α.1).toSubmodule ≤ I.toSubmodule }, le_antisymm ?_ ?_⟩
-  · -- ≤: use the decomposition, simplify each I ⊓ rootSpace(α) via 1-dimensionality
-    calc I.toSubmodule
+  · calc I.toSubmodule
         = (I.toSubmodule ⊓ H.toSubmodule) ⊔
             ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
               I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule :=
           lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace I
       _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
-    by_cases h : I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥
+    obtain h | h := rootSpace_le_or_disjoint I α hα
+    · exact le_iSup₂_of_le ⟨α, by simpa [LieSubalgebra.root]⟩ h inf_le_right
     · simp [h]
-    · have h_eq : I.toSubmodule ⊓ (rootSpace H α).toSubmodule =
-          (rootSpace H α).toSubmodule :=
-        Submodule.eq_of_le_of_finrank_le inf_le_right
-          ((finrank_rootSpace_eq_one α hα).symm ▸ Submodule.one_le_finrank_iff.mpr h)
-      rw [h_eq]
-      exact le_iSup₂_of_le ⟨α, by simpa [LieSubalgebra.root]⟩ (inf_eq_right.mp h_eq) le_rfl
-  · -- ≥: I ⊓ H ≤ I and each rootSpace in Φ ≤ I by definition
-    exact sup_le inf_le_left (iSup₂_le fun _ hα ↦ hα)
+  · exact sup_le inf_le_left (iSup₂_le fun _ hα ↦ hα)
 
 end
 
