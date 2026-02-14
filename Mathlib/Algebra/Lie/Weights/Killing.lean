@@ -33,8 +33,8 @@ forms.
   subalgebra `H`, we have a natural decomposition of `H` as the kernel of `α` and the span of the
   coroot corresponding to `α`.
 * `LieAlgebra.IsKilling.finrank_rootSpace_eq_one`: root spaces are one-dimensional.
-* `LieAlgebra.IsKilling.rootSpace_le_or_disjoint`: since root spaces are one-dimensional,
-  a Lie ideal either contains a root space entirely or intersects it trivially.
+* `LieAlgebra.IsKilling.rootSpace_le_or_disjoint`: a Lie ideal either contains a root space entirely
+  or intersects it trivially.
 * `LieAlgebra.IsKilling.exists_rootSet_lieIdeal_eq`: a Lie ideal decomposes as its intersection
   with the Cartan subalgebra plus a sum of root spaces for some subset of roots.
 
