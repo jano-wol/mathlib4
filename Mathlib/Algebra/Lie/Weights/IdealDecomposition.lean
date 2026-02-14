@@ -16,8 +16,6 @@ with a Cartan subalgebra plus a sum of root spaces corresponding to some subset 
 
 ## Main results
 
-* `LieAlgebra.IsKilling.instIsTriangularizableLieIdeal`: a Lie ideal inherits
-  triangularizability from the ambient Lie algebra.
 * `LieAlgebra.IsKilling.lieIdeal_eq_iSup_inf_genWeightSpace`: a Lie ideal equals the
   supremum of its intersections with the weight spaces.
 * `LieAlgebra.IsKilling.lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace`: a Lie ideal equals
