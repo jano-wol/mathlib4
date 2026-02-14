@@ -142,6 +142,40 @@ lemma mem_ker_killingForm_of_mem_rootSpace_of_forall_rootSpace_neg
     · exact killingForm_apply_eq_zero_of_mem_rootSpace_of_add_ne_zero K L H hx hy hαβ
   | zero => simp
   | add => simp_all
+
+instance instIsTriangularizableLieIdeal (I : LieIdeal K L) : IsTriangularizable K H I :=
+  inferInstanceAs (IsTriangularizable K H
+    ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
+
+lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
+    I.toSubmodule =
+      ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
+  refine le_antisymm (fun x hx ↦ ?_) (iSup_le fun χ ↦ inf_le_left)
+  have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
+    rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
+  refine Submodule.iSup_induction _
+    (motive := fun z : I ↦
+      (z : L) ∈ ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule)
+    hx_mem ?_ (Submodule.zero_mem _) (fun _ _ ha hb ↦ Submodule.add_mem _ ha hb)
+  intro χ_I z hz
+  have hz_L := map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
+  by_cases h : (z : L) = 0
+  · rw [h]; exact Submodule.zero_mem _
+  · exact Submodule.mem_iSup_of_mem
+      ⟨(χ_I : H → K), fun h_eq ↦ h ((LieSubmodule.eq_bot_iff _).mp h_eq _ hz_L)⟩
+      (Submodule.mem_inf.mpr ⟨z.property, hz_L⟩)
+
+lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
+    I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
+      ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
+        I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule := by
+  refine le_antisymm ((lieIdeal_eq_iSup_inf_genWeightSpace K L H I).le.trans
+    (iSup_le fun α ↦ ?_)) (sup_le inf_le_left (iSup₂_le fun α _ ↦ inf_le_left))
+  by_cases hα : α.IsZero
+  · rw [show (genWeightSpace L (α : H → K)).toSubmodule = H.toSubmodule by simp [hα.eq]]
+    exact le_sup_left
+  · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
+
 end
 
 end Field
@@ -317,41 +351,6 @@ lemma iInf_ker_weight_eq_bot :
   rw [← Subspace.dualAnnihilator_inj, Subspace.dualAnnihilator_iInf_eq,
     Submodule.dualAnnihilator_bot]
   simp [← LinearMap.range_dualMap_eq_dualAnnihilator_ker, ← Submodule.span_range_eq_iSup]
-
-instance instIsTriangularizableLieIdeal (I : LieIdeal K L) : IsTriangularizable K H I :=
-  inferInstanceAs (IsTriangularizable K H
-    ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
-
-omit [IsKilling K L] in
-lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
-    I.toSubmodule =
-      ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
-  refine le_antisymm (fun x hx ↦ ?_) (iSup_le fun χ ↦ inf_le_left)
-  have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
-    rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
-  refine Submodule.iSup_induction _
-    (motive := fun z : I ↦
-      (z : L) ∈ ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule)
-    hx_mem ?_ (Submodule.zero_mem _) (fun _ _ ha hb ↦ Submodule.add_mem _ ha hb)
-  intro χ_I z hz
-  have hz_L := map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
-  by_cases h : (z : L) = 0
-  · rw [h]; exact Submodule.zero_mem _
-  · exact Submodule.mem_iSup_of_mem
-      ⟨(χ_I : H → K), fun h_eq ↦ h ((LieSubmodule.eq_bot_iff _).mp h_eq _ hz_L)⟩
-      (Submodule.mem_inf.mpr ⟨z.property, hz_L⟩)
-
-omit [IsKilling K L] in
-lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
-    I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-      ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
-        I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule := by
-  refine le_antisymm ((lieIdeal_eq_iSup_inf_genWeightSpace (H := H) I).le.trans
-    (iSup_le fun α ↦ ?_)) (sup_le inf_le_left (iSup₂_le fun α _ ↦ inf_le_left))
-  by_cases hα : α.IsZero
-  · rw [show (genWeightSpace L (α : H → K)).toSubmodule = H.toSubmodule by simp [hα.eq]]
-    exact le_sup_left
-  · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
 
 section PerfectField
 
@@ -782,7 +781,7 @@ lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
       = (I.toSubmodule ⊓ H.toSubmodule) ⊔
           ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
             I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule :=
-        lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace I
+        lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace K L H I
     _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
   obtain h | h := rootSpace_le_or_disjoint I α hα
   · exact le_iSup₂_of_le ⟨α, by simpa [LieSubalgebra.root]⟩ h inf_le_right
