@@ -34,17 +34,13 @@ namespace LieAlgebra.IsKilling
 
 open LieAlgebra LieModule Module
 
-variable {K L : Type*} [Field K] [CharZero K] [LieRing L] [LieAlgebra K L] [FiniteDimensional K L]
-  {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsKilling K L] [IsTriangularizable K H L]
+variable {K L : Type*} [Field K] [LieRing L] [LieAlgebra K L] [FiniteDimensional K L]
+  {H : LieSubalgebra K L} [H.IsCartanSubalgebra] [IsTriangularizable K H L]
 
-noncomputable section
-
-omit [CharZero K] [IsKilling K L] in
 instance instIsTriangularizableLieIdeal (I : LieIdeal K L) : IsTriangularizable K H I :=
   (inferInstance : IsTriangularizable K H
     ({ __ := I.toSubmodule, lie_mem := fun hm => I.lie_mem hm } : LieSubmodule K H L))
 
-omit [CharZero K] [IsKilling K L] in
 /-- A Lie ideal decomposes as the supremum of its intersections with the weight spaces.
 This follows from the triangularizability of the ideal as a submodule. -/
 lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
@@ -71,7 +67,6 @@ lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
   · exact Submodule.zero_mem _
   · exact fun _ _ ha hb ↦ Submodule.add_mem _ ha hb
 
-omit [CharZero K] [IsKilling K L] in
 /-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a sum of
 intersections with nonzero weight spaces. -/
 lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
@@ -85,6 +80,8 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
   · rw [show (genWeightSpace L (α : H → K)).toSubmodule = H.toSubmodule by simp [hα.eq]]
     exact le_sup_left
   · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
+
+variable [CharZero K] [IsKilling K L]
 
 /-- Since root spaces are one-dimensional, a Lie ideal either contains a root space entirely or
 intersects it trivially. -/
@@ -112,7 +109,5 @@ lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
   obtain h | h := rootSpace_le_or_disjoint I α hα
   · exact le_iSup₂_of_le ⟨α, by simpa [LieSubalgebra.root]⟩ h inf_le_right
   · simp [h]
-
-end
 
 end LieAlgebra.IsKilling
