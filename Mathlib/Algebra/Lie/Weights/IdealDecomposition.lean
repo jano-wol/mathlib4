@@ -41,31 +41,24 @@ instance instIsTriangularizableLieIdeal (I : LieIdeal K L) : IsTriangularizable 
   (inferInstance : IsTriangularizable K H
     ({ __ := I.toSubmodule, lie_mem := fun hm => I.lie_mem hm } : LieSubmodule K H L))
 
-/-- A Lie ideal decomposes as the supremum of its intersections with the weight spaces.
-This follows from the triangularizability of the ideal as a submodule. -/
+/-- A Lie ideal decomposes as the supremum of its intersections with the weight spaces. -/
 lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
     I.toSubmodule =
       ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
-  refine le_antisymm ?_ (iSup_le fun χ ↦ inf_le_left)
-  intro x hx
+  refine le_antisymm (fun x hx ↦ ?_) (iSup_le fun χ ↦ inf_le_left)
   have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
-    have := congr_arg LieSubmodule.toSubmodule (iSup_genWeightSpace_eq_top' K H I)
-    simp only [LieSubmodule.iSup_toSubmodule, LieSubmodule.top_toSubmodule] at this
-    exact this ▸ Submodule.mem_top
+    rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
   refine Submodule.iSup_induction _
     (motive := fun z : I ↦
       (z : L) ∈ ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule)
-    hx_mem ?_ ?_ ?_
-  · intro χ_I z hz
-    have hz_L : (z : L) ∈ genWeightSpace L (χ_I : H → K) :=
-      map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
-    by_cases h : (z : L) = 0
-    · rw [h]; exact Submodule.zero_mem _
-    · exact Submodule.mem_iSup_of_mem
-        ⟨(χ_I : H → K), fun h_eq ↦ h ((LieSubmodule.eq_bot_iff _).mp h_eq _ hz_L)⟩
-        (Submodule.mem_inf.mpr ⟨z.property, hz_L⟩)
-  · exact Submodule.zero_mem _
-  · exact fun _ _ ha hb ↦ Submodule.add_mem _ ha hb
+    hx_mem ?_ (Submodule.zero_mem _) (fun _ _ ha hb ↦ Submodule.add_mem _ ha hb)
+  intro χ_I z hz
+  have hz_L := map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
+  by_cases h : (z : L) = 0
+  · rw [h]; exact Submodule.zero_mem _
+  · exact Submodule.mem_iSup_of_mem
+      ⟨(χ_I : H → K), fun h_eq ↦ h ((LieSubmodule.eq_bot_iff _).mp h_eq _ hz_L)⟩
+      (Submodule.mem_inf.mpr ⟨z.property, hz_L⟩)
 
 /-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a sum of
 intersections with nonzero weight spaces. -/
@@ -73,9 +66,8 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
     I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
       ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
         I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule := by
-  have h_iSup := lieIdeal_eq_iSup_inf_genWeightSpace (H := H) I
-  refine le_antisymm (h_iSup.le.trans (iSup_le fun α ↦ ?_))
-    (sup_le inf_le_left (iSup₂_le fun α _ ↦ inf_le_left))
+  refine le_antisymm ((lieIdeal_eq_iSup_inf_genWeightSpace (H := H) I).le.trans
+    (iSup_le fun α ↦ ?_)) (sup_le inf_le_left (iSup₂_le fun α _ ↦ inf_le_left))
   by_cases hα : α.IsZero
   · rw [show (genWeightSpace L (α : H → K)).toSubmodule = H.toSubmodule by simp [hα.eq]]
     exact le_sup_left
