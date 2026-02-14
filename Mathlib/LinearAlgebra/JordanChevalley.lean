@@ -89,7 +89,6 @@ theorem isNilpotent_isSemisimple_unique [PerfectField K]
     (h₁ : f = n₁ + s₁) (h₂ : f = n₂ + s₂) :
     n₁ = n₂ ∧ s₁ = s₂ := by
   obtain ⟨n₀, hn₀, s₀, hs₀, hn₀_nil, hs₀_ss, h₀⟩ := f.exists_isNilpotent_isSemisimple
-  -- Any commuting decomposition f = n + s must have s = s₀ (the canonical semisimple part).
   have key : ∀ {n s}, IsNilpotent n → s.IsSemisimple → Commute n s → f = n + s → s = s₀ := by
     intro n s hn hs hc heq
     have hsf : Commute s f := heq ▸ hc.symm.add_right (Commute.refl s)
@@ -97,11 +96,13 @@ theorem isNilpotent_isSemisimple_unique [PerfectField K]
     have : s - s₀ = n₀ - n := by
       have : s = n₀ + s₀ - n := by rw [← heq.symm.trans h₀]; abel
       rw [this]; abel
-    exact sub_eq_zero.mp (eq_zero_of_isNilpotent_isSemisimple
-      (this ▸ (commute_of_mem_adjoin_singleton_of_commute hn₀ hnf).symm.isNilpotent_sub
-        hn₀_nil hn)
-      (hs.sub_of_commute (commute_of_mem_adjoin_singleton_of_commute hs₀ hsf) hs₀_ss))
-  exact ⟨add_right_cancel ((key hn₁ hs₁ hc₁ h₁) ▸ (key hn₂ hs₂ hc₂ h₂) ▸ h₁.symm.trans h₂),
-    (key hn₁ hs₁ hc₁ h₁).trans (key hn₂ hs₂ hc₂ h₂).symm⟩
+    have hnil : IsNilpotent (s - s₀) := this ▸
+      (commute_of_mem_adjoin_singleton_of_commute hn₀ hnf).symm.isNilpotent_sub hn₀_nil hn
+    have hss : (s - s₀).IsSemisimple :=
+      hs.sub_of_commute (commute_of_mem_adjoin_singleton_of_commute hs₀ hsf) hs₀_ss
+    exact sub_eq_zero.mp (eq_zero_of_isNilpotent_isSemisimple hnil hss)
+  have hs₁_eq := key hn₁ hs₁ hc₁ h₁
+  have hs₂_eq := key hn₂ hs₂ hc₂ h₂
+  exact ⟨add_right_cancel (hs₁_eq ▸ hs₂_eq ▸ h₁.symm.trans h₂), hs₁_eq.trans hs₂_eq.symm⟩
 
 end Module.End
