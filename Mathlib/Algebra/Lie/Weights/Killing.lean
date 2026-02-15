@@ -726,8 +726,8 @@ lemma restrict_killingForm_eq_sum :
   replace hχ : χ.IsNonZero := by simpa [LieSubalgebra.root] using hχ
   simp [finrank_rootSpace_eq_one _ hχ]
 
-/-- Since root spaces are one-dimensional, a Lie ideal either contains a root space entirely or
-intersects it trivially. -/
+/-- In a Lie algebra with non-degenerate Killing form, root spaces are one-dimensional, so a Lie
+ideal either contains a root space entirely or intersects it trivially. -/
 lemma rootSpace_le_or_disjoint (I : LieIdeal K L) (α : Weight K H L) (hα : α.IsNonZero) :
     (rootSpace H α).toSubmodule ≤ I.toSubmodule ∨
     I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥ := by
@@ -736,8 +736,8 @@ lemma rootSpace_le_or_disjoint (I : LieIdeal K L) (α : Weight K H L) (hα : α.
   · exact .inl (inf_eq_right.mp (Submodule.eq_of_le_of_finrank_le inf_le_right
       ((finrank_rootSpace_eq_one α hα).symm ▸ Submodule.one_le_finrank_iff.mpr h)))
 
-/-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a sum of
-root spaces corresponding to some subset of roots. -/
+/-- In a Lie algebra with non-degenerate Killing form, a Lie ideal decomposes as its intersection
+with the Cartan subalgebra plus a sum of root spaces corresponding to some subset of roots. -/
 lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
     I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
     ⨆ (α : H.root) (_ : (rootSpace H α.1).toSubmodule ≤ I.toSubmodule),
