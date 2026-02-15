@@ -35,8 +35,8 @@ forms.
 * `LieAlgebra.IsKilling.finrank_rootSpace_eq_one`: root spaces are one-dimensional.
 * `LieAlgebra.IsKilling.rootSpace_le_or_disjoint`: a Lie ideal either contains a root space entirely
   or intersects it trivially.
-* `LieAlgebra.IsKilling.exists_rootSet_lieIdeal_eq`: a Lie ideal decomposes as its intersection
-  with the Cartan subalgebra plus a sum of root spaces for some subset of roots.
+* `LieAlgebra.IsKilling.lieIdeal_eq_inf_cartan_sup_biSup_rootSpace`: a Lie ideal decomposes as its
+  intersection with the Cartan subalgebra plus a sum of root spaces.
 
 -/
 
@@ -148,8 +148,7 @@ instance instIsTriangularizableLieIdeal (I : LieIdeal K L) : IsTriangularizable 
     ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
 
 lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
-    I.toSubmodule =
-      ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
+    I.toSubmodule = ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule := by
   refine le_antisymm (fun x hx ↦ ?_) (iSup_le fun χ ↦ inf_le_left)
   have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
     rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
@@ -167,8 +166,7 @@ lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
 
 lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
     I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-      ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
-        I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule := by
+    ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero), I.toSubmodule ⊓ (rootSpace H α).toSubmodule := by
   refine le_antisymm ((lieIdeal_eq_iSup_inf_genWeightSpace K L H I).le.trans
     (iSup_le fun α ↦ ?_)) (sup_le inf_le_left (iSup₂_le fun α _ ↦ inf_le_left))
   by_cases hα : α.IsZero
@@ -772,16 +770,14 @@ lemma rootSpace_le_or_disjoint (I : LieIdeal K L) (α : Weight K H L) (hα : α.
 
 /-- A Lie ideal decomposes as its intersection with the Cartan subalgebra plus a sum of
 root spaces corresponding to some subset of roots. -/
-lemma exists_rootSet_lieIdeal_eq (I : LieIdeal K L) :
-    ∃ Φ : Set H.root, I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-      ⨆ α ∈ Φ, (rootSpace H α.1).toSubmodule := by
-  refine ⟨{ α | (rootSpace H α.1).toSubmodule ≤ I.toSubmodule }, le_antisymm ?_
-    (sup_le inf_le_left (iSup₂_le fun _ hα ↦ hα))⟩
-  calc I.toSubmodule
-      = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-          ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
-            I.toSubmodule ⊓ (genWeightSpace L α).toSubmodule :=
-        lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace K L H I
+lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
+    I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
+    ⨆ (α : H.root) (_ : (rootSpace H α.1).toSubmodule ≤ I.toSubmodule),
+    (rootSpace H α.1).toSubmodule := by
+  refine le_antisymm ?_ (sup_le inf_le_left (iSup₂_le fun _ hα ↦ hα))
+  calc I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
+      I.toSubmodule ⊓ (rootSpace H α).toSubmodule :=
+    lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace K L H I
     _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
   obtain h | h := rootSpace_le_or_disjoint I α hα
   · exact le_iSup₂_of_le ⟨α, by simpa [LieSubalgebra.root]⟩ h inf_le_right
