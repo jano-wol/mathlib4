@@ -766,4 +766,10 @@ lemma iSup_genWeightSpace_eq_top' [IsTriangularizable K L M] :
 
 end field
 
+instance instIsTriangularizableLieIdeal {K : Type*} [Field K] [LieAlgebra K L]
+    [FiniteDimensional K L] (H : LieSubalgebra K L) [IsTriangularizable K H L] (I : LieIdeal K L) :
+    IsTriangularizable K H I :=
+  inferInstanceAs
+    (IsTriangularizable K H ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
+
 end LieModule
