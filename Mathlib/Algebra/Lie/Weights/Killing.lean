@@ -142,7 +142,6 @@ lemma mem_ker_killingForm_of_mem_rootSpace_of_forall_rootSpace_neg
     · exact killingForm_apply_eq_zero_of_mem_rootSpace_of_add_ne_zero K L H hx hy hαβ
   | zero => simp
   | add => simp_all
-
 end
 
 end Field
