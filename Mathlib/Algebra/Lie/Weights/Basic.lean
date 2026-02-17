@@ -752,7 +752,6 @@ instance instIsTriangularizableLieIdeal [FiniteDimensional K L] (H : LieSubalgeb
   inferInstanceAs
     (IsTriangularizable K H ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
 
-
 /-- For a triangularizable Lie module in finite dimensions, the weight spaces span the entire space.
 
 See also `LieModule.iSup_genWeightSpace_eq_top'`. -/
