@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.Lie.Weights.IsSimple
 public import Mathlib.Algebra.Lie.Weights.IdealDecomposition
+public import Mathlib.LinearAlgebra.RootSystem.Irreducible
 
 /-! # Order Isomorphism: Lie Ideals and Invariant Root Submodules
 
@@ -75,8 +76,7 @@ lemma rootSpace_le_ideal_of_apply_coroot_ne_zero (I : LieIdeal K L)
     {γ : H → K} (hγ_ne : γ (coroot α) ≠ 0) :
     (rootSpace H γ).toSubmodule ≤ I.toSubmodule := by
   have h_coroot_I : (coroot α : L) ∈ I.toSubmodule :=
-    corootSubmodule_le_lieIdeal I hI ((LieSubmodule.mem_map _).mpr
-      ⟨⟨coroot α, (coroot α).property⟩, coroot_mem_corootSpace α, rfl⟩)
+    corootSubmodule_le_lieIdeal I hI (coroot_mem_corootSubmodule α)
   intro y hy
   have h_lie : ⁅(coroot α : L), y⁆ ∈ I.toSubmodule :=
     lie_mem_left K L I (coroot α : L) y h_coroot_I
@@ -180,8 +180,7 @@ private lemma traceForm_coroot_eq_zero_of_ideal_complement (I : LieIdeal K L)
     (Submodule.mem_span_singleton_self _)
   change (β : H → K) (coroot α) = 0
   exact weight_apply_eq_zero_of_not_mem_lieIdealRootSet I
-    (corootSubmodule_le_lieIdeal I hαI ((LieSubmodule.mem_map _).mpr
-      ⟨⟨coroot α, (coroot α).property⟩, coroot_mem_corootSpace α, rfl⟩))
+    (corootSubmodule_le_lieIdeal I hαI (coroot_mem_corootSubmodule α))
     (coroot α).property hβI
 
 /-- `I ⊓ H` is contained in the coroot span of roots in `lieIdealRootSet I`. -/
@@ -211,8 +210,7 @@ lemma inf_cartan_le_coroot_span (I : LieIdeal K L) :
       obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
       simp only [map_smul]
       exact I.toSubmodule.smul_mem _ (corootSubmodule_le_lieIdeal I hα
-        ((LieSubmodule.mem_map _).mpr
-          ⟨⟨coroot α.1, (coroot α.1).property⟩, coroot_mem_corootSpace α.1, rfl⟩))
+        (coroot_mem_corootSubmodule α.1))
   have hbI : (b : L) ∈ I.toSubmodule := by
     have : (b : L) = x - (a : L) := by
       have h1 : (a : L) + (b : L) = x := congr_arg Subtype.val hab
@@ -242,8 +240,7 @@ lemma inf_cartan_le_coroot_span (I : LieIdeal K L) :
     simp only [map_smul]
     exact Submodule.smul_mem _ _
       ((le_iSup₂_of_le α hα le_rfl : (corootSubmodule α.1).toSubmodule ≤ _)
-        ((LieSubmodule.mem_map _).mpr
-          ⟨⟨coroot α.1, (coroot α.1).property⟩, coroot_mem_corootSpace α.1, rfl⟩))
+        (coroot_mem_corootSubmodule α.1))
 
 /-- The Cartan part `I ∩ H` equals the span of coroots corresponding to roots in
 `lieIdealRootSet I`. -/
@@ -275,9 +272,7 @@ lemma mem_lieIdealRootSet_of_mem_lieIdealToSubmodule (I : LieIdeal K L)
   have h_vanish : ∀ γ ∈ lieIdealRootSet (H := H) I,
       (↑α : Weight K H L) (coroot (↑γ : Weight K H L)) = 0 := fun γ hγ ↦
     weight_apply_eq_zero_of_not_mem_lieIdealRootSet I
-      (corootSubmodule_le_lieIdeal I hγ ((LieSubmodule.mem_map _).mpr
-        ⟨⟨coroot (↑γ : Weight K H L), (coroot (↑γ : Weight K H L)).property⟩,
-         coroot_mem_corootSpace (↑γ : Weight K H L), rfl⟩))
+      (corootSubmodule_le_lieIdeal I hγ (coroot_mem_corootSubmodule (↑γ : Weight K H L)))
       (coroot (↑γ : Weight K H L)).property hα_not
   have h_span_le : lieIdealToSubmodule (H := H) I ≤
       LinearMap.ker (Module.Dual.eval K H ((cartanEquivDual H).symm (↑α : Dual K H))) := by
@@ -393,56 +388,6 @@ private lemma mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal
   exact Weight.genWeightSpace_ne_bot L (↑α : Weight K H L)
     ((LieSubmodule.toSubmodule_eq_bot _).mp h_inter_bot)
 
-private lemma invtSubmodule_le_span_roots (q : (rootSystem H).invtRootSubmodule) :
-    (q : Submodule K (Dual K H)) ≤
-      Submodule.span K ((rootSystem H).root ''
-        {i | (rootSystem H).root i ∈ (q : Submodule K _)}) := by
-  have hq_ker : ∀ ℓ, (rootSystem H).root ℓ ∉ (q : Submodule K _) →
-      (q : Submodule K _) ≤ LinearMap.ker ((rootSystem H).coroot' ℓ) := by
-    intro ℓ hℓ w hw
-    rw [LinearMap.mem_ker]; by_contra h; apply hℓ
-    have h_refl : ((rootSystem H).reflection ℓ) w ∈ (q : Submodule K _) :=
-      (rootSystem H).mem_invtRootSubmodule_iff.mp q.property ℓ hw
-    rw [(rootSystem H).reflection_apply] at h_refl
-    have h_smul : ((rootSystem H).coroot' ℓ w) • (rootSystem H).root ℓ ∈
-        (q : Submodule K _) := by
-      have h_sub := sub_mem hw h_refl; rwa [sub_sub_cancel] at h_sub
-    exact (Submodule.smul_mem_iff _ h).mp h_smul
-  set S := Submodule.span K ((rootSystem H).root ''
-    {i | (rootSystem H).root i ∈ (q : Submodule K _)})
-  set T := Submodule.span K ((rootSystem H).root ''
-    {i | (rootSystem H).root i ∉ (q : Submodule K _)})
-  have hS_ker : ∀ ℓ, (rootSystem H).root ℓ ∉ (q : Submodule K _) →
-      S ≤ LinearMap.ker ((rootSystem H).coroot' ℓ) := by
-    intro ℓ hℓ; apply Submodule.span_le.mpr; rintro _ ⟨i, hi, rfl⟩
-    exact hq_ker ℓ hℓ hi
-  have hT_ker : ∀ i, (rootSystem H).root i ∈ (q : Submodule K _) →
-      T ≤ LinearMap.ker ((rootSystem H).coroot' i) := by
-    intro i hi; apply Submodule.span_le.mpr; rintro _ ⟨j, hj, rfl⟩
-    rw [SetLike.mem_coe, LinearMap.mem_ker, (rootSystem H).root_coroot'_eq_pairing]
-    have h₁ := LinearMap.mem_ker.mp (hq_ker j hj hi)
-    rw [(rootSystem H).root_coroot'_eq_pairing] at h₁
-    exact (rootSystem H).pairing_eq_zero_iff'.mpr h₁
-  have h_sup : S ⊔ T = ⊤ := by
-    rw [← Submodule.span_union, ← Set.image_union]
-    have : {i | (rootSystem H).root i ∈ (q : Submodule K _)} ∪
-        {i | (rootSystem H).root i ∉ (q : Submodule K _)} = Set.univ := by
-      ext; exact ⟨fun _ => trivial, fun _ => em _⟩
-    rw [this, Set.image_univ]; simp
-  intro v hv
-  obtain ⟨s, hs, t, ht, rfl⟩ := Submodule.mem_sup.mp (h_sup ▸ Submodule.mem_top (x := v))
-  suffices t = 0 by rw [this, add_zero]; exact hs
-  have h_ker : ∀ ℓ, (rootSystem H).coroot' ℓ t = 0 := fun ℓ ↦ by
-    by_cases hℓ : (rootSystem H).root ℓ ∈ (q : Submodule K _)
-    · exact LinearMap.mem_ker.mp (hT_ker ℓ hℓ ht)
-    · have h1 := LinearMap.mem_ker.mp (hq_ker ℓ hℓ hv)
-      have h2 := LinearMap.mem_ker.mp (hS_ker ℓ hℓ hs)
-      rw [map_add, h2, zero_add] at h1; exact h1
-  have : IsReflexive K (Dual K H) := .of_isPerfPair (rootSystem H).toLinearMap
-  exact ((Module.Dual.eval K _).map_eq_zero_iff
-    (bijective_dual_eval K _).injective).mp
-    (LinearMap.ext_on_range (rootSystem H).span_coroot'_eq_top h_ker)
-
 /-- The lattice of Lie ideals of a Killing Lie algebra is order-isomorphic to the lattice of
 invariant root submodules of the associated root system. -/
 def lieIdealOrderIso :
@@ -459,7 +404,7 @@ def lieIdealOrderIso :
     · apply Submodule.span_le.mpr
       rintro _ ⟨α, hα, rfl⟩
       exact mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal q hα
-    · apply (invtSubmodule_le_span_roots q).trans
+    · apply (RootPairing.invtRootSubmodule.le_span_root q).trans
       apply Submodule.span_mono; apply Set.image_mono
       intro i hi
       have hi_nz : (↑i : Weight K H L).IsNonZero := (Finset.mem_filter.mp i.property).2
