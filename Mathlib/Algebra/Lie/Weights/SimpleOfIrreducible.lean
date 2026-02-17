@@ -9,7 +9,7 @@ public import Mathlib.Algebra.Lie.Weights.IsSimple
 public import Mathlib.Algebra.Lie.Weights.RootSystem
 public import Mathlib.LinearAlgebra.RootSystem.Finite.Lemmas
 public import Mathlib.Algebra.Lie.Weights.IdealDecomposition
-public import Mathlib.Algebra.Lie.Weights.KillingComplement
+public import Mathlib.Algebra.Lie.Killing
 
 /-! # Simplicity from Irreducibility
 
@@ -127,7 +127,6 @@ lemma h_H_le_C_1 (β : Weight K H L) (hβ : β.IsNonZero) :
   · generalize_proofs at *
     exact h_sum
 
-set_option linter.flexible false in
 theorem isSimple_of_isIrreducible
     (hIrr : (rootSystem H).IsIrreducible) : IsSimple K L := by
   by_contra h_not_simple
@@ -145,7 +144,8 @@ theorem isSimple_of_isIrreducible
       · cases subsingleton_or_nontrivial L <;>
           simp_all only [ne_eq]
         · have := hIrr.1
-          simp_all +decide [LieAlgebra.IsKilling.rootSystem]
+          simp_all +decide only [rootSystem, LinearMap.identityMapOfZeroModuleIsZero,
+            nontrivial_dual_iff]
           exact False.elim (this.exists_pair_ne.elim
             fun x hx => hx.elim
               fun y hy => hy <| Subsingleton.elim _ _)
@@ -417,7 +417,10 @@ theorem isSimple_of_isIrreducible
           Or.resolve_left
             (s3.symm.subset (Set.mem_univ i)) hi
         specialize xxx a ⟨i, hi₂⟩
-        simp +zetaDelta at *
+        simp +zetaDelta only [ne_eq, LieIdeal.toSubmodule_killingCompl, nontrivial_dual_iff,
+          Subtype.forall, Finset.mem_filter, Finset.mem_univ, true_and, rootSystem_pairing_apply,
+          LinearMap.flip_apply, rootSystem_coroot_apply, rootSystem_toLinearMap_apply,
+          Weight.toLinear_apply, rootSystem_root_apply] at *
         simp +decide [xxx]
   · simp +decide
     obtain ⟨x, hx⟩ := Set.nonempty_iff_ne_empty.2 s4
@@ -440,7 +443,11 @@ theorem isSimple_of_isIrreducible
         congr_arg (fun f => f (S.coroot j)) hl₂
       simp +decide only [Finsupp.linearCombination_apply,
         Finsupp.sum] at hl₂
-      simp +zetaDelta at *
+      simp +zetaDelta only [ne_eq, LieIdeal.toSubmodule_killingCompl, rootSystem_pairing_apply,
+        Subtype.forall, Finset.mem_filter, Finset.mem_univ, true_and, nontrivial_dual_iff,
+        Finsupp.supported_univ, Submodule.mem_top, rootSystem_root_apply,
+        rootSystem_coroot_apply, LinearMap.coe_sum, Finset.sum_apply, LinearMap.smul_apply,
+        Weight.toLinear_apply, smul_eq_mul] at *
       have h_sum_zero :
           ∑ x ∈ l.support,
             (l x) * ((x.val : LieModule.Weight K (↥H) L) :
