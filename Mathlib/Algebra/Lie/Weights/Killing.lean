@@ -33,8 +33,6 @@ forms.
   subalgebra `H`, we have a natural decomposition of `H` as the kernel of `α` and the span of the
   coroot corresponding to `α`.
 * `LieAlgebra.IsKilling.finrank_rootSpace_eq_one`: root spaces are one-dimensional.
-* `LieAlgebra.IsKilling.rootSpace_le_or_disjoint`: a Lie ideal either contains a root space entirely
-  or intersects it trivially.
 * `LieAlgebra.IsKilling.lieIdeal_eq_inf_cartan_sup_biSup_rootSpace`: a Lie ideal decomposes as its
   intersection with the Cartan subalgebra plus a sum of root spaces.
 
@@ -726,16 +724,6 @@ lemma restrict_killingForm_eq_sum :
   replace hχ : χ.IsNonZero := by simpa [LieSubalgebra.root] using hχ
   simp [finrank_rootSpace_eq_one _ hχ]
 
-/-- In a Lie algebra with non-degenerate Killing form, root spaces are one-dimensional, so a Lie
-ideal either contains a root space entirely or intersects it trivially. -/
-lemma rootSpace_le_or_disjoint (I : LieIdeal K L) (α : Weight K H L) (hα : α.IsNonZero) :
-    (rootSpace H α).toSubmodule ≤ I.toSubmodule ∨
-    I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥ := by
-  by_cases h : I.toSubmodule ⊓ (rootSpace H α).toSubmodule = ⊥
-  · exact .inr h
-  · exact .inl (inf_eq_right.mp (Submodule.eq_of_le_of_finrank_le inf_le_right
-      ((finrank_rootSpace_eq_one α hα).symm ▸ Submodule.one_le_finrank_iff.mpr h)))
-
 /-- In a Lie algebra with non-degenerate Killing form, a Lie ideal decomposes as its intersection
 with the Cartan subalgebra plus a sum of root spaces corresponding to some subset of roots. -/
 lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
@@ -747,9 +735,10 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
       I.toSubmodule ⊓ (rootSpace H α).toSubmodule :=
       lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace H I
       _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
-  obtain h | h := rootSpace_le_or_disjoint I α hα
-  · exact le_iSup₂_of_le ⟨α, by simpa [LieSubalgebra.root]⟩ h inf_le_right
-  · simp [h]
+  by_cases h : (rootSpace H α).toSubmodule ≤ I.toSubmodule
+  · exact le_iSup₂_of_le ⟨α, by simpa⟩ h inf_le_right
+  · have ha := Submodule.isAtom_of_finrank_eq_one (finrank_rootSpace_eq_one α hα)
+    simp [(ha.not_le_iff_disjoint.mp h).symm.eq_bot]
 
 end CharZero
 

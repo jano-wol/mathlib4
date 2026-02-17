@@ -236,6 +236,16 @@ theorem eq_of_le_of_finrank_eq {S₁ S₂ : Submodule K V} [FiniteDimensional K 
     (hd : finrank K S₁ = finrank K S₂) : S₁ = S₂ :=
   eq_of_le_of_finrank_le hle hd.ge
 
+/-- A submodule with `finrank` 1 is an atom of the submodule lattice. -/
+theorem isAtom_of_finrank_eq_one {S : Submodule K V} (hS : finrank K S = 1) : IsAtom S := by
+  haveI : FiniteDimensional K S := .of_finrank_eq_succ hS
+  refine ⟨by rintro rfl; simp at hS, fun T hT => ?_⟩
+  haveI : Module.Finite K T :=
+    .of_injective (inclusion hT.le) (inclusion_injective hT.le)
+  rw [← finrank_eq_zero (R := K)]
+  by_contra h
+  exact hT.ne (eq_of_le_of_finrank_le hT.le (by omega))
+
 end Submodule
 
 namespace Subalgebra
