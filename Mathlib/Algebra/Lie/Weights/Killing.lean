@@ -737,7 +737,7 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
       _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
   by_cases h : (rootSpace H α).toSubmodule ≤ I.toSubmodule
   · exact le_iSup₂_of_le ⟨α, by simpa⟩ h inf_le_right
-  · have ha := Submodule.isAtom_of_finrank_eq_one (finrank_rootSpace_eq_one α hα)
+  · have ha := Submodule.isAtom_iff_finrank_eq_one.mpr (finrank_rootSpace_eq_one α hα)
     simp [(ha.not_le_iff_disjoint.mp h).symm.eq_bot]
 
 end CharZero
