@@ -553,7 +553,7 @@ theorem Submodule.isAtom_iff_finrank_eq_one {S : Submodule K V} :
     have : FiniteDimensional K T := .of_injective (inclusion hT.le) (inclusion_injective hT.le)
     rw [← finrank_eq_zero (R := K)]
     by_contra h
-    exact hT.ne (Submodule.eq_of_le_of_finrank_le hT.le (by omega))
+    exact hT.ne <| eq_of_le_of_finrank_le hT.le <| by lia
 
 /-- In a one-dimensional space, any vector is a multiple of any nonzero vector -/
 lemma exists_smul_eq_of_finrank_eq_one

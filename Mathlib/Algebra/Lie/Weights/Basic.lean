@@ -750,8 +750,7 @@ instance (N : LieSubmodule K L M) [IsTriangularizable K L M] : IsTriangularizabl
 
 instance instIsTriangularizableLieIdeal [FiniteDimensional K L] (H : LieSubalgebra K L)
     [IsTriangularizable K H L] (I : LieIdeal K L) : IsTriangularizable K H I :=
-  inferInstanceAs
-    (IsTriangularizable K H ({ I.toSubmodule with lie_mem := I.lie_mem } : LieSubmodule K H L))
+  inferInstanceAs (IsTriangularizable K H (I.restr H))
 
 /-- For a triangularizable Lie module in finite dimensions, the weight spaces span the entire space.
 
