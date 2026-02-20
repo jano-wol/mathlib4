@@ -532,7 +532,7 @@ theorem Submodule.isAtom_iff_finrank_eq_one {S : Submodule K V} :
       (Submodule.span_le.mpr (Set.singleton_subset_iff.mpr hv))]
     exact finrank_span_singleton hv_ne
   · intro hS
-    haveI : FiniteDimensional K S := .of_finrank_eq_succ hS
+    have : FiniteDimensional K S := .of_finrank_eq_succ hS
     refine ⟨by rintro rfl; simp at hS, fun T hT => ?_⟩
     haveI : Module.Finite K T := .of_injective (Submodule.inclusion hT.le)
       (Submodule.inclusion_injective hT.le)
