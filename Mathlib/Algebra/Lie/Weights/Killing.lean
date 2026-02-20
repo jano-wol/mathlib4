@@ -733,18 +733,19 @@ lemma restrict_killingForm_eq_sum :
 /-- In a Lie algebra with non-degenerate Killing form, a Lie ideal decomposes as its intersection
 with the Cartan subalgebra plus a sum of root spaces corresponding to some subset of roots. -/
 lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
-    I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
-    ⨆ (α : H.root) (_ : (rootSpace H α.1).toSubmodule ≤ I.toSubmodule),
-    (rootSpace H α.1).toSubmodule := by
+    I.restr H = (I.restr H ⊓ H.toLieSubmodule) ⊔
+    ⨆ (α : H.root) (_ : rootSpace H α.1 ≤ I.restr H), rootSpace H α.1 := by
   refine le_antisymm ?_ (sup_le inf_le_left (iSup₂_le fun _ hα ↦ hα))
-  calc I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
-      I.toSubmodule ⊓ (rootSpace H α).toSubmodule :=
-      lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace H I
-      _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
-  by_cases h : (rootSpace H α).toSubmodule ≤ I.toSubmodule
-  · exact le_iSup₂_of_le ⟨α, by simpa⟩ h inf_le_right
+  calc I.restr H
+    _ = (I.restr H ⊓ H.toLieSubmodule) ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
+        I.restr H ⊓ rootSpace H α := lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace H I
+    _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
+  by_cases h : rootSpace H α ≤ I.restr H
+  · exact le_iSup₂_of_le ⟨α, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hα⟩⟩ h inf_le_right
   · have ha := Submodule.isAtom_iff_finrank_eq_one.mpr (finrank_rootSpace_eq_one α hα)
-    simp [(ha.not_le_iff_disjoint.mp h).symm.eq_bot]
+    have : I.restr H ⊓ rootSpace H (α : H → K) = ⊥ :=
+      LieSubmodule.toSubmodule_injective ((ha.not_le_iff_disjoint.mp h).symm.eq_bot)
+    simp only [this, bot_le]
 
 end CharZero
 
