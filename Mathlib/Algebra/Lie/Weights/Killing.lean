@@ -736,10 +736,8 @@ lemma lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (I : LieIdeal K L) :
     I.restr H = (I.restr H ⊓ H.toLieSubmodule) ⊔
     ⨆ (α : H.root) (_ : rootSpace H α.1 ≤ I.restr H), rootSpace H α.1 := by
   refine le_antisymm ?_ (sup_le inf_le_left (iSup₂_le fun _ hα ↦ hα))
-  calc I.restr H
-    _ = (I.restr H ⊓ H.toLieSubmodule) ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
-        I.restr H ⊓ rootSpace H α := lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace H I
-    _ ≤ _ := sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
+  conv_lhs => rw [lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace]
+  refine sup_le_sup_left (iSup₂_le fun α hα ↦ ?_) _
   by_cases h : rootSpace H α ≤ I.restr H
   · exact le_iSup₂_of_le ⟨α, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hα⟩⟩ h inf_le_right
   · have ha := Submodule.isAtom_iff_finrank_eq_one.mpr (finrank_rootSpace_eq_one α hα)

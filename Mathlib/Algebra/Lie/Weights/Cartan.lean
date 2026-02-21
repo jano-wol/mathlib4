@@ -297,32 +297,25 @@ variable [LieModule.IsTriangularizable K H L]
 
 lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
     I.restr H = ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ := by
-  refine le_antisymm (fun x hx ↦ ?_) (iSup_le fun χ ↦ inf_le_left)
-  have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
-    rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
-  refine Submodule.iSup_induction _
-    (motive := fun z : I ↦ (z : L) ∈ ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ)
-    hx_mem ?_ (zero_mem _) (fun _ _ ha hb ↦ add_mem ha hb)
-  intro χ_I z hz
-  have hz_L := map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
-  by_cases h : (z : L) = 0
-  · rw [h]; exact zero_mem _
-  · exact le_iSup (fun χ : Weight K H L ↦ I.restr H ⊓ genWeightSpace L χ)
-      ⟨(χ_I : H → K), fun h_eq ↦ h ((LieSubmodule.eq_bot_iff _).mp h_eq _ hz_L)⟩
-      ⟨z.property, hz_L⟩
+  refine le_antisymm ?_ (iSup_le fun χ ↦ inf_le_left)
+  conv_lhs => rw [← LieSubmodule.map_restrictLie_incl_top I H,
+    ← iSup_genWeightSpace_eq_top', LieSubmodule.map_iSup]
+  exact iSup_le fun χ_I ↦ (le_inf ((LieSubmodule.map_mono le_top).trans
+    (LieSubmodule.map_restrictLie_incl_top I H).le) (map_genWeightSpace_le _)).trans <| by
+    by_cases h : genWeightSpace L (χ_I : H → K) = ⊥
+    · simp [h]
+    · exact le_iSup_of_le ⟨_, h⟩ le_rfl
 
 lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
     I.restr H = (I.restr H ⊓ H.toLieSubmodule) ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
     I.restr H ⊓ rootSpace H α := by
   refine le_antisymm ?_ (sup_le inf_le_left (iSup₂_le fun _ _ ↦ inf_le_left))
-  calc I.restr H
-    _ = ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ :=
-      lieIdeal_eq_iSup_inf_genWeightSpace H I
-    _ ≤ _ := iSup_le fun α ↦ by
-      by_cases hα : α.IsZero
-      · rw [show genWeightSpace L (α : H → K) = H.toLieSubmodule from by ext; simp [hα.eq]]
-        exact le_sup_left
-      · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
+  conv_lhs => rw [lieIdeal_eq_iSup_inf_genWeightSpace]
+  exact iSup_le fun α ↦ by
+    by_cases hα : α.IsZero
+    · rw [show genWeightSpace L (α : H → K) = H.toLieSubmodule from by ext; simp [hα.eq]]
+      exact le_sup_left
+    · exact le_sup_of_le_right (le_iSup₂_of_le α hα le_rfl)
 
 lemma cartan_sup_iSup_rootSpace_eq_top :
     H.toLieSubmodule ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero), rootSpace H α = ⊤ := by
