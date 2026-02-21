@@ -297,27 +297,23 @@ variable [LieModule.IsTriangularizable K H L]
 
 lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
     I.restr H = ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ := by
-  apply LieSubmodule.toSubmodule_injective
-  simp only [LieSubmodule.restr_toSubmodule, LieSubmodule.inf_toSubmodule,
-    LieSubmodule.iSup_toSubmodule]
   refine le_antisymm (fun x hx ↦ ?_) (iSup_le fun χ ↦ inf_le_left)
   have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
     rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
   refine Submodule.iSup_induction _
     (motive := fun z : I ↦
-    (z : L) ∈ ⨆ χ : Weight K H L, I.toSubmodule ⊓ (genWeightSpace L χ).toSubmodule)
-    hx_mem ?_ (Submodule.zero_mem _) (fun _ _ ha hb ↦ Submodule.add_mem _ ha hb)
+    (z : L) ∈ ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ)
+    hx_mem ?_ (zero_mem _) (fun _ _ ha hb ↦ add_mem ha hb)
   intro χ_I z hz
   have hz_L := map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
   by_cases h : (z : L) = 0
-  · rw [h]; exact Submodule.zero_mem _
-  · exact Submodule.mem_iSup_of_mem
+  · rw [h]; exact zero_mem _
+  · exact le_iSup (fun χ : Weight K H L ↦ I.restr H ⊓ genWeightSpace L χ)
       ⟨(χ_I : H → K), fun h_eq ↦ h ((LieSubmodule.eq_bot_iff _).mp h_eq _ hz_L)⟩
-      (Submodule.mem_inf.mpr ⟨z.property, hz_L⟩)
+      ⟨z.property, hz_L⟩
 
 lemma lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (I : LieIdeal K L) :
-    I.restr H = (I.restr H ⊓ H.toLieSubmodule) ⊔
-    ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
+    I.restr H = (I.restr H ⊓ H.toLieSubmodule) ⊔ ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
     I.restr H ⊓ rootSpace H α := by
   refine le_antisymm ?_ (sup_le inf_le_left (iSup₂_le fun _ _ ↦ inf_le_left))
   calc I.restr H
