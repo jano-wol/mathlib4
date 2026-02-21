@@ -300,8 +300,10 @@ lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
   refine le_antisymm ?_ (iSup_le fun χ ↦ inf_le_left)
   conv_lhs => rw [← LieSubmodule.map_restrictLie_incl_top I H,
     ← iSup_genWeightSpace_eq_top', LieSubmodule.map_iSup]
-  exact iSup_le fun χ_I ↦ (le_inf ((LieSubmodule.map_mono le_top).trans
-    (LieSubmodule.map_restrictLie_incl_top I H).le) (map_genWeightSpace_le _)).trans <| by
+  refine iSup_le fun χ_I ↦ ?_
+  have hI := (LieSubmodule.map_mono (le_top : genWeightSpace I χ_I ≤ ⊤)).trans
+    (LieSubmodule.map_restrictLie_incl_top I H).le
+  exact (le_inf hI (map_genWeightSpace_le _)).trans <| by
     by_cases h : genWeightSpace L (χ_I : H → K) = ⊥
     · simp [h]
     · exact le_iSup_of_le ⟨_, h⟩ le_rfl
