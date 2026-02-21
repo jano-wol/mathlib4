@@ -301,8 +301,7 @@ lemma lieIdeal_eq_iSup_inf_genWeightSpace (I : LieIdeal K L) :
   have hx_mem : (⟨x, hx⟩ : I) ∈ ⨆ χ : Weight K H I, (genWeightSpace I χ).toSubmodule := by
     rw [← LieSubmodule.iSup_toSubmodule, iSup_genWeightSpace_eq_top' K H I]; trivial
   refine Submodule.iSup_induction _
-    (motive := fun z : I ↦
-    (z : L) ∈ ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ)
+    (motive := fun z : I ↦ (z : L) ∈ ⨆ χ : Weight K H L, I.restr H ⊓ genWeightSpace L χ)
     hx_mem ?_ (zero_mem _) (fun _ _ ha hb ↦ add_mem ha hb)
   intro χ_I z hz
   have hz_L := map_genWeightSpace_le ((LieSubmodule.incl I).restrictLie H) ⟨z, hz, rfl⟩
