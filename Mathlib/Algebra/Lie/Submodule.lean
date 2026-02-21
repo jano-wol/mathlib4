@@ -963,7 +963,6 @@ theorem comap_incl_self : comap N.incl N = ⊤ := by
 
 theorem map_incl_top : (⊤ : LieSubmodule R L N).map N.incl = N := by simp
 
-@[simp]
 theorem map_restrictLie_incl_top [LieAlgebra R L] (H : LieSubalgebra R L) :
     (⊤ : LieSubmodule R H N).map (N.incl.restrictLie H) = N.restr H := by
   ext; simp
