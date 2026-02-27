@@ -6,7 +6,7 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.Algebra.Lie.Weights.IsSimple
-public import Mathlib.Algebra.Lie.Weights.IdealDecomposition
+public import Mathlib.Algebra.Lie.Weights.Killing
 public import Mathlib.LinearAlgebra.RootSystem.Irreducible
 
 /-! # Order Isomorphism: Lie Ideals and Invariant Root Submodules
@@ -64,8 +64,9 @@ lemma corootSubmodule_le_lieIdeal (I : LieIdeal K L) {α : Weight K H L}
     (corootSubmodule α).toSubmodule ≤ I.toSubmodule := by
   intro x hx
   obtain ⟨h, hh, rfl⟩ := (LieSubmodule.mem_map _).mp hx
-  rw [mem_corootSpace] at hh
-  refine (Submodule.span_le.mpr ?_) hh
+  have key : (⟨h.val, h.property⟩ : H) ∈ corootSpace α := hh
+  rw [mem_corootSpace] at key
+  refine (Submodule.span_le.mpr ?_) key
   rintro _ ⟨y, hy, _, -, rfl⟩
   exact lie_mem_left K L I y _ (hα hy)
 
@@ -322,8 +323,12 @@ lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
       sl2SubmoduleOfRoot_le_ideal I hα_nz
         (rootSpace_le_ideal_of_mem_lieIdealToSubmodule I hα_nz hα_span)
   · rw [LieSubmodule.iSup_toSubmodule]
-    conv_lhs => rw [lieIdeal_eq_inf_cartan_sup_biSup_inf_rootSpace (H := H) I,
-                     lieIdeal_inf_cartan_eq_coroot_span I]
+    have h_decomp := congr_arg LieSubmodule.toSubmodule
+      (lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (H := H) I)
+    simp only [LieSubmodule.restr_toSubmodule, LieSubmodule.sup_toSubmodule,
+      LieSubmodule.iSup_toSubmodule, LieSubmodule.inf_toSubmodule,
+      LieSubalgebra.coe_toLieSubmodule] at h_decomp
+    conv_lhs => rw [h_decomp, lieIdeal_inf_cartan_eq_coroot_span I]
     apply sup_le
     · exact iSup₂_le fun β hβ ↦ by
         have hβ_nz : (↑β : Weight K H L).IsNonZero := (Finset.mem_filter.mp β.property).2
@@ -331,14 +336,13 @@ lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
           ⟨(↑β : Weight K H L), Submodule.subset_span ⟨β, hβ, rfl⟩, hβ_nz⟩
           (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
               exact le_sup_right))
-    · exact iSup₂_le fun α hα ↦ by
-        obtain h | h := rootSpace_le_or_disjoint I α hα
-        · exact inf_le_right.trans
-            (le_iSup_of_le ⟨α, Submodule.subset_span
-              ⟨⟨α, by simpa [LieSubalgebra.root] using hα⟩, h, rfl⟩, hα⟩
-              (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
-                  exact le_sup_of_le_left le_sup_left))
-        · simp [h]
+    · exact iSup₂_le fun α hα_le ↦ by
+        have hα_nz : (α.val : Weight K H L).IsNonZero := by
+          simpa [LieSubalgebra.root] using (Finset.mem_filter.mp α.property).2
+        exact (le_iSup_of_le ⟨α.val, Submodule.subset_span
+            ⟨α, hα_le, rfl⟩, hα_nz⟩
+            (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
+                exact le_sup_of_le_left le_sup_left))
 
 /-- The backward map `invtSubmoduleToLieIdeal` is monotone. -/
 lemma invtSubmoduleToLieIdeal_mono {q₁ q₂ : Submodule K (Dual K H)}

@@ -8,7 +8,6 @@ module
 public import Mathlib.Algebra.Lie.Weights.IsSimple
 public import Mathlib.Algebra.Lie.Weights.RootSystem
 public import Mathlib.LinearAlgebra.RootSystem.Finite.Lemmas
-public import Mathlib.Algebra.Lie.Weights.IdealDecomposition
 public import Mathlib.Algebra.Lie.Killing
 
 /-! # Simplicity from Irreducibility
@@ -160,8 +159,22 @@ theorem isSimple_of_isIrreducible
               (by simp +decide))
     exact h_not_simple_def h_not_simple
   let J := I.killingCompl
-  obtain ⟨Φ₁, hΦ₁⟩ := exists_rootSet_lieIdeal_eq (H := H) I
-  obtain ⟨Φ₂, hΦ₂⟩ := exists_rootSet_lieIdeal_eq (H := H) J
+  set Φ₁ : Set H.root := { α | (rootSpace H α.1).toSubmodule ≤ I.toSubmodule }
+  set Φ₂ : Set H.root := { α | (rootSpace H α.1).toSubmodule ≤ J.toSubmodule }
+  have hΦ₁ : I.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
+      ⨆ α ∈ Φ₁, (rootSpace H α.1).toSubmodule := by
+    have h := congr_arg LieSubmodule.toSubmodule
+      (lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (H := H) I)
+    simp only [LieSubmodule.restr_toSubmodule, LieSubmodule.sup_toSubmodule,
+      LieSubmodule.iSup_toSubmodule] at h
+    exact h
+  have hΦ₂ : J.toSubmodule = (J.toSubmodule ⊓ H.toSubmodule) ⊔
+      ⨆ α ∈ Φ₂, (rootSpace H α.1).toSubmodule := by
+    have h := congr_arg LieSubmodule.toSubmodule
+      (lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (H := H) J)
+    simp only [LieSubmodule.restr_toSubmodule, LieSubmodule.sup_toSubmodule,
+      LieSubmodule.iSup_toSubmodule] at h
+    exact h
   have s1 : H.toSubmodule = (I.toSubmodule ⊓ H.toSubmodule) ⊔
       (J.toSubmodule ⊓ H.toSubmodule) := by
     have h_cartan_decomp : H.toSubmodule =
@@ -288,50 +301,46 @@ theorem isSimple_of_isIrreducible
     simp only [Set.mem_empty_iff_false, iSup_false,
       iSup_bot, sup_bot_eq] at hΦ₁
     have ttt := cartan_is_abelian (K := K) (H := H) (L := L)
-    have rrr : IsLieAbelian I := by
-      have hI_abelian : IsLieAbelian (↥I) := by
-        have h_submodule : I.toSubmodule ≤ H.toSubmodule :=
-          inf_eq_left.mp hΦ₁.symm
-        constructor
-        have h_abelian :
-            ∀ x m : L, x ∈ I.toSubmodule →
-              m ∈ I.toSubmodule → ⁅x, m⁆ = 0 := by
-          intro x m hx hm
-          have := ttt.1 ⟨x, h_submodule hx⟩
-            ⟨m, h_submodule hm⟩
-          exact congr_arg Subtype.val this
-        exact fun x m =>
-          Subtype.ext <| h_abelian x m x.2 m.2
-      exact hI_abelian
+    have h_abelian : IsLieAbelian I := by
+      have h_submodule : I.toSubmodule ≤ H.toSubmodule :=
+        inf_eq_left.mp hΦ₁.symm
+      constructor
+      have h_abelian :
+          ∀ x m : L, x ∈ I.toSubmodule →
+            m ∈ I.toSubmodule → ⁅x, m⁆ = 0 := by
+        intro x m hx hm
+        have := ttt.1 ⟨x, h_submodule hx⟩
+          ⟨m, h_submodule hm⟩
+        exact congr_arg Subtype.val this
+      exact fun x m =>
+        Subtype.ext <| h_abelian x m x.2 m.2
     haveI : LieAlgebra.IsSemisimple K L :=
       LieAlgebra.IsKilling.instSemisimple K L
-    exact hI_ne_bot (by
-      exact HasTrivialRadical.eq_bot_of_isSolvable I)
+    exact hI_ne_bot
+      ((LieAlgebra.hasTrivialRadical_iff_no_abelian_ideals K L).mp inferInstance I h_abelian)
   have s5 : Φ₂ ≠ ∅ := by
     by_contra Φ_empty
     rw [Φ_empty] at hΦ₂
     simp only [Set.mem_empty_iff_false, iSup_false,
       iSup_bot, sup_bot_eq] at hΦ₂
     have ttt := cartan_is_abelian (K := K) (H := H) (L := L)
-    have rrr : IsLieAbelian J := by
-      have hI_abelian : IsLieAbelian (↥J) := by
-        have h_submodule : J.toSubmodule ≤ H.toSubmodule :=
-          inf_eq_left.mp hΦ₂.symm
-        constructor
-        have h_abelian :
-            ∀ x m : L, x ∈ J.toSubmodule →
-              m ∈ J.toSubmodule → ⁅x, m⁆ = 0 := by
-          intro x m hx hm
-          have := ttt.1 ⟨x, h_submodule hx⟩
-            ⟨m, h_submodule hm⟩
-          exact congr_arg Subtype.val this
-        exact fun x m =>
-          Subtype.ext <| h_abelian x m x.2 m.2
-      exact hI_abelian
+    have h_abelian : IsLieAbelian J := by
+      have h_submodule : J.toSubmodule ≤ H.toSubmodule :=
+        inf_eq_left.mp hΦ₂.symm
+      constructor
+      have h_abelian :
+          ∀ x m : L, x ∈ J.toSubmodule →
+            m ∈ J.toSubmodule → ⁅x, m⁆ = 0 := by
+        intro x m hx hm
+        have := ttt.1 ⟨x, h_submodule hx⟩
+          ⟨m, h_submodule hm⟩
+        exact congr_arg Subtype.val this
+      exact fun x m =>
+        Subtype.ext <| h_abelian x m x.2 m.2
     haveI : LieAlgebra.IsSemisimple K L :=
       LieAlgebra.IsKilling.instSemisimple K L
-    exact hJ_ne_bot (by
-      exact HasTrivialRadical.eq_bot_of_isSolvable J)
+    exact hJ_ne_bot
+      ((LieAlgebra.hasTrivialRadical_iff_no_abelian_ideals K L).mp inferInstance J h_abelian)
   let S := rootSystem H
   have xxx (i : Φ₁) (j : Φ₂) : S.pairing i j = 0 := by
     have hΦ₁_le :
@@ -460,13 +469,12 @@ theorem isSimple_of_isIrreducible
                 (LieAlgebra.IsKilling.coroot (j.val)) = 0 := by
           grind
         exact Finset.sum_eq_zero h_term_zero
-      simp +decide [h_sum_zero] at hl₂
       have h_root_coroot :
           (j.val : ↥H → K)
             (LieAlgebra.IsKilling.coroot (j.val)) = 2 := by
         apply LieAlgebra.IsKilling.root_apply_coroot
         grind
-      norm_num [h_root_coroot] at hl₂
+      exact two_ne_zero (h_root_coroot ▸ hl₂ ▸ h_sum_zero)
     exact h_span_proper
 
 end

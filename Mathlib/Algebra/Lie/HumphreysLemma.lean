@@ -60,6 +60,10 @@ noncomputable def eigenspaceIsInternal
     simp_rw [hs.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace] at this
     exact this⟩
 
+noncomputable instance eigenspaceFree (s : Module.End K V) (μ : K) :
+    @Module.Free K ↥(s.eigenspace μ) _ _ (s.eigenspace μ).module :=
+  @Module.Free.of_divisionRing K ↥(s.eigenspace μ) _ _ (s.eigenspace μ).module
+
 omit [CharZero K] in
 open Classical in
 /-- The eigenbasis: a basis of `V` that diagonalizes `s`.
@@ -330,8 +334,8 @@ lemma ad_semisimple_part_in_adjoin
   have hc_canonical : Commute n' s' :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs'_adj hc_n'.symm
   have hc_ad : Commute (ad n) (ad s) := commute_ad_of_commute hc_ns
-  exact ((ad x).isNilpotent_isSemisimple_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
-    hc_canonical hc_ad h_jc h_sum).2 ▸ hs'_adj
+  exact (isNilpotent_isSemisimple_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
+    hc_canonical hc_ad (h_jc.symm.trans h_sum)).2 ▸ hs'_adj
 
 -- TODO: belongs in Mathlib/LinearAlgebra/Eigenspace/Semisimple.lean
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
