@@ -56,6 +56,12 @@ def lieIdealRootSet (I : LieIdeal K L) : Set H.root :=
 def lieIdealToSubmodule (I : LieIdeal K L) : Submodule K (Dual K H) :=
   Submodule.span K ((↑) '' lieIdealRootSet (H := H) I)
 
+omit [CharZero K] in
+lemma coroot_mem_corootSubmodule (α : Weight K H L) :
+    (coroot α : L) ∈ corootSubmodule α :=
+  (LieSubmodule.mem_map _).mpr
+    ⟨⟨coroot α, (coroot α).property⟩, coroot_mem_corootSpace α, rfl⟩
+
 omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
 /-- If the root space of `α` is contained in a Lie ideal `I`, then the coroot submodule of `α`
 is also contained in `I`. -/
