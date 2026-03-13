@@ -96,6 +96,16 @@ theorem humphreys_lemma
     IsNilpotent x := by
   let Kbar := AlgebraicClosure K
   let bc : End K V → End Kbar (Kbar ⊗[K] V) := fun f => f.baseChange Kbar
+  haveI : FiniteDimensional Kbar (Kbar ⊗[K] V) := Module.Finite.base_change K Kbar V
+  have bc_mul : ∀ a b, bc (a * b) = bc a * bc b :=
+    (End.baseChangeHom K Kbar V).map_mul
+  have bc_add : ∀ a b, bc (a + b) = bc a + bc b :=
+    (End.baseChangeHom K Kbar V).map_add
+  have bc_zero : bc 0 = 0 := (End.baseChangeHom K Kbar V).map_zero
+  have bc_neg : ∀ a, bc (-a) = -bc a := fun a =>
+    (neg_eq_of_add_eq_zero_right (by rw [← bc_add, add_neg_cancel a, bc_zero])).symm
+  have bc_sub : ∀ a b, bc (a - b) = bc a - bc b := fun a b => by
+    rw [sub_eq_add_neg, bc_add, bc_neg, ← sub_eq_add_neg]
   rw [show IsNilpotent x ↔ IsNilpotent (End.baseChangeHom K Kbar V x) from
     (IsNilpotent.map_iff (End.baseChangeHom_injective (Kbar := Kbar))).symm]
   let A' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑A)
@@ -106,29 +116,27 @@ theorem humphreys_lemma
     induction hb' using Submodule.span_induction with
     | mem _ h =>
       obtain ⟨b, hb, rfl⟩ := h
-      rw [show ⁅(End.baseChangeHom K Kbar V) x, bc b⁆ =
-            (End.baseChangeHom K Kbar V) ⁅x, b⁆ from by
-        change ⁅(End.baseChangeHom K Kbar V) x, (End.baseChangeHom K Kbar V) b⁆ = _
-        simp only [Ring.lie_def, map_sub, map_mul]]
-      exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
+      have : bc x * bc b - bc b * bc x ∈ A' := by
+        rw [← bc_mul, ← bc_mul, ← bc_sub]
+        exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
+      change bc x * bc b - bc b * bc x ∈ A'
+      exact this
     | zero => rw [lie_zero]; exact A'.zero_mem
     | add _ _ _ _ ha hb => rw [lie_add]; exact A'.add_mem ha hb
     | smul c _ _ hb => rw [lie_smul]; exact A'.smul_mem c hb
   · intro z hz
     have trace_vanish : ∀ w ∈ Submodule.span Kbar
         (bc '' {w : End K V | ∀ b ∈ B, ⁅w, b⁆ ∈ A}),
-        (trace Kbar _) ((End.baseChangeHom K Kbar V) x * w) = 0 := by
+        (trace Kbar _) (bc x * w) = 0 := by
       intro w hw
       induction hw using Submodule.span_induction with
       | mem _ hm =>
         obtain ⟨z₀, hz₀, rfl⟩ := hm
-        have h1 : (End.baseChangeHom K Kbar V) x * bc z₀ = (x * z₀).baseChange Kbar := by
-          change (End.baseChangeHom K Kbar V) x * (End.baseChangeHom K Kbar V) z₀ = _
-          exact (map_mul _ x z₀).symm
-        rw [h1, trace_baseChange, htr z₀ hz₀, map_zero]
-      | zero => rw [mul_zero, map_zero]
-      | add _ _ _ _ ha hb => rw [mul_add, map_add, ha, hb, add_zero]
-      | smul c _ _ hb => rw [mul_smul_comm, map_smul, hb, smul_zero]
+        have h1 : bc x * bc z₀ = bc (x * z₀) := (bc_mul x z₀).symm
+        rw [h1]; erw [trace_baseChange]; rw [htr z₀ hz₀, map_zero]
+      | zero => rw [mul_zero]; exact LinearMap.map_zero _
+      | add _ _ _ _ ha hb => rw [mul_add, LinearMap.map_add, ha, hb, add_zero]
+      | smul c _ _ hb => rw [mul_smul_comm, LinearMap.map_smul, hb, smul_zero]
     apply trace_vanish
     let e := (TensorProduct.isBaseChange K V Kbar).end.equiv
     let M_sub : Submodule K (End K V) :=
@@ -147,8 +155,10 @@ theorem humphreys_lemma
     rw [hbc_eq]
     change z ∈ Submodule.span Kbar (e.toLinearMap ''
       (⇑(TensorProduct.mk K Kbar (End K V) 1) '' ↑M_sub))
-    rw [Submodule.span_image, ← Submodule.baseChange_span, Submodule.span_eq,
-        Submodule.mem_map_equiv]
+    rw [Submodule.span_image]
+    erw [← Submodule.baseChange_span, Submodule.span_eq]
+    suffices e.symm z ∈ M_sub.baseChange Kbar by
+      exact ⟨e.symm z, this, e.apply_symm_apply z⟩
     set s := finrank K ↥B
     let bB := finBasis K ↥B
     let lieR : Fin s → (End K V →ₗ[K] End K V) := fun i =>
@@ -172,17 +182,18 @@ theorem humphreys_lemma
           apply_fun B.subtype at h
           simp only [map_sum, map_smul, Submodule.subtype_apply] at h
           exact h.symm
-        rw [Ring.lie_def, hb_val, Finset.mul_sum, Finset.sum_mul, ← Finset.sum_sub_distrib]
+        change w * b - b * w ∈ A
+        rw [hb_val, Finset.mul_sum, Finset.sum_mul, ← Finset.sum_sub_distrib]
         exact A.sum_mem fun i _ => by
           rw [mul_smul_comm, smul_mul_assoc, ← smul_sub]
-          exact A.smul_mem _ (by rw [← Ring.lie_def]; exact hbase i)
+          exact A.smul_mem _ (hbase i)
       · intro hw
         rw [mem_ker]; ext i
         simp only [Φ, pi_apply, φ, LinearMap.comp_apply, Submodule.mkQ_apply,
-          Pi.zero_apply, Submodule.Quotient.mk_eq_zero]
-        change (lieR i) w ∈ A
-        have : (lieR i) w = ⁅w, (bB i).1⁆ := by simp [lieR, Ring.lie_def]
-        rw [this]; exact hw (bB i).1 (bB i).2
+          Pi.zero_apply]
+        erw [Submodule.Quotient.mk_eq_zero]
+        change w * (bB i).1 - (bB i).1 * w ∈ A
+        exact hw (bB i).1 (bB i).2
     rw [← hkerΦ, ← ker_baseChange_eq, mem_ker]
     apply baseChange_pi_eq_zero; intro i
     have hcomp : (proj i).comp Φ = φ i := by ext; simp [Φ, φ]
@@ -191,21 +202,36 @@ theorem humphreys_lemma
     rw [baseChange_comp, comp_apply, ← mem_ker, ker_baseChange_eq, Submodule.ker_mkQ]
     have e_tmul : ∀ (a : Kbar) (g : End K V), e (a ⊗ₜ g) = a • bc g := by
       intro a g
-      rw [show a ⊗ₜ[K] g = a • ((1 : Kbar) ⊗ₜ[K] g) from by
-        simp [TensorProduct.smul_tmul'], map_smul, isBaseChange_end_equiv_tmul_one]
+      have : a ⊗ₜ[K] g = a • ((1 : Kbar) ⊗ₜ[K] g) := by
+        simp [TensorProduct.smul_tmul']
+      erw [this, map_smul, isBaseChange_end_equiv_tmul_one]; rfl
+    let ew (w : Kbar ⊗[K] End K V) : End Kbar (Kbar ⊗[K] V) := e w
+    have hew_zero : ew 0 = 0 := map_zero e
+    have hew_add : ∀ a b, ew (a + b) = ew a + ew b := fun a b => map_add e a b
+    have hew_tmul : ∀ (a : Kbar) (g : End K V), ew (a ⊗ₜ g) = a • bc g := e_tmul
     have hcomm : ∀ (w : Kbar ⊗[K] End K V),
-        e ((lieR i).baseChange Kbar w) = ⁅e w, bc (bB i).1⁆ := by
+        ew ((lieR i).baseChange Kbar w) =
+        ew w * bc (bB i).1 - bc (bB i).1 * ew w := by
       intro w
       induction w using TensorProduct.induction_on with
-      | zero => rw [map_zero, map_zero, zero_lie]
+      | zero =>
+        have : ew ((lieR i).baseChange Kbar 0) = 0 := by
+          change e ((lieR i).baseChange Kbar 0) = 0; rw [map_zero, map_zero]
+        rw [show ew 0 * bc (bB i).1 - bc (bB i).1 * ew 0 = 0 from by
+          rw [hew_zero, zero_mul, mul_zero, sub_self]]
+        exact this
       | tmul a f =>
+        change ew ((lieR i).baseChange Kbar (a ⊗ₜ[K] f)) = _
         simp only [baseChange_tmul, lieR, sub_apply, mulRight_apply, mulLeft_apply]
-        rw [e_tmul, e_tmul]
-        have : bc (f * ↑(bB i) - ↑(bB i) * f) = bc f * bc ↑(bB i) - bc ↑(bB i) * bc f := by
-          have hbc : bc = ⇑(End.baseChangeHom K Kbar V) := rfl
-          simp only [hbc, map_sub, map_mul]
-        rw [this, Ring.lie_def, smul_sub, smul_mul_assoc, mul_smul_comm]
-      | add x y hx hy => rw [map_add, map_add, map_add, add_lie, hx, hy]
+        change ew (a ⊗ₜ[K] (f * ↑(bB i) - ↑(bB i) * f)) =
+          ew (a ⊗ₜ[K] f) * bc ↑(bB i) - bc ↑(bB i) * ew (a ⊗ₜ[K] f)
+        rw [hew_tmul, hew_tmul, bc_sub, bc_mul, bc_mul, smul_sub, smul_mul_assoc, mul_smul_comm]
+      | add x y hx hy =>
+        have h1 : ew ((lieR i).baseChange Kbar (x + y)) =
+            ew ((lieR i).baseChange Kbar x) + ew ((lieR i).baseChange Kbar y) := by
+          change e ((lieR i).baseChange Kbar (x + y)) = _
+          erw [map_add]; exact map_add e _ _
+        rw [h1, hx, hy, hew_add, add_mul, mul_add, sub_add_sub_comm]
     have hA'_eq : A' = Submodule.map e.toLinearMap (A.baseChange Kbar) := by
       apply le_antisymm
       · apply Submodule.span_le.mpr
@@ -217,8 +243,15 @@ theorem humphreys_lemma
         rintro _ ⟨w, hw, rfl⟩
         obtain ⟨a, ha, rfl⟩ := Submodule.mem_map.mp hw
         exact ⟨a, ha, (isBaseChange_end_equiv_tmul_one a).symm⟩
-    suffices e ((lieR i).baseChange Kbar (e.symm z)) ∈
-        Submodule.map e.toLinearMap (A.baseChange Kbar) by
-      rwa [Submodule.mem_map_equiv, e.symm_apply_apply] at this
-    rw [← hA'_eq, hcomm (e.symm z), e.apply_symm_apply]
-    exact hz (bc (bB i).1) (Submodule.subset_span ⟨(bB i).1, (bB i).2, rfl⟩)
+    have key : ew ((lieR i).baseChange Kbar (e.symm z)) ∈ A' := by
+      rw [hcomm (e.symm z), show ew (e.symm z) = z from e.apply_symm_apply z]
+      change z * bc (bB i).1 - bc (bB i).1 * z ∈ A'
+      exact hz (bc (bB i).1) (Submodule.subset_span ⟨(bB i).1, (bB i).2, rfl⟩)
+    rw [hA'_eq] at key
+    have : e.toLinearMap ((lieR i).baseChange Kbar (e.symm z)) ∈
+        Submodule.map e.toLinearMap (A.baseChange Kbar) := key
+    rw [Submodule.mem_map] at this
+    obtain ⟨w, hw, hwe⟩ := this
+    have heq : (lieR i).baseChange Kbar (e.symm z) = w := by
+      apply e.injective; exact hwe.symm
+    rw [heq]; exact hw

@@ -373,9 +373,8 @@ lemma ad_semisimple_part_polynomial
   have had_x_x : (ad x) x = 0 := by
     change ⁅x, x⁆ = 0; exact lie_self x
   have had_s_x : (ad s) x = 0 := by
-    change ⁅s, x⁆ = 0
     have : Commute x s := Algebra.commute_of_mem_adjoin_self hs_adj
-    rw [Ring.lie_def, this.eq, sub_self]
+    exact sub_eq_zero.mpr this.symm.eq
   have hq' : ad s = Polynomial.aeval (ad x) q := hq.symm
   have h_eval : (Polynomial.aeval (ad x) q) x = Polynomial.eval 0 q • x :=
     aeval_apply_of_eigenvalue (by rw [zero_smul]; exact had_x_x) q

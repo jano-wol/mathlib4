@@ -63,16 +63,17 @@ lemma killingCompl_top_le_radical :
       refine Submodule.span_induction (p := fun x _ =>
           trace K L (ad_lin x * z) = 0) ?_ ?_ ?_ ?_ hx'
       · rintro _ ⟨a, ha, b, hb, rfl⟩
-        have h_lie : ad_lin ⁅a, b⁆ = ad_lin a * ad_lin b - ad_lin b * ad_lin a := by
-          have := LieHom.map_lie (ad K L) a b; rwa [Ring.lie_def] at this
+        have h_lie : ad_lin ⁅a, b⁆ = ad_lin a * ad_lin b - ad_lin b * ad_lin a :=
+          LieHom.map_lie (ad K L) a b
         rw [h_lie, sub_mul, map_sub,
           ← trace_mul_cycle (R := K) (M := L) (ad_lin a) z (ad_lin b), ← map_sub,
           show ad_lin a * ad_lin b * z - ad_lin a * z * ad_lin b =
             ad_lin a * (ad_lin b * z - z * ad_lin b) from by simp only [mul_sub, mul_assoc]]
         have hz_comm : ad_lin b * z - z * ad_lin b ∈ A := by
-          have h := hz (ad_lin b) (Submodule.mem_map_of_mem hb)
-          rw [Ring.lie_def] at h
-          have := A.neg_mem h; rwa [neg_sub] at this
+          have h := A.neg_mem (hz (ad_lin b) (Submodule.mem_map_of_mem hb))
+          rw [show -⁅z, ad_lin b⁆ = -(z * ad_lin b - ad_lin b * z) from rfl,
+            neg_sub] at h
+          exact h
         obtain ⟨w, hw, hwz⟩ := hz_comm
         rw [← hwz]
         change (trace K L) ((ad K L) a ∘ₗ (ad K L) w) = 0
@@ -82,6 +83,8 @@ lemma killingCompl_top_le_radical :
       · intro x₁ x₂ _ _ h1 h2; rw [map_add, add_mul, map_add, h1, h2, add_zero]
       · intro c x₁ _ h1; rw [map_smul, smul_mul_assoc, LinearMap.map_smul, h1, smul_zero]
   have ss_nilpotent : LieRing.IsNilpotent ↥SS := by
+    haveI : IsNoetherian K ↥SS :=
+      isNoetherian_submodule' (SS : LieSubmodule K L L).toSubmodule
     rw [LieAlgebra.isNilpotent_iff_forall (R := K)]
     intro ⟨x, hx⟩
     obtain ⟨n, hn⟩ := ad_nil x hx
@@ -89,7 +92,7 @@ lemma killingCompl_top_le_radical :
         ad_lin x y ∈ (SS : LieSubmodule K L L).toSubmodule := fun _ hy => SS.lie_mem hy
     have h_eq : ad K ↥SS ⟨x, hx⟩ = (ad_lin x).restrict h_inv := by ext ⟨_, _⟩; rfl
     refine ⟨n, ?_⟩
-    rw [h_eq, Module.End.pow_restrict n h_inv]
+    rw [h_eq]; erw [Module.End.pow_restrict n h_inv]
     ext ⟨y, hy⟩
     simp only [LinearMap.restrict_apply]
     exact LinearMap.congr_fun hn y
