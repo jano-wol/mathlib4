@@ -6,7 +6,7 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.LinearAlgebra.Trace
-public import Mathlib.Algebra.Lie.OfAssociative
+public import Mathlib.Algebra.Lie.AdjointAction.Basic
 public import Mathlib.Algebra.Lie.Nilpotent
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
 public import Mathlib.LinearAlgebra.JordanChevalley
@@ -232,62 +232,6 @@ lemma aeval_ad_maps_to
   rw [map_mul, Polynomial.aeval_X, Module.End.mul_apply]
   exact hxM _ (hpoly_B q' b hb)
 
-/-! ## ad-semisimplicity
-
-These results should eventually move to their respective files. -/
-
--- TODO: belongs in Mathlib/Algebra/Lie/OfAssociative.lean
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- Commuting endomorphisms have commuting adjoint actions.
-
-Follows from the Jacobi identity: `⁅ad(a), ad(b)⁆ = ad(⁅a, b⁆)`, so if
-`⁅a, b⁆ = 0` (i.e., `Commute a b`) then `ad(a)` and `ad(b)` commute. -/
-theorem commute_ad_of_commute {R : Type*} [CommRing R]
-    {A : Type*} [Ring A] [Algebra R A] {a b : A}
-    (h : Commute a b) :
-    Commute (LieAlgebra.ad R A a) (LieAlgebra.ad R A b) := by
-  rw [Commute, SemiconjBy, ← sub_eq_zero, ← Ring.lie_def,
-      ← (LieAlgebra.ad R A).map_lie, Ring.lie_def, sub_eq_zero.mpr h, map_zero]
-
-open Polynomial in
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-private lemma aeval_mulRight_apply (a : Module.End K V) (p : K[X]) (T : Module.End K V) :
-    (aeval (mulRight K a) p) T = T * aeval a p := by
-  induction p using Polynomial.induction_on' with
-  | add p q hp hq => simp only [map_add, LinearMap.add_apply, hp, hq, mul_add]
-  | monomial n c =>
-    simp only [aeval_monomial, ← Algebra.smul_def, LinearMap.smul_apply,
-        mul_smul_comm, pow_mulRight, mulRight_apply]
-
-open Polynomial in
-omit [IsAlgClosed K] [CharZero K] in
-private theorem isSemisimple_mulLeft_of_isSemisimple
-    {a : Module.End K V} (ha : a.IsSemisimple) :
-    IsSemisimple (mulLeft K a) := by
-  apply isSemisimple_of_squarefree_aeval_eq_zero ha.minpoly_squarefree
-  have : aeval (Algebra.lmul K (Module.End K V) a) (minpoly K a) = 0 := by
-    rw [aeval_algHom_apply, minpoly.aeval, map_zero]
-  simpa using this
-
-omit [IsAlgClosed K] [CharZero K] in
-private theorem isSemisimple_mulRight_of_isSemisimple
-    {a : Module.End K V} (ha : a.IsSemisimple) :
-    IsSemisimple (mulRight K a) := by
-  apply isSemisimple_of_squarefree_aeval_eq_zero ha.minpoly_squarefree
-  ext1 T
-  simp only [LinearMap.zero_apply, aeval_mulRight_apply, minpoly.aeval, mul_zero]
-
--- TODO: belongs in Mathlib/Algebra/Lie/Nilpotent.lean (next to ad_nilpotent_of_nilpotent)
-omit [IsAlgClosed K] [CharZero K] in
-/-- The adjoint of a semisimple element is semisimple. -/
-theorem ad_isSemisimple_of_isSemisimple [PerfectField K]
-    {a : Module.End K V} (ha : a.IsSemisimple) :
-    (LieAlgebra.ad K (Module.End K V) a).IsSemisimple := by
-  rw [LieAlgebra.ad_eq_lmul_left_sub_lmul_right]
-  exact (isSemisimple_mulLeft_of_isSemisimple ha).sub_of_commute
-    (LinearMap.commute_mulLeft_right a a)
-    (isSemisimple_mulRight_of_isSemisimple ha)
-
 omit [IsAlgClosed K] in
 /-- If `x = n + s` with `n` nilpotent and `s` semisimple, then `ad(x) = ad(n) + ad(s)`
 is the Jordan-Chevalley decomposition of `ad(x)`: `ad(n)` is nilpotent and
@@ -304,7 +248,7 @@ lemma ad_semisimple_part
   haveI : FiniteDimensional K (Module.End K V) := inferInstance
   exact ⟨by rw [hxns, map_add],
          LieAlgebra.ad_nilpotent_of_nilpotent K hn_nil,
-         ad_isSemisimple_of_isSemisimple hs_ss⟩
+         LieAlgebra.ad_isSemisimple_of_isSemisimple hs_ss⟩
 
 omit [IsAlgClosed K] in
 /-- `ad(s) ∈ adjoin K {ad(x)}`: the semisimple part of `ad(x)` is a polynomial in `ad(x)`.
@@ -333,7 +277,7 @@ lemma ad_semisimple_part_in_adjoin
   have hc_s' : Commute (ad x) s' := Algebra.commute_of_mem_adjoin_self hs'_adj
   have hc_canonical : Commute n' s' :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs'_adj hc_n'.symm
-  have hc_ad : Commute (ad n) (ad s) := commute_ad_of_commute hc_ns
+  have hc_ad : Commute (ad n) (ad s) := LieAlgebra.commute_ad_of_commute hc_ns
   exact (isNilpotent_isSemisimple_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
     hc_canonical hc_ad (h_jc.symm.trans h_sum)).2 ▸ hs'_adj
 

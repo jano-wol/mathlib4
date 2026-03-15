@@ -414,7 +414,7 @@ def lieIdealOrderIso :
     · apply Submodule.span_le.mpr
       rintro _ ⟨α, hα, rfl⟩
       exact mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal q hα
-    · apply (RootPairing.invtRootSubmodule.le_span_root q).trans
+    · apply (RootPairing.invtRootSubmodule.eq_span_root q).le.trans
       apply Submodule.span_mono; apply Set.image_mono
       intro i hi
       have hi_nz : (↑i : Weight K H L).IsNonZero := (Finset.mem_filter.mp i.property).2
