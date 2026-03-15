@@ -247,7 +247,7 @@ lemma ad_semisimple_part
   haveI : PerfectField K := inferInstance
   haveI : FiniteDimensional K (Module.End K V) := inferInstance
   exact ⟨by rw [hxns, map_add],
-         LieAlgebra.ad_nilpotent_of_nilpotent K hn_nil,
+         LieAlgebra.ad_nilpotent_of_nilpotent hn_nil,
          LieAlgebra.ad_isSemisimple_of_isSemisimple hs_ss⟩
 
 omit [IsAlgClosed K] in
