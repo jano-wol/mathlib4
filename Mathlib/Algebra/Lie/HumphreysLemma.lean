@@ -233,29 +233,11 @@ lemma aeval_ad_maps_to
   exact hxM _ (hpoly_B q' b hb)
 
 omit [IsAlgClosed K] in
-/-- If `x = n + s` with `n` nilpotent and `s` semisimple, then `ad(x) = ad(n) + ad(s)`
-is the Jordan-Chevalley decomposition of `ad(x)`: `ad(n)` is nilpotent and
-`ad(s)` is semisimple. -/
-lemma ad_semisimple_part
-    (x n s : Module.End K V)
-    (hn_nil : IsNilpotent n) (hs_ss : s.IsSemisimple)
-    (hxns : x = n + s) :
-    LieAlgebra.ad K (Module.End K V) x =
-      LieAlgebra.ad K (Module.End K V) n + LieAlgebra.ad K (Module.End K V) s ∧
-    IsNilpotent (LieAlgebra.ad K (Module.End K V) n) ∧
-    (LieAlgebra.ad K (Module.End K V) s).IsSemisimple := by
-  haveI : PerfectField K := inferInstance
-  haveI : FiniteDimensional K (Module.End K V) := inferInstance
-  exact ⟨by rw [hxns, map_add],
-         LieAlgebra.ad_nilpotent_of_nilpotent hn_nil,
-         LieAlgebra.ad_isSemisimple_of_isSemisimple hs_ss⟩
-
-omit [IsAlgClosed K] in
 /-- `ad(s) ∈ adjoin K {ad(x)}`: the semisimple part of `ad(x)` is a polynomial in `ad(x)`.
 
-Uses `ad_semisimple_part` to see that `ad(x) = ad(n) + ad(s)` is a JC decomposition,
-then the canonical JC of `ad(x)` (from `exists_isNilpotent_isSemisimple`) places
-its semisimple part in `adjoin K {ad(x)}`, and uniqueness identifies it with `ad(s)`. -/
+The key idea: `ad(x) = ad(n) + ad(s)` is a JC decomposition (using `ad_nilpotent_of_nilpotent`
+and `ad_isSemisimple_of_isSemisimple`), then the canonical JC of `ad(x)` places its semisimple
+part in `adjoin K {ad(x)}`, and uniqueness identifies it with `ad(s)`. -/
 lemma ad_semisimple_part_in_adjoin
     (x n s : Module.End K V)
     (hn_adj : n ∈ Algebra.adjoin K {x})
@@ -267,7 +249,9 @@ lemma ad_semisimple_part_in_adjoin
   haveI : PerfectField K := inferInstance
   haveI : FiniteDimensional K (Module.End K V) := inferInstance
   set ad := LieAlgebra.ad K (Module.End K V)
-  obtain ⟨h_sum, h_ad_n_nil, h_ad_s_ss⟩ := ad_semisimple_part x n s hn_nil hs_ss hxns
+  have h_sum : ad x = ad n + ad s := by rw [hxns, map_add]
+  have h_ad_n_nil := LieAlgebra.ad_nilpotent_of_nilpotent (R := K) hn_nil
+  have h_ad_s_ss := LieAlgebra.ad_isSemisimple_of_isSemisimple hs_ss
   have hc_xn : Commute x n := Algebra.commute_of_mem_adjoin_self hn_adj
   have hc_ns : Commute n s :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj hc_xn.symm
