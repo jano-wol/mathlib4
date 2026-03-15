@@ -304,25 +304,18 @@ lemma ad_semisimple_part_polynomial
     have : Commute x s := Algebra.commute_of_mem_adjoin_self hs_adj
     exact sub_eq_zero.mpr this.symm.eq
   have hq' : ad s = Polynomial.aeval (ad x) q := hq.symm
-  have h_eval : (Polynomial.aeval (ad x) q) x = Polynomial.eval 0 q • x :=
-    aeval_apply_of_eigenvalue (by rw [zero_smul]; exact had_x_x) q
-  rw [← hq'] at h_eval
-  rw [had_s_x] at h_eval
-  -- SUSPICIOUS: awkward x=0 case; could potentially be simplified
+  have h_eval : Polynomial.eval 0 q • x = 0 := by
+    have h := aeval_apply_of_eigenvalue (show (ad x) x = 0 • x by simp [had_x_x]) q
+    rw [← hq', had_s_x] at h; exact h.symm
   by_cases hx : x = 0
-  · have h0 : n + s = 0 := by rw [← hxns]; exact hx
-    have hs0 : s = 0 := by
-      have : IsNilpotent s := by
-        have hs_neg : s = -n := by
-          have : s = -n + (n + s) := by abel
-          rw [h0, add_zero] at this; exact this
-        rw [hs_neg]; exact hn_nil.neg
-      exact Module.End.eq_zero_of_isNilpotent_isSemisimple this hs_ss
-    exact ⟨0, by simp, by simp [hs0, map_zero]⟩
-  · have hq0 : Polynomial.eval 0 q = 0 := by
-      by_contra h
-      exact hx (smul_eq_zero.mp h_eval.symm |>.resolve_left h)
-    exact ⟨q, hq0, hq'⟩
+  · have hs0 : s = 0 := by
+      have hsn : s = -n := by
+        have h0 : n + s = 0 := by rw [← hxns, hx]
+        have : s = -n + (n + s) := by abel
+        rw [h0, add_zero] at this; exact this
+      rw [hsn]; exact Module.End.eq_zero_of_isNilpotent_isSemisimple hn_nil.neg (hsn ▸ hs_ss)
+    exact ⟨0, by simp, by simp [hs0]⟩
+  · exact ⟨q, smul_eq_zero.mp h_eval |>.resolve_right hx, hq'⟩
 
 /-! ## Semisimple with zero eigenvalues is zero -/
 
