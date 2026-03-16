@@ -5,7 +5,7 @@ Authors: Janos Wolosz
 -/
 module
 
-public import Mathlib.Algebra.Lie.HumphreysLemma
+public import Mathlib.Algebra.Lie.HumphreysLemma_target
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
 public import Mathlib.RingTheory.Flat.Equalizer

@@ -5,7 +5,7 @@ Authors: Janos Wolosz
 -/
 module
 
-public import Mathlib.Algebra.Lie.Weights.IdealOrderIso
+public import Mathlib.Algebra.Lie.Weights.IdealOrderIso_target
 public import Mathlib.Algebra.Lie.Weights.Basic
 
 /-! # Simplicity from irreducibility

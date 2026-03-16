@@ -6,7 +6,7 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.Algebra.Lie.Killing
-public import Mathlib.Algebra.Lie.HumphreysLemmaGeneral
+public import Mathlib.Algebra.Lie.HumphreysLemmaGeneral_target
 public import Mathlib.Algebra.Lie.Engel
 
 /-!
