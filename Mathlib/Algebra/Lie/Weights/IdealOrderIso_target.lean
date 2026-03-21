@@ -43,15 +43,10 @@ noncomputable section
 /-! ### Ideal-Cartan intersection -/
 
 omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
-lemma corootSubmodule_le_cartan (α : Weight K H L) :
-    (corootSubmodule α).toSubmodule ≤ H.toSubmodule :=
-  LieSubmodule.map_incl_le
-
-omit [CharZero K] [IsKilling K L] [IsTriangularizable K H L] in
 lemma coroot_span_le_inf_cartan (I : LieIdeal K L) :
     ⨆ α ∈ I.rootSet (H := H), (corootSubmodule α.1).toSubmodule ≤
       I.toSubmodule ⊓ H.toSubmodule :=
-  iSup₂_le fun α hα ↦ le_inf (I.corootSubmodule_le hα) (corootSubmodule_le_cartan α.1)
+  iSup₂_le fun _α hα ↦ le_inf (I.corootSubmodule_le hα) LieSubmodule.map_incl_le
 
 lemma weight_apply_eq_zero_of_not_mem_rootSet (I : LieIdeal K L)
     {x : L} (hxI : x ∈ I.toSubmodule) (hxH : x ∈ H.toSubmodule)
@@ -66,10 +61,8 @@ lemma weight_apply_eq_zero_of_not_mem_rootSet (I : LieIdeal K L)
 
 private lemma biSup_span_coroot_eq_top :
     ⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero), (K ∙ coroot α : Submodule K H) = ⊤ := by
-  have h1 : (⨆ α : Weight K H L, ⨆ (_ : α.IsNonZero),
-      (corootSpace (⇑α) : LieIdeal K H)) = ⊤ := by simp
-  simp_rw [← coe_corootSpace_eq_span_singleton, ← LieSubmodule.iSup_toSubmodule, h1,
-    LieSubmodule.top_toSubmodule]
+  simp_rw [← coe_corootSpace_eq_span_singleton, ← LieSubmodule.iSup_toSubmodule,
+    biSup_corootSpace_eq_top, LieSubmodule.top_toSubmodule]
 
 private lemma eq_zero_of_traceForm_coroot_eq_zero (h : H)
     (horth : ∀ α : Weight K H L, α.IsNonZero → traceForm K H L h (coroot α) = 0) :
@@ -78,11 +71,9 @@ private lemma eq_zero_of_traceForm_coroot_eq_zero (h : H)
     rw [← biSup_span_coroot_eq_top (K := K) (L := L) (H := H)]
     exact iSup₂_le fun α hα ↦ Submodule.span_le.mpr <| by
       simp [Set.singleton_subset_iff, LinearMap.mem_ker, horth α hα]
-  have hzero := LinearMap.ker_eq_top.mp (eq_top_iff.mpr hker)
-  have hzero' : cartanEquivDual H h = 0 := by
-    ext y; simp only [cartanEquivDual_apply_apply, LinearMap.zero_apply]
-    exact DFunLike.congr_fun hzero y
-  exact (cartanEquivDual H).injective (by rw [hzero', map_zero])
+  apply (cartanEquivDual H).injective; ext y
+  simpa [cartanEquivDual_apply_apply] using DFunLike.congr_fun (LinearMap.ker_eq_top.mp
+    (eq_top_iff.mpr hker)) y
 
 private lemma traceForm_coroot_eq_zero_of_ideal_complement (I : LieIdeal K L)
     {α : H.root} (hαI : α ∈ I.rootSet (H := H))
@@ -112,15 +103,18 @@ lemma inf_cartan_le_coroot_span (I : LieIdeal K L) :
       by_cases hαI : (⟨α, hα_root⟩ : H.root) ∈ I.rootSet (H := H)
       · exact le_sup_of_le_left (le_iSup₂_of_le ⟨α, hα_root⟩ hαI le_rfl)
       · exact le_sup_of_le_right (le_iSup₂_of_le ⟨α, hα_root⟩ hαI le_rfl)
-  obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp (h_sup ▸ Submodule.mem_top (x := h))
-  have haI : (a : L) ∈ I.toSubmodule := by
-    suffices hle : S_I ≤ Submodule.comap H.toSubmodule.subtype I.toSubmodule from hle ha
-    exact iSup₂_le fun α hα z hz ↦ by
+  have hS_I_le : S_I ≤ Submodule.comap H.toSubmodule.subtype
+      (⨆ α ∈ I.rootSet (H := H), (corootSubmodule α.1).toSubmodule) :=
+    iSup₂_le fun α hα z hz ↦ by
       rw [Submodule.mem_comap]
       obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
       simp only [map_smul]
-      exact I.toSubmodule.smul_mem _ (I.corootSubmodule_le hα
-        (coe_coroot_mem_corootSubmodule α.1))
+      exact Submodule.smul_mem _ _
+        ((le_iSup₂_of_le α hα le_rfl : (corootSubmodule α.1).toSubmodule ≤ _)
+          (coe_coroot_mem_corootSubmodule α.1))
+  obtain ⟨a, ha, b, hb, hab⟩ := Submodule.mem_sup.mp (h_sup ▸ Submodule.mem_top (x := h))
+  have haI : (a : L) ∈ I.toSubmodule :=
+    (Submodule.mem_inf.mp (coroot_span_le_inf_cartan I (hS_I_le ha))).1
   have hbI : (b : L) ∈ I.toSubmodule := by
     have : (b : L) = x - (a : L) := by
       have h1 : (a : L) + (b : L) = x := congr_arg Subtype.val hab
@@ -141,17 +135,8 @@ lemma inf_cartan_le_coroot_span (I : LieIdeal K L) :
           weight_apply_eq_zero_of_not_mem_rootSet I hbI b.property hμI)
         (Submodule.mem_span_singleton_self _)
   have hha : h = a := by rw [← hab, hb_zero, add_zero]
-  change x ∈ ⨆ α ∈ I.rootSet (H := H), (corootSubmodule α.1).toSubmodule
-  rw [show x = (a : L) from by rw [← hha]]
-  suffices hle : S_I ≤ Submodule.comap H.toSubmodule.subtype
-      (⨆ α ∈ I.rootSet (H := H), (corootSubmodule α.1).toSubmodule) from hle ha
-  exact iSup₂_le fun α hα z hz ↦ by
-    rw [Submodule.mem_comap]
-    obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hz
-    simp only [map_smul]
-    exact Submodule.smul_mem _ _
-      ((le_iSup₂_of_le α hα le_rfl : (corootSubmodule α.1).toSubmodule ≤ _)
-        (coe_coroot_mem_corootSubmodule α.1))
+  rw [show x = (a : L) from congr_arg Subtype.val hha]
+  exact hS_I_le ha
 
 lemma lieIdeal_inf_cartan_eq_coroot_span (I : LieIdeal K L) :
     I.toSubmodule ⊓ H.toSubmodule =
@@ -194,13 +179,6 @@ lemma mem_rootSet_of_mem_rootSpan (I : LieIdeal K L)
   exact root_apply_cartanEquivDual_symm_ne_zero hα_nz
     (by simpa [Module.Dual.eval_apply] using LinearMap.mem_ker.mp (h_span_le hα_span))
 
-private lemma rootSpace_le_ideal_of_mem_rootSpan (I : LieIdeal K L)
-    {α : Weight K H L} (hα_nz : α.IsNonZero)
-    (hα_span : Weight.toLinear K H L α ∈ I.rootSpan (H := H)) :
-    rootSpace H α ≤ I.restr H :=
-  mem_rootSet_of_mem_rootSpan I
-    (α := ⟨α, by simpa [LieSubalgebra.root] using hα_nz⟩) hα_span
-
 lemma sl2SubmoduleOfRoot_le_ideal (I : LieIdeal K L) {α : H.root}
     (hα : α ∈ I.rootSet (H := H)) :
     (sl2SubmoduleOfRoot (H.isNonZero_coe_root α)).toSubmodule ≤ I.toSubmodule := by
@@ -220,7 +198,7 @@ lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
     exact iSup_le fun ⟨α, hα_span, hα_nz⟩ ↦
       sl2SubmoduleOfRoot_le_ideal I
         (α := ⟨α, by simpa [LieSubalgebra.root] using hα_nz⟩)
-        (rootSpace_le_ideal_of_mem_rootSpan I hα_nz hα_span)
+        (mem_rootSet_of_mem_rootSpan I hα_span)
   · rw [LieSubmodule.iSup_toSubmodule]
     have h_decomp := congr_arg LieSubmodule.toSubmodule
       (lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (H := H) I)
