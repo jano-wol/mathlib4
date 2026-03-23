@@ -6,10 +6,9 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.LinearAlgebra.Trace
-public import Mathlib.Algebra.Lie.AdjointAction.Basic
+public import Mathlib.Algebra.Lie.AdjointAction.JordanChevalley
 public import Mathlib.Algebra.Lie.Nilpotent
 public import Mathlib.FieldTheory.IsAlgClosed.Basic
-public import Mathlib.LinearAlgebra.JordanChevalley
 public import Mathlib.LinearAlgebra.Eigenspace.Triangularizable
 public import Mathlib.LinearAlgebra.Eigenspace.Semisimple
 public import Mathlib.Algebra.DirectSum.Module
@@ -232,119 +231,6 @@ lemma aeval_ad_maps_to
   rw [map_mul, Polynomial.aeval_X, Module.End.mul_apply]
   exact hxM _ (hpoly_B q' b hb)
 
-omit [IsAlgClosed K] in
-/-- `ad(s) ∈ adjoin K {ad(x)}`: the semisimple part of `ad(x)` is a polynomial in `ad(x)`.
-
-The key idea: `ad(x) = ad(n) + ad(s)` is a JC decomposition (using `ad_nilpotent_of_nilpotent`
-and `ad_isSemisimple_of_isSemisimple`), then the canonical JC of `ad(x)` places its semisimple
-part in `adjoin K {ad(x)}`, and uniqueness identifies it with `ad(s)`. -/
-lemma ad_semisimple_part_in_adjoin
-    (x n s : Module.End K V)
-    (hn_adj : n ∈ Algebra.adjoin K {x})
-    (hs_adj : s ∈ Algebra.adjoin K {x})
-    (hn_nil : IsNilpotent n) (hs_ss : s.IsSemisimple)
-    (hxns : x = n + s) :
-    LieAlgebra.ad K (Module.End K V) s ∈
-      Algebra.adjoin K {LieAlgebra.ad K (Module.End K V) x} := by
-  haveI : PerfectField K := inferInstance
-  haveI : FiniteDimensional K (Module.End K V) := inferInstance
-  set ad := LieAlgebra.ad K (Module.End K V)
-  have h_sum : ad x = ad n + ad s := by rw [hxns, map_add]
-  have h_ad_n_nil := LieAlgebra.ad_nilpotent_of_nilpotent (R := K) hn_nil
-  have h_ad_s_ss := LieAlgebra.ad_isSemisimple_of_isSemisimple hs_ss
-  have hc_xn : Commute x n := Algebra.commute_of_mem_adjoin_self hn_adj
-  have hc_ns : Commute n s :=
-    Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj hc_xn.symm
-  obtain ⟨n', hn'_adj, s', hs'_adj, hn'_nil, hs'_ss, h_jc⟩ :=
-    (ad x).exists_isNilpotent_isSemisimple
-  have hc_n' : Commute (ad x) n' := Algebra.commute_of_mem_adjoin_self hn'_adj
-  have hc_s' : Commute (ad x) s' := Algebra.commute_of_mem_adjoin_self hs'_adj
-  have hc_canonical : Commute n' s' :=
-    Algebra.commute_of_mem_adjoin_singleton_of_commute hs'_adj hc_n'.symm
-  have hc_ad : Commute (ad n) (ad s) := LieAlgebra.commute_ad_of_commute hc_ns
-  exact (isNilpotent_isSemisimple_unique hn'_nil hs'_ss h_ad_n_nil h_ad_s_ss
-    hc_canonical hc_ad (h_jc.symm.trans h_sum)).2 ▸ hs'_adj
-
--- TODO: belongs in Mathlib/LinearAlgebra/Eigenspace/Semisimple.lean
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- If `f x = μ • x`, then `(aeval f p) x = (eval μ p) • x`.
-
-This is a generalization of `Module.End.aeval_apply_of_hasEigenvector` that does not require
-`x ≠ 0`. -/
-theorem aeval_apply_of_eigenvalue {R : Type*} {M : Type*}
-    [CommRing R] [AddCommGroup M] [Module R M]
-    {f : Module.End R M} {μ : R} {x : M} (hx : f x = μ • x) (p : Polynomial R) :
-    (Polynomial.aeval f p) x = (Polynomial.eval μ p) • x := by
-  refine p.induction_on ?_ ?_ ?_
-  · intro a; simp [Module.algebraMap_end_apply]
-  · intro p q hp hq; simp [hp, hq, add_smul]
-  · intro n a hna
-    rw [mul_comm, pow_succ', mul_assoc, map_mul, Module.End.mul_apply, mul_comm, hna]
-    simp only [hx, smul_smul, Polynomial.aeval_X, Polynomial.eval_mul, Polynomial.eval_C,
-      Polynomial.eval_pow, Polynomial.eval_X, map_smulₛₗ, RingHom.id_apply, mul_comm]
-
-omit [IsAlgClosed K] in
-/-- `ad(s)` can be written as a polynomial in `ad(x)` without constant term. -/
-lemma ad_semisimple_part_polynomial
-    (x n s : Module.End K V)
-    (hn_adj : n ∈ Algebra.adjoin K {x})
-    (hs_adj : s ∈ Algebra.adjoin K {x})
-    (hn_nil : IsNilpotent n) (hs_ss : s.IsSemisimple)
-    (hxns : x = n + s) :
-    ∃ p : Polynomial K, Polynomial.eval 0 p = 0 ∧
-      LieAlgebra.ad K (Module.End K V) s =
-        Polynomial.aeval (LieAlgebra.ad K (Module.End K V) x) p := by
-  set ad := LieAlgebra.ad K (Module.End K V)
-  have h_mem := ad_semisimple_part_in_adjoin x n s hn_adj hs_adj hn_nil hs_ss hxns
-  rw [Algebra.adjoin_singleton_eq_range_aeval] at h_mem
-  obtain ⟨q, hq⟩ := h_mem
-  have had_x_x : (ad x) x = 0 := by
-    change ⁅x, x⁆ = 0; exact lie_self x
-  have had_s_x : (ad s) x = 0 := by
-    have : Commute x s := Algebra.commute_of_mem_adjoin_self hs_adj
-    exact sub_eq_zero.mpr this.symm.eq
-  have hq' : ad s = Polynomial.aeval (ad x) q := hq.symm
-  have h_eval : Polynomial.eval 0 q • x = 0 := by
-    have h := aeval_apply_of_eigenvalue (show (ad x) x = 0 • x by simp [had_x_x]) q
-    rw [← hq', had_s_x] at h; exact h.symm
-  by_cases hx : x = 0
-  · have hs0 : s = 0 := by
-      have hsn : s = -n := by
-        have h0 : n + s = 0 := by rw [← hxns, hx]
-        have : s = -n + (n + s) := by abel
-        rw [h0, add_zero] at this; exact this
-      rw [hsn]; exact Module.End.eq_zero_of_isNilpotent_isSemisimple hn_nil.neg (hsn ▸ hs_ss)
-    exact ⟨0, by simp, by simp [hs0]⟩
-  · exact ⟨q, smul_eq_zero.mp h_eval |>.resolve_right hx, hq'⟩
-
-/-! ## Semisimple with zero eigenvalues is zero -/
-
--- TODO: belongs in Mathlib/LinearAlgebra/Eigenspace/Semisimple.lean
-omit [CharZero K] in
-/-- A semisimple endomorphism over an algebraically closed field with all eigenvalues
-equal to zero must be zero. -/
-lemma eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero
-    (s : Module.End K V) (hs : s.IsSemisimple)
-    (h : ∀ μ : K, s.HasEigenvalue μ → μ = 0) : s = 0 := by
-  have h_top : ⨆ μ, s.maxGenEigenspace μ = ⊤ := iSup_maxGenEigenspace_eq_top s
-  have h_eq : ∀ μ, s.maxGenEigenspace μ = s.eigenspace μ :=
-    hs.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace
-  simp_rw [h_eq] at h_top
-  have h_bot : ∀ μ ≠ (0 : K), s.eigenspace μ = ⊥ := by
-    intro μ hμ
-    by_contra h_ne
-    exact hμ (h μ (hasEigenvalue_iff.mpr h_ne))
-  have h_ker : s.eigenspace 0 = ⊤ := by
-    rw [← h_top]
-    apply le_antisymm (le_iSup _ 0)
-    apply iSup_le; intro μ
-    rcases eq_or_ne μ 0 with rfl | hμ
-    · exact le_refl _
-    · rw [h_bot μ hμ]; exact bot_le
-  rw [eigenspace_zero] at h_ker
-  exact ker_eq_top.mp h_ker
-
-
 /-! ## Lagrange interpolation for eigenvalue differences -/
 
 omit [IsAlgClosed K] in
@@ -405,6 +291,8 @@ theorem humphreys_lemma_algClosed
     (hxM : x ∈ M A B)
     (htr : ∀ y ∈ M A B, trace K V (x * y) = 0) :
     IsNilpotent x := by
+  rcases eq_or_ne x 0 with rfl | hx
+  · exact .zero
   obtain ⟨n, hn_adj, s, hs_adj, hn_nil, hs_ss, hxns⟩ :=
     x.exists_isNilpotent_isSemisimple
   let v := eigenbasis s hs_ss
@@ -413,7 +301,7 @@ theorem humphreys_lemma_algClosed
   let E : Submodule ℚ K := Submodule.span ℚ (Set.range a)
   suffices hs_zero : s = 0 by rw [hxns, hs_zero, add_zero]; exact hn_nil
   suffices h_f_zero : ∀ f : E →ₗ[ℚ] ℚ, f = 0 by
-    apply eq_zero_of_isSemisimple_of_forall_eigenvalue_eq_zero s hs_ss
+    apply hs_ss.eq_zero_iff_forall_eigenvalue.mpr
     intro μ hμ
     have hpos : 0 < Module.finrank K (s.eigenspace μ) := by
       haveI : Nontrivial (s.eigenspace μ) :=
@@ -440,14 +328,22 @@ theorem humphreys_lemma_algClosed
     apply (eijBasis v).ext; intro ⟨i, j⟩
     rw [eijBasis_eq]
     change ⁅y, eij v i j⁆ = (Polynomial.aeval ad_s r) (eij v i j)
-    rw [aeval_apply_of_eigenvalue (had_s i j) r, hr_eval i j, had_y i j]
-  obtain ⟨p, hp_zero, hp_eq⟩ :=
-    ad_semisimple_part_polynomial x n s hn_adj hs_adj hn_nil hs_ss hxns
+    rw [Module.End.aeval_apply_of_mem_eigenspace (had_s i j), hr_eval i j, had_y i j]
+  have hc_ns : Commute n s :=
+    Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj
+      (Algebra.commute_of_mem_adjoin_self hn_adj).symm
+  have h_ad_s_mem : ad_s ∈ Algebra.adjoin K {LieAlgebra.ad K _ x} := by
+    rw [hxns]; exact LieAlgebra.ad_mem_adjoin_of_isSemisimple hc_ns hn_nil hs_ss
+  rw [Algebra.adjoin_singleton_eq_range_aeval] at h_ad_s_mem
+  obtain ⟨p, hp_eq⟩ := h_ad_s_mem
+  have hp_zero : Polynomial.eval 0 p = 0 :=
+    LieAlgebra.eval_zero_of_aeval_ad_eq hx
+      (Algebra.commute_of_mem_adjoin_self hs_adj).symm hp_eq.symm
   let ad_x := LieAlgebra.ad K (Module.End K V) x
   have had_y_adx : LieAlgebra.ad K (Module.End K V) y =
       Polynomial.aeval ad_x (r.comp p) := by
     rw [had_y_eq]
-    have : ad_s = Polynomial.aeval ad_x p := hp_eq
+    have : ad_s = Polynomial.aeval ad_x p := hp_eq.symm
     rw [this, ← Polynomial.aeval_comp]
   have hcomp_zero : Polynomial.eval 0 (r.comp p) = 0 := by
     simp [Polynomial.eval_comp, hp_zero, hr_zero]
@@ -462,7 +358,7 @@ theorem humphreys_lemma_algClosed
     classical
     let eigenvals : Finset K := Finset.univ.image a
     let c_val : K → K := fun μ => if hμ : μ ∈ E then algebraMap ℚ K (f ⟨μ, hμ⟩) else 0
-    let g := Lagrange.interpolate eigenvals id c_val
+    let g := Lagrange.interpolate eigenvals _root_.id c_val
     have hg_eval : ∀ i, Polynomial.eval (a i) g = algebraMap ℚ K (f ⟨a i, ha i⟩) := by
       intro i
       have h_mem : a i ∈ eigenvals := Finset.mem_image.mpr ⟨i, Finset.mem_univ _, rfl⟩
@@ -470,7 +366,7 @@ theorem humphreys_lemma_algClosed
         (fun _ _ _ _ h => h) h_mem).trans (dif_pos (ha i))
     have hy_eq : Polynomial.aeval s g = y := by
       apply v.ext; intro i
-      rw [aeval_apply_of_eigenvalue (hv_diag i) g, hg_eval i, diagEnd_apply_basis]
+      rw [Module.End.aeval_apply_of_mem_eigenspace (hv_diag i), hg_eval i, diagEnd_apply_basis]
     have hy_adj_s : y ∈ Algebra.adjoin K {s} := by
       rw [Algebra.adjoin_singleton_eq_range_aeval]
       exact ⟨g, hy_eq⟩
