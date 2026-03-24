@@ -248,16 +248,12 @@ theorem humphreys_lemma_algClosed
   let E : Submodule ℚ K := Submodule.span ℚ (Set.range a)
   suffices hs_zero : s = 0 by rw [hxns, hs_zero, add_zero]; exact hn_nil
   suffices h_f_zero : ∀ f : E →ₗ[ℚ] ℚ, f = 0 by
-    apply hs_ss.eq_zero_iff_forall_eigenvalue.mpr
-    intro μ hμ
-    have hpos : 0 < Module.finrank K (s.eigenspace μ) := by
-      haveI : Nontrivial (s.eigenspace μ) :=
-        Submodule.nontrivial_iff_ne_bot.mpr (hasEigenvalue_iff.mp hμ)
-      exact Module.finrank_pos
-    have hμ_E : μ ∈ E := Submodule.subset_span ⟨⟨μ, ⟨0, hpos⟩⟩, rfl⟩
-    have hμ_zero : (⟨μ, hμ_E⟩ : E) = 0 :=
-      (Module.forall_dual_apply_eq_zero_iff ℚ _).mp (fun φ => by simp [h_f_zero φ])
-    exact congr_arg Subtype.val hμ_zero
+    refine hs_ss.eq_zero_iff_forall_eigenvalue.mpr fun μ hμ => ?_
+    haveI : Nontrivial (s.eigenspace μ) :=
+      Submodule.nontrivial_iff_ne_bot.mpr (hasEigenvalue_iff.mp hμ)
+    have hμ_E : μ ∈ E := Submodule.subset_span ⟨⟨μ, ⟨0, Module.finrank_pos⟩⟩, rfl⟩
+    exact congr_arg Subtype.val <|
+      (Module.forall_dual_apply_eq_zero_iff ℚ (⟨μ, hμ_E⟩ : E)).mp (fun φ => by simp [h_f_zero φ])
   intro f
   have ha : ∀ i, a i ∈ E := fun i => Submodule.subset_span (Set.mem_range_self i)
   classical
@@ -276,62 +272,49 @@ theorem humphreys_lemma_algClosed
     apply (v.linearMap v).ext; intro ⟨i, j⟩
     change ⁅y, (v.linearMap v) (i, j)⁆ = (Polynomial.aeval ad_s r) ((v.linearMap v) (i, j))
     rw [Module.End.aeval_apply_of_mem_eigenspace (had_s i j), hr_eval i j, had_y i j]
-  have hc_ns : Commute n s :=
-    Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj
-      (Algebra.commute_of_mem_adjoin_self hn_adj).symm
   have h_ad_s_mem : ad_s ∈ Algebra.adjoin K {LieAlgebra.ad K _ x} := by
-    rw [hxns]; exact LieAlgebra.ad_mem_adjoin_of_isSemisimple hc_ns hn_nil hs_ss
+    rw [hxns]; exact LieAlgebra.ad_mem_adjoin_of_isSemisimple
+      (Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj
+        (Algebra.commute_of_mem_adjoin_self hn_adj).symm) hn_nil hs_ss
   rw [Algebra.adjoin_singleton_eq_range_aeval] at h_ad_s_mem
   obtain ⟨p, hp_eq⟩ := h_ad_s_mem
   have hp_zero : Polynomial.eval 0 p = 0 :=
     LieAlgebra.eval_zero_of_aeval_ad_eq hx
       (Algebra.commute_of_mem_adjoin_self hs_adj).symm hp_eq.symm
-  let ad_x := LieAlgebra.ad K (Module.End K V) x
-  have had_y_adx : LieAlgebra.ad K (Module.End K V) y =
-      Polynomial.aeval ad_x (r.comp p) := by
-    rw [had_y_eq]
-    have : ad_s = Polynomial.aeval ad_x p := hp_eq.symm
-    rw [this, ← Polynomial.aeval_comp]
-  have hcomp_zero : Polynomial.eval 0 (r.comp p) = 0 := by
-    simp [Polynomial.eval_comp, hp_zero, hr_zero]
   have hyM : y ∈ M A B := by
+    have had_y_adx : LieAlgebra.ad K _ y =
+        Polynomial.aeval (LieAlgebra.ad K _ x) (r.comp p) := by
+      rw [had_y_eq, show ad_s = Polynomial.aeval (LieAlgebra.ad K _ x) p from hp_eq.symm,
+        ← Polynomial.aeval_comp]
     intro b hb
-    change (LieAlgebra.ad K (Module.End K V) y) b ∈ A
+    change (LieAlgebra.ad K _ y) b ∈ A
     rw [had_y_adx]
-    exact aeval_ad_maps_to A B hAB x hxM (r.comp p) hcomp_zero b hb
+    exact aeval_ad_maps_to A B hAB x hxM _ (by simp [Polynomial.eval_comp, hp_zero, hr_zero]) b hb
   have htr_xy : trace K V (x * y) = 0 := htr y hyM
   have htr_sum : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       a i * algebraMap ℚ K (f ⟨a i, ha i⟩) = 0 := by
     let eigenvals : Finset K := Finset.univ.image a
     let c_val : K → K := fun μ => if hμ : μ ∈ E then algebraMap ℚ K (f ⟨μ, hμ⟩) else 0
     let g := Lagrange.interpolate eigenvals _root_.id c_val
-    have hg_eval : ∀ i, Polynomial.eval (a i) g = algebraMap ℚ K (f ⟨a i, ha i⟩) := by
-      intro i
-      have h_mem : a i ∈ eigenvals := Finset.mem_image.mpr ⟨i, Finset.mem_univ _, rfl⟩
-      exact (Lagrange.eval_interpolate_at_node c_val
-        (fun _ _ _ _ h => h) h_mem).trans (dif_pos (ha i))
-    have hy_eq : Polynomial.aeval s g = y := by
-      apply v.ext; intro i
+    have hg_eval : ∀ i, Polynomial.eval (a i) g = algebraMap ℚ K (f ⟨a i, ha i⟩) := fun i =>
+      (Lagrange.eval_interpolate_at_node c_val (fun _ _ _ _ h => h)
+        (Finset.mem_image.mpr ⟨i, Finset.mem_univ _, rfl⟩)).trans (dif_pos (ha i))
+    have hy_eq : Polynomial.aeval s g = y := v.ext fun i => by
       rw [Module.End.aeval_apply_of_mem_eigenspace (hv_diag i), hg_eval i, diagEnd_apply_basis]
-    have hy_adj_x : y ∈ Algebra.adjoin K {x} := Algebra.adjoin_singleton_le hs_adj <| by
-      rw [Algebra.adjoin_singleton_eq_range_aeval]; exact ⟨g, hy_eq⟩
-    have hcommute_ny : Commute n y :=
-      Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x
-        (Algebra.commute_of_mem_adjoin_self hn_adj).symm
     have htr_ny : trace K V (n * y) = 0 :=
       (LinearMap.isNilpotent_trace_of_isNilpotent
-        (hcommute_ny.isNilpotent_mul_right hn_nil)).eq_zero
-    have hsy_diag : s * y =
-        diagEnd v (fun i => a i * algebraMap ℚ K (f ⟨a i, ha i⟩)) := by
-      apply v.ext; intro i
-      change s (y (v i)) = _
-      rw [show y (v i) = algebraMap ℚ K (f ⟨a i, ha i⟩) • v i from diagEnd_apply_basis v _ i,
-        diagEnd_apply_basis, map_smul, hv_diag i, smul_smul, mul_comm]
-    have htr_sy : trace K V (s * y) =
-        ∑ i, a i * algebraMap ℚ K (f ⟨a i, ha i⟩) :=
-      hsy_diag ▸ trace_diagEnd v _
+        ((Algebra.commute_of_mem_adjoin_singleton_of_commute
+          (Algebra.adjoin_singleton_le hs_adj <| by
+            rw [Algebra.adjoin_singleton_eq_range_aeval]; exact ⟨g, hy_eq⟩)
+          (Algebra.commute_of_mem_adjoin_self hn_adj).symm).isNilpotent_mul_right hn_nil)).eq_zero
+    have htr_sy : trace K V (s * y) = ∑ i, a i * algebraMap ℚ K (f ⟨a i, ha i⟩) := by
+      have : s * y = diagEnd v (fun i => a i * algebraMap ℚ K (f ⟨a i, ha i⟩)) := v.ext fun i => by
+        change s (y (v i)) = _
+        rw [show y (v i) = algebraMap ℚ K (f ⟨a i, ha i⟩) • v i from diagEnd_apply_basis v _ i,
+          diagEnd_apply_basis, map_smul, hv_diag i, smul_smul, mul_comm]
+      rw [this, trace_diagEnd]
     have htr_split : trace K V (x * y) = trace K V (n * y) + trace K V (s * y) := by
-      rw [hxns, add_mul]; exact map_add (trace K V) (n * y) (s * y)
+      rw [hxns, add_mul]; exact map_add _ _ _
     rw [← htr_sy]; have := htr_split.symm.trans htr_xy; rw [htr_ny, zero_add] at this; exact this
   have h_sum_E : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       (f ⟨a i, ha i⟩) • (⟨a i, ha i⟩ : E) = 0 := by
@@ -343,8 +326,6 @@ theorem humphreys_lemma_algClosed
     have := congr_arg f h_sum_E
     simp only [map_sum, map_smul, smul_eq_mul, map_zero] at this
     convert this using 1; congr 1; ext i; ring
-  have h_f_zero_all : ∀ i, f ⟨a i, ha i⟩ = 0 := fun i =>
+  exact (Submodule.linearMap_eq_zero_iff_of_eq_span f rfl).mpr fun ⟨_, ⟨i, rfl⟩⟩ =>
     eq_zero_of_pow_eq_zero ((Finset.sum_eq_zero_iff_of_nonneg
       (fun j _ => sq_nonneg _)).mp h_sum_sq i (Finset.mem_univ _))
-  exact (Submodule.linearMap_eq_zero_iff_of_eq_span f rfl).mpr
-    fun ⟨_, ⟨i, rfl⟩⟩ => h_f_zero_all i
