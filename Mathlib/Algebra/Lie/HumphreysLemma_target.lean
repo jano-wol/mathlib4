@@ -316,17 +316,12 @@ theorem humphreys_lemma_algClosed
     have hy_eq : Polynomial.aeval s g = y := by
       apply v.ext; intro i
       rw [Module.End.aeval_apply_of_mem_eigenspace (hv_diag i), hg_eval i, diagEnd_apply_basis]
-    have hy_adj_s : y ∈ Algebra.adjoin K {s} := by
-      rw [Algebra.adjoin_singleton_eq_range_aeval]
-      exact ⟨g, hy_eq⟩
-    have hy_adj_x : y ∈ Algebra.adjoin K {x} :=
-      Algebra.adjoin_singleton_le hs_adj hy_adj_s
-    have hc_nx : Commute n x := (Algebra.commute_of_mem_adjoin_self hn_adj).symm
-    have hcommute_ny : Commute n y :=
-      Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x hc_nx
-    have htr_ny : trace K V (n * y) = 0 := by
-      have h_nil : IsNilpotent (n * y) := hcommute_ny.isNilpotent_mul_right hn_nil
-      exact (LinearMap.isNilpotent_trace_of_isNilpotent h_nil).eq_zero
+    have hy_adj_x : y ∈ Algebra.adjoin K {x} := Algebra.adjoin_singleton_le hs_adj <| by
+      rw [Algebra.adjoin_singleton_eq_range_aeval]; exact ⟨g, hy_eq⟩
+    have htr_ny : trace K V (n * y) = 0 :=
+      (LinearMap.isNilpotent_trace_of_isNilpotent
+        ((Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x
+          (Algebra.commute_of_mem_adjoin_self hn_adj).symm).isNilpotent_mul_right hn_nil)).eq_zero
     have hsy_diag : s * y =
         diagEnd v (fun i => a i * algebraMap ℚ K (f ⟨a i, ha i⟩)) := by
       apply v.ext; intro i
@@ -336,14 +331,9 @@ theorem humphreys_lemma_algClosed
     have htr_sy : trace K V (s * y) =
         ∑ i, a i * algebraMap ℚ K (f ⟨a i, ha i⟩) :=
       hsy_diag ▸ trace_diagEnd v _
-    have htr_split : trace K V (x * y) =
-        trace K V (n * y) + trace K V (s * y) := by
-      conv_lhs => rw [hxns, add_mul]
-      exact map_add (trace K V) (n * y) (s * y)
-    rw [← htr_sy]
-    have h := htr_split.symm.trans htr_xy
-    rw [htr_ny, zero_add] at h
-    exact h
+    have htr_split : trace K V (x * y) = trace K V (n * y) + trace K V (s * y) := by
+      rw [hxns, add_mul]; exact map_add (trace K V) (n * y) (s * y)
+    rw [← htr_sy]; have := htr_split.symm.trans htr_xy; rw [htr_ny, zero_add] at this; exact this
   have h_sum_E : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       (f ⟨a i, ha i⟩) • (⟨a i, ha i⟩ : E) = 0 := by
     apply_fun E.subtype using Subtype.val_injective
