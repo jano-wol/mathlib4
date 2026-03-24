@@ -136,33 +136,17 @@ theorem diagEnd_apply_basis {ι : Type*}
   simp [diagEnd, Module.Basis.constr_basis]
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- The adjoint action of a diagonal endomorphism on `e_{ij}`:
-`⁅diagEnd b c, e_{ij}⁆ = (cᵢ − cⱼ) • e_{ij}`. -/
-theorem ad_diagEnd_eij {ι : Type*}
-    (b : Module.Basis ι K V) (c : ι → K) (i j : ι) :
-    ⁅diagEnd b c, eij b i j⁆ = (c i - c j) • eij b i j :=
-  ad_diag_eij b c (diagEnd b c) (diagEnd_apply_basis b c) i j
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- The matrix of a diagonal endomorphism is a diagonal matrix. -/
-theorem toMatrix_diagEnd {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (b : Module.Basis ι K V) (c : ι → K) :
-    LinearMap.toMatrix b b (diagEnd b c) = Matrix.diagonal c := by
-  ext i j
-  rw [LinearMap.toMatrix_apply, diagEnd_apply_basis]
-  simp only [map_smul, Module.Basis.repr_self, Finsupp.smul_single, smul_eq_mul, mul_one,
-    Matrix.diagonal_apply]
-  by_cases h : i = j
-  · subst h; simp [Finsupp.single_eq_same]
-  · simp [h]
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- The trace of a diagonal endomorphism is the sum of its diagonal entries. -/
 theorem trace_diagEnd {ι : Type*} [Fintype ι]
     (b : Module.Basis ι K V) (c : ι → K) :
     trace K V (diagEnd b c) = ∑ i, c i := by
   classical
-  rw [trace_eq_matrix_trace K b, toMatrix_diagEnd, Matrix.trace_diagonal]
+  have : LinearMap.toMatrix b b (diagEnd b c) = Matrix.diagonal c := by
+    ext i j
+    rw [LinearMap.toMatrix_apply, diagEnd_apply_basis]
+    simp only [map_smul, Module.Basis.repr_self, Finsupp.smul_single, smul_eq_mul, mul_one,
+      Matrix.diagonal_apply]
+    by_cases h : i = j <;> simp [h]
+  rw [trace_eq_matrix_trace K b, this, Matrix.trace_diagonal]
 
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
@@ -305,7 +289,7 @@ theorem humphreys_lemma_algClosed
   have had_y : ∀ i j, ⁅y, eij v i j⁆ =
       (algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) •
         eij v i j :=
-    fun i j => ad_diagEnd_eij v _ i j
+    fun i j => ad_diag_eij v _ (diagEnd v _) (diagEnd_apply_basis v _) i j
   haveI : Fintype (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :=
     eigenbasisFintype s hs_ss
   obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
