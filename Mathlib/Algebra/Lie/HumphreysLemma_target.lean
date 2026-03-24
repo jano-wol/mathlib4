@@ -17,31 +17,32 @@ public import Mathlib.LinearAlgebra.Dual.Lemmas
 public import Mathlib.LinearAlgebra.Lagrange
 
 /-!
-# Humphreys' Lemma (algebraically closed case)
+# Trace-nilpotency criterion in gl(V)
 
-This file proves Humphreys' lemma over algebraically closed fields of characteristic zero,
-following Humphreys' *Introduction to Lie Algebras and Representation Theory*, §4.3.
-
-The general characteristic zero version (by scalar extension) is in
-`Mathlib.Algebra.Lie.HumphreysLemmaGeneral`.
+Given subspaces `A ≤ B` of `gl(V)` and the set `M = {x ∈ gl(V) : [x, B] ⊆ A}`, any `x ∈ M`
+that is trace-orthogonal to all of `M` is nilpotent. This is the key technical lemma behind
+Cartan's criterion for semisimplicity.
 
 ## Main definitions
 
-* `HumphreysLemma.M`: the set `{x ∈ gl(V) : [x, B] ⊆ A}`.
+* `NilpotentOfTrace.M`: the set `{x ∈ gl(V) : [x, B] ⊆ A}`.
+* `NilpotentOfTrace.diagEnd`: the diagonal endomorphism `b i ↦ c i • b i` relative to a basis `b`.
+* `NilpotentOfTrace.eigenbasis`: an eigenbasis for a semisimple endomorphism over an algebraically
+  closed field.
 
 ## Main results
 
-* `humphreys_lemma_algClosed`: Humphreys' lemma for algebraically closed fields — if `x ∈ M`
-  satisfies `tr(xz) = 0` for all `z ∈ M`, then `x` is nilpotent.
+* `isNilpotent_of_trace_orthogonal_algClosed`: if `x ∈ M` satisfies `tr(xz) = 0` for all `z ∈ M`,
+  then `x` is nilpotent.
 
 ## References
 
-* [J.E. Humphreys, *Introduction to Lie Algebras and Representation Theory*][humphreys1972], §4.3
+* [J.E. Humphreys, *Introduction to Lie Algebras and Representation Theory*][humphreys1972]
 -/
 
 @[expose] public section
 
-namespace HumphreysLemma
+namespace NilpotentOfTrace
 
 open LinearMap Module.End
 
@@ -197,23 +198,14 @@ lemma exists_lagrange_polynomial
 
 end Lagrange
 
-end HumphreysLemma
+end NilpotentOfTrace
 
 variable {K : Type*} [Field K] [IsAlgClosed K] [CharZero K]
   {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
 
-open LinearMap Module.End HumphreysLemma in
-/-- **Humphreys' Lemma** over algebraically closed fields of characteristic zero.
-
-Given subspaces `A ≤ B` of `gl(V)` and `M = {z ∈ gl(V) : [z, B] ⊆ A}`,
-if `x ∈ M` satisfies `tr(xz) = 0` for all `z ∈ M`, then `x` is nilpotent.
-
-The proof follows Humphreys, "Introduction to Lie Algebras and Representation
-Theory", §4.3:
-1. Jordan-Chevalley decomposition: `x = n + s`
-2. Show all eigenvalues of `s` are zero (the dual-space trace argument)
-3. Conclude `s = 0`, hence `x = n` is nilpotent -/
-theorem humphreys_lemma_algClosed
+open LinearMap Module.End NilpotentOfTrace in
+/-- If `x ∈ M(A, B)` is trace-orthogonal to all of `M(A, B)`, then `x` is nilpotent. -/
+theorem isNilpotent_of_trace_orthogonal_algClosed
     (A B : Submodule K (Module.End K V))
     (hAB : A ≤ B)
     (x : Module.End K V)
