@@ -164,29 +164,15 @@ theorem trace_diagEnd {ι : Type*} [Fintype ι]
   classical
   rw [trace_eq_matrix_trace K b, toMatrix_diagEnd, Matrix.trace_diagonal]
 
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-open Classical in
-/-- The `eij` elementary endomorphisms form a basis of `End K V`, obtained by
-transporting the standard matrix basis `Matrix.stdBasis` along `LinearMap.toMatrix`. -/
-noncomputable def eijBasis {ι : Type*} [Fintype ι]
-    (b : Module.Basis ι K V) : Module.Basis (ι × ι) K (Module.End K V) :=
-  (Matrix.stdBasis K ι ι).map (LinearMap.toMatrix b b).symm
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-open Classical in
-/-- The `eijBasis` at `(i, j)` equals `eij b i j`. -/
-theorem eijBasis_eq {ι : Type*} [Fintype ι]
+theorem eij_eq_linearMap {ι : Type*} [Fintype ι] [DecidableEq ι]
     (b : Module.Basis ι K V) (i j : ι) :
-    eijBasis b (i, j) = eij b i j := by
+    eij b i j = (b.linearMap b) (i, j) := by
   apply b.ext; intro k
-  simp only [eijBasis, eij, Module.Basis.map_apply, LinearMap.smulRight_apply,
-    Module.Basis.coord_apply, Matrix.stdBasis_eq_single]
-  change (Matrix.toLin b b (Matrix.single i j 1)) (b k) = _
-  rw [Matrix.toLin_self]
-  simp only [Matrix.single_apply, Module.Basis.repr_self, Finsupp.single_apply]
-  by_cases hjk : j = k
-  · subst hjk; simp
-  · simp [hjk, eq_comm]
+  rw [Module.Basis.linearMap_apply_apply]
+  simp only [eij, LinearMap.smulRight_apply, Module.Basis.coord_apply, Module.Basis.repr_self]
+  by_cases h : j = k <;> simp [h]
 
 /-! ## The set M -/
 
@@ -325,8 +311,9 @@ theorem humphreys_lemma_algClosed
   obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
   let ad_s := LieAlgebra.ad K (Module.End K V) s
   have had_y_eq : LieAlgebra.ad K (Module.End K V) y = Polynomial.aeval ad_s r := by
-    apply (eijBasis v).ext; intro ⟨i, j⟩
-    rw [eijBasis_eq]
+    classical
+    apply (v.linearMap v).ext; intro ⟨i, j⟩
+    simp only [← eij_eq_linearMap]
     change ⁅y, eij v i j⁆ = (Polynomial.aeval ad_s r) (eij v i j)
     rw [Module.End.aeval_apply_of_mem_eigenspace (had_s i j), hr_eval i j, had_y i j]
   have hc_ns : Commute n s :=
