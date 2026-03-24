@@ -348,30 +348,14 @@ theorem humphreys_lemma_algClosed
       (f ⟨a i, ha i⟩) • (⟨a i, ha i⟩ : E) = 0 := by
     apply_fun E.subtype using Subtype.val_injective
     simp only [map_sum, map_smul, map_zero, Submodule.subtype_apply]
-    convert htr_sum using 1
-    congr 1; ext i
-    rw [Algebra.smul_def, mul_comm]
+    convert htr_sum using 1; congr 1; ext i; rw [Algebra.smul_def, mul_comm]
   have h_sum_sq : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       f ⟨a i, ha i⟩ ^ 2 = (0 : ℚ) := by
     have := congr_arg f h_sum_E
     simp only [map_sum, map_smul, smul_eq_mul, map_zero] at this
-    convert this using 1
-    congr 1; ext i; ring
-  have h_f_zero_all : ∀ i, f ⟨a i, ha i⟩ = 0 := by
-    intro i
-    have h_nonneg : ∀ j ∈ Finset.univ,
-        (0 : ℚ) ≤ (fun j => f ⟨a j, ha j⟩ ^ 2) j := fun j _ => sq_nonneg _
-    have := (Finset.sum_eq_zero_iff_of_nonneg h_nonneg).mp h_sum_sq i (Finset.mem_univ _)
-    exact eq_zero_of_pow_eq_zero this
-  ext ⟨e, he⟩
-  simp only [LinearMap.zero_apply]
-  refine Submodule.span_induction
-    (p := fun e he => f ⟨e, he⟩ = 0)
-    (fun k hk => ?_) (map_zero f) (fun x y hx hy ihx ihy => ?_)
-    (fun q x hx ih => ?_) he
-  · obtain ⟨i, rfl⟩ := hk
-    exact h_f_zero_all i
-  · change f (⟨x, hx⟩ + ⟨y, hy⟩) = 0
-    rw [map_add, ihx, ihy, add_zero]
-  · change f (q • ⟨x, hx⟩) = 0
-    rw [map_smul, ih, smul_zero]
+    convert this using 1; congr 1; ext i; ring
+  have h_f_zero_all : ∀ i, f ⟨a i, ha i⟩ = 0 := fun i =>
+    eq_zero_of_pow_eq_zero ((Finset.sum_eq_zero_iff_of_nonneg
+      (fun j _ => sq_nonneg _)).mp h_sum_sq i (Finset.mem_univ _))
+  exact (Submodule.linearMap_eq_zero_iff_of_eq_span f rfl).mpr
+    fun ⟨_, ⟨i, rfl⟩⟩ => h_f_zero_all i
