@@ -25,10 +25,14 @@ following Humphreys' *Introduction to Lie Algebras and Representation Theory*, �
 The general characteristic zero version (by scalar extension) is in
 `Mathlib.Algebra.Lie.HumphreysLemmaGeneral`.
 
-## Main definitions and results
+## Main definitions
 
 * `HumphreysLemma.M`: the set `{x ∈ gl(V) : [x, B] ⊆ A}`.
-* `humphreys_lemma_algClosed`: Humphreys' lemma for algebraically closed fields.
+
+## Main results
+
+* `humphreys_lemma_algClosed`: Humphreys' lemma for algebraically closed fields — if `x ∈ M`
+  satisfies `tr(xz) = 0` for all `z ∈ M`, then `x` is nilpotent.
 
 ## References
 
@@ -37,77 +41,27 @@ The general characteristic zero version (by scalar extension) is in
 
 @[expose] public section
 
-open LinearMap Module.End
-
-variable {K : Type*} [Field K] [IsAlgClosed K] [CharZero K]
-variable {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
-
 namespace HumphreysLemma
 
-/-! ## Eigenbasis for semisimple endomorphisms -/
+open LinearMap Module.End
 
-omit [CharZero K] in
-open Classical in
-/-- The eigenspaces of a semisimple endomorphism over an algebraically closed field
-form an internal direct sum decomposition of `V`. -/
-noncomputable def eigenspaceIsInternal
-    (s : Module.End K V) (hs : s.IsSemisimple) :
-    DirectSum.IsInternal (fun μ : K => s.eigenspace μ) := by
-  rw [DirectSum.isInternal_submodule_iff_iSupIndep_and_iSup_eq_top]
-  exact ⟨s.eigenspaces_iSupIndep, by
-    have := iSup_maxGenEigenspace_eq_top s
-    simp_rw [hs.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace] at this
-    exact this⟩
+section General
+
+variable {K : Type*} [Field K] {V : Type*} [AddCommGroup V] [Module K V]
 
 noncomputable instance eigenspaceFree (s : Module.End K V) (μ : K) :
     @Module.Free K ↥(s.eigenspace μ) _ _ (s.eigenspace μ).module :=
   @Module.Free.of_divisionRing K ↥(s.eigenspace μ) _ _ (s.eigenspace μ).module
 
-omit [CharZero K] in
-open Classical in
-/-- The eigenbasis: a basis of `V` that diagonalizes `s`.
-
-Indexed by `Σ μ : K, Fin (finrank K (eigenspace s μ))`. Each basis vector
-`eigenbasis s hs ⟨μ, i⟩` lies in `eigenspace s μ`. The eigenvalue of basis
-vector `σ` is `σ.1`. -/
-noncomputable def eigenbasis (s : Module.End K V) (hs : s.IsSemisimple) :=
-  (eigenspaceIsInternal s hs).collectedBasis
-    (fun μ => Module.finBasis K (s.eigenspace μ))
-
-omit [CharZero K] in
-open Classical in
-/-- The eigenbasis index type is finite (since `V` is finite-dimensional). -/
-noncomputable instance eigenbasisFintype (s : Module.End K V) (hs : s.IsSemisimple) :
-    Fintype (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :=
-  Module.Basis.fintypeIndexOfRankLtAleph0 (eigenbasis s hs)
-    (Module.rank_lt_aleph0 K V)
-
-omit [CharZero K] in
-open Classical in
-/-- Each eigenbasis vector is an eigenvector: `s(vσ) = σ.1 • vσ`. -/
-theorem eigenbasis_eigenvalue (s : Module.End K V) (hs : s.IsSemisimple)
-    (σ : Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :
-    s (eigenbasis s hs σ) = σ.1 • eigenbasis s hs σ := by
-  have hmem := (eigenspaceIsInternal s hs).collectedBasis_mem
-    (fun μ => Module.finBasis K (s.eigenspace μ)) σ
-  exact mem_eigenspace_iff.mp hmem
-
-/-! ## Diagonal endomorphisms -/
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- The diagonal endomorphism with entries `c` relative to basis `b`:
-sends `b i ↦ c i • b i`. -/
 noncomputable def diagEnd {ι : Type*}
     (b : Module.Basis ι K V) (c : ι → K) : Module.End K V :=
   b.constr K (fun i => c i • b i)
 
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 theorem diagEnd_apply_basis {ι : Type*}
     (b : Module.Basis ι K V) (c : ι → K) (k : ι) :
     diagEnd b c (b k) = c k • b k := by
   simp [diagEnd, Module.Basis.constr_basis]
 
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 theorem trace_diagEnd {ι : Type*} [Fintype ι]
     (b : Module.Basis ι K V) (c : ι → K) :
     trace K V (diagEnd b c) = ∑ i, c i := by
@@ -120,11 +74,7 @@ theorem trace_diagEnd {ι : Type*} [Fintype ι]
     by_cases h : i = j <;> simp [h]
   rw [trace_eq_matrix_trace K b, this, Matrix.trace_diagonal]
 
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 open Classical in
-/-- `⁅s, e(i,j)⁆ = (aᵢ − aⱼ) • e(i,j)` when `s` is diagonal with eigenvalues `a`
-in the basis `b`, where `e(i,j) = b.linearMap b (i,j)` is the standard matrix unit. -/
 theorem ad_diag_basis {ι : Type*} [Fintype ι]
     (b : Module.Basis ι K V) (a : ι → K) (s : Module.End K V)
     (hs : ∀ k, s (b k) = a k • b k)
@@ -138,20 +88,10 @@ theorem ad_diag_basis {ι : Type*} [Fintype ι]
   · subst hjk; simp [hs i, sub_smul]
   · simp [hjk]
 
-/-! ## The set M -/
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
 /-- The set `M = {x ∈ gl(V) : [x, B] ⊆ A}`. -/
 abbrev M (A B : Submodule K (Module.End K V)) : Set (Module.End K V) :=
   {x | ∀ b ∈ B, ⁅x, b⁆ ∈ A}
 
-/-! ## Polynomial-in-ad preserves the M condition -/
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- Any polynomial in `ad(x)` without constant term maps `B` into `A`.
-
-If `x ∈ M(A, B)` (meaning `[x, B] ⊆ A`) and `q(0) = 0`, then `q(ad x)` also
-maps `B` into `A`. -/
 lemma aeval_ad_maps_to
     (A B : Submodule K (Module.End K V)) (hAB : A ≤ B)
     (x : Module.End K V) (hxM : ∀ b ∈ B, ⁅x, b⁆ ∈ A)
@@ -178,11 +118,48 @@ lemma aeval_ad_maps_to
   rw [map_mul, Polynomial.aeval_X, Module.End.mul_apply]
   exact hxM _ (hpoly_B q' b hb)
 
-/-! ## Lagrange interpolation for eigenvalue differences -/
+end General
 
-omit [IsAlgClosed K] in
-/-- Lagrange interpolation produces a polynomial `r` with `r(0) = 0` and
-`r(aᵢ − aⱼ) = f(aᵢ) − f(aⱼ)` for all index pairs `(i, j)`. -/
+section EigenBasis
+
+variable {K : Type*} [Field K] [IsAlgClosed K]
+  {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
+
+open Classical in
+noncomputable def eigenspaceIsInternal
+    (s : Module.End K V) (hs : s.IsSemisimple) :
+    DirectSum.IsInternal (fun μ : K => s.eigenspace μ) := by
+  rw [DirectSum.isInternal_submodule_iff_iSupIndep_and_iSup_eq_top]
+  exact ⟨s.eigenspaces_iSupIndep, by
+    have := iSup_maxGenEigenspace_eq_top s
+    simp_rw [hs.isFinitelySemisimple.maxGenEigenspace_eq_eigenspace] at this
+    exact this⟩
+
+open Classical in
+noncomputable def eigenbasis (s : Module.End K V) (hs : s.IsSemisimple) :=
+  (eigenspaceIsInternal s hs).collectedBasis
+    (fun μ => Module.finBasis K (s.eigenspace μ))
+
+open Classical in
+noncomputable instance eigenbasisFintype (s : Module.End K V) (hs : s.IsSemisimple) :
+    Fintype (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :=
+  Module.Basis.fintypeIndexOfRankLtAleph0 (eigenbasis s hs)
+    (Module.rank_lt_aleph0 K V)
+
+open Classical in
+theorem eigenbasis_eigenvalue (s : Module.End K V) (hs : s.IsSemisimple)
+    (σ : Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :
+    s (eigenbasis s hs σ) = σ.1 • eigenbasis s hs σ := by
+  have hmem := (eigenspaceIsInternal s hs).collectedBasis_mem
+    (fun μ => Module.finBasis K (s.eigenspace μ)) σ
+  exact mem_eigenspace_iff.mp hmem
+
+end EigenBasis
+
+section Lagrange
+
+variable {K : Type*} [Field K] [CharZero K]
+
 lemma exists_lagrange_polynomial
     {ι : Type*} [Finite ι]
     (a : ι → K) (E : Submodule ℚ K) (f : E →ₗ[ℚ] ℚ)
@@ -218,9 +195,14 @@ lemma exists_lagrange_polynomial
         simp only [diffs, Finset.image_eq_empty]; exact Finset.univ_eq_empty
       simp [Lagrange.interpolate_apply, h_empty]
 
+end Lagrange
+
 end HumphreysLemma
 
-open HumphreysLemma in
+variable {K : Type*} [Field K] [IsAlgClosed K] [CharZero K]
+  {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
+
+open LinearMap Module.End HumphreysLemma in
 /-- **Humphreys' Lemma** over algebraically closed fields of characteristic zero.
 
 Given subspaces `A ≤ B` of `gl(V)` and `M = {z ∈ gl(V) : [z, B] ⊆ A}`,
