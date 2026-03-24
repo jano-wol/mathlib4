@@ -158,14 +158,11 @@ lemma aeval_ad_maps_to
     (q : Polynomial K) (hq : Polynomial.eval 0 q = 0) :
     ∀ b ∈ B, (Polynomial.aeval (LieAlgebra.ad K (Module.End K V) x) q) b ∈ A := by
   set ad_x := LieAlgebra.ad K (Module.End K V) x
-  have hdvd : Polynomial.X ∣ q := by
-    have h := Polynomial.dvd_iff_isRoot.mpr (show q.IsRoot 0 from hq)
-    simpa using h
-  obtain ⟨q', rfl⟩ := hdvd
+  obtain ⟨q', rfl⟩ : Polynomial.X ∣ q := by simpa using Polynomial.dvd_iff_isRoot.mpr hq
   have had_B : ∀ b ∈ B, ad_x b ∈ B := fun b hb => hAB (hxM b hb)
   have hpow_B : ∀ (n : ℕ) (b : Module.End K V), b ∈ B → (ad_x ^ n) b ∈ B := by
     intro n; induction n with
-    | zero => intro b hb; simpa using hb
+    | zero => simp
     | succ n ih => intro b hb; rw [pow_succ', Module.End.mul_apply]; exact had_B _ (ih b hb)
   have hpoly_B : ∀ (p : Polynomial K) (b : Module.End K V), b ∈ B →
       (Polynomial.aeval ad_x p) b ∈ B := by
@@ -318,10 +315,12 @@ theorem humphreys_lemma_algClosed
       rw [Module.End.aeval_apply_of_mem_eigenspace (hv_diag i), hg_eval i, diagEnd_apply_basis]
     have hy_adj_x : y ∈ Algebra.adjoin K {x} := Algebra.adjoin_singleton_le hs_adj <| by
       rw [Algebra.adjoin_singleton_eq_range_aeval]; exact ⟨g, hy_eq⟩
+    have hcommute_ny : Commute n y :=
+      Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x
+        (Algebra.commute_of_mem_adjoin_self hn_adj).symm
     have htr_ny : trace K V (n * y) = 0 :=
       (LinearMap.isNilpotent_trace_of_isNilpotent
-        ((Algebra.commute_of_mem_adjoin_singleton_of_commute hy_adj_x
-          (Algebra.commute_of_mem_adjoin_self hn_adj).symm).isNilpotent_mul_right hn_nil)).eq_zero
+        (hcommute_ny.isNilpotent_mul_right hn_nil)).eq_zero
     have hsy_diag : s * y =
         diagEnd v (fun i => a i * algebraMap ℚ K (f ⟨a i, ha i⟩)) := by
       apply v.ext; intro i
