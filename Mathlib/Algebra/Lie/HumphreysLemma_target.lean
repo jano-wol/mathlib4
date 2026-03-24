@@ -92,34 +92,6 @@ theorem eigenbasis_eigenvalue (s : Module.End K V) (hs : s.IsSemisimple)
     (fun μ => Module.finBasis K (s.eigenspace μ)) σ
   exact mem_eigenspace_iff.mp hmem
 
-/-! ## Elementary endomorphisms `e_{ij}` -/
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- The elementary endomorphism `e_{ij}`: sends `b j ↦ b i`, all other basis
-vectors to `0`. In coordinates: `e_{ij}(v) = ⟨v, b*.j⟩ • b i`. -/
-noncomputable def eij {ι : Type*}
-    (b : Module.Basis ι K V) (i j : ι) : Module.End K V :=
-  (b.coord j).smulRight (b i)
-
-omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-/-- `⁅s, e_{ij}⁆ = (aᵢ − aⱼ) • e_{ij}` when `s` is diagonal with eigenvalues `a`
-in the basis `b`. -/
-theorem ad_diag_eij {ι : Type*}
-    (b : Module.Basis ι K V) (a : ι → K) (s : Module.End K V)
-    (hs : ∀ k, s (b k) = a k • b k)
-    (i j : ι) : ⁅s, eij b i j⁆ = (a i - a j) • eij b i j := by
-  classical
-  apply b.ext; intro k
-  change s (eij b i j (b k)) - eij b i j (s (b k)) =
-    (a i - a j) • eij b i j (b k)
-  simp only [eij, LinearMap.smulRight_apply, Module.Basis.coord_apply, hs k,
-    map_smul, Module.Basis.repr_self]
-  by_cases hjk : k = j
-  · subst hjk
-    simp only [Finsupp.single_eq_same, one_smul, hs i, sub_smul]
-  · simp only [Finsupp.single_apply, hjk, ↓reduceIte, zero_smul, smul_zero,
-      sub_self]
-
 /-! ## Diagonal endomorphisms -/
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
@@ -150,13 +122,21 @@ theorem trace_diagEnd {ι : Type*} [Fintype ι]
 
 
 omit [IsAlgClosed K] [CharZero K] [FiniteDimensional K V] in
-theorem eij_eq_linearMap {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (b : Module.Basis ι K V) (i j : ι) :
-    eij b i j = (b.linearMap b) (i, j) := by
+open Classical in
+/-- `⁅s, e(i,j)⁆ = (aᵢ − aⱼ) • e(i,j)` when `s` is diagonal with eigenvalues `a`
+in the basis `b`, where `e(i,j) = b.linearMap b (i,j)` is the standard matrix unit. -/
+theorem ad_diag_basis {ι : Type*} [Fintype ι]
+    (b : Module.Basis ι K V) (a : ι → K) (s : Module.End K V)
+    (hs : ∀ k, s (b k) = a k • b k)
+    (i j : ι) :
+    ⁅s, (b.linearMap b) (i, j)⁆ = (a i - a j) • (b.linearMap b) (i, j) := by
   apply b.ext; intro k
-  rw [Module.Basis.linearMap_apply_apply]
-  simp only [eij, LinearMap.smulRight_apply, Module.Basis.coord_apply, Module.Basis.repr_self]
-  by_cases h : j = k <;> simp [h]
+  change s ((b.linearMap b) (i, j) (b k)) - (b.linearMap b) (i, j) (s (b k)) =
+    (a i - a j) • (b.linearMap b) (i, j) (b k)
+  simp only [Module.Basis.linearMap_apply_apply, hs k, map_smul]
+  by_cases hjk : j = k
+  · subst hjk; simp [hs i, sub_smul]
+  · simp [hjk]
 
 /-! ## The set M -/
 
@@ -283,22 +263,21 @@ theorem humphreys_lemma_algClosed
     exact congr_arg Subtype.val hμ_zero
   intro f
   have ha : ∀ i, a i ∈ E := fun i => Submodule.subset_span (Set.mem_range_self i)
-  let y := diagEnd v (fun i => algebraMap ℚ K (f ⟨a i, ha i⟩))
-  have had_s : ∀ i j, ⁅s, eij v i j⁆ = (a i - a j) • eij v i j :=
-    ad_diag_eij v a s hv_diag
-  have had_y : ∀ i j, ⁅y, eij v i j⁆ =
-      (algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) •
-        eij v i j :=
-    fun i j => ad_diag_eij v _ (diagEnd v _) (diagEnd_apply_basis v _) i j
+  classical
   haveI : Fintype (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))) :=
     eigenbasisFintype s hs_ss
+  let y := diagEnd v (fun i => algebraMap ℚ K (f ⟨a i, ha i⟩))
+  have had_s : ∀ i j, ⁅s, (v.linearMap v) (i, j)⁆ =
+      (a i - a j) • (v.linearMap v) (i, j) := ad_diag_basis v a s hv_diag
+  have had_y : ∀ i j, ⁅y, (v.linearMap v) (i, j)⁆ =
+      (algebraMap ℚ K (f ⟨a i, ha i⟩) - algebraMap ℚ K (f ⟨a j, ha j⟩)) •
+        (v.linearMap v) (i, j) :=
+    fun i j => ad_diag_basis v _ (diagEnd v _) (diagEnd_apply_basis v _) i j
   obtain ⟨r, hr_eval, hr_zero⟩ := exists_lagrange_polynomial a E f ha
   let ad_s := LieAlgebra.ad K (Module.End K V) s
   have had_y_eq : LieAlgebra.ad K (Module.End K V) y = Polynomial.aeval ad_s r := by
-    classical
     apply (v.linearMap v).ext; intro ⟨i, j⟩
-    simp only [← eij_eq_linearMap]
-    change ⁅y, eij v i j⁆ = (Polynomial.aeval ad_s r) (eij v i j)
+    change ⁅y, (v.linearMap v) (i, j)⁆ = (Polynomial.aeval ad_s r) ((v.linearMap v) (i, j))
     rw [Module.End.aeval_apply_of_mem_eigenspace (had_s i j), hr_eval i j, had_y i j]
   have hc_ns : Commute n s :=
     Algebra.commute_of_mem_adjoin_singleton_of_commute hs_adj
@@ -326,7 +305,6 @@ theorem humphreys_lemma_algClosed
   have htr_xy : trace K V (x * y) = 0 := htr y hyM
   have htr_sum : ∑ i : (Σ μ : K, Fin (Module.finrank K (s.eigenspace μ))),
       a i * algebraMap ℚ K (f ⟨a i, ha i⟩) = 0 := by
-    classical
     let eigenvals : Finset K := Finset.univ.image a
     let c_val : K → K := fun μ => if hμ : μ ∈ E then algebraMap ℚ K (f ⟨μ, hμ⟩) else 0
     let g := Lagrange.interpolate eigenvals _root_.id c_val
