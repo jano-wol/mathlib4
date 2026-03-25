@@ -60,6 +60,15 @@ lemma sl2SubmoduleOfRoot_le_ideal (I : LieIdeal K L) {α : H.root}
   simp only [Pi.neg_apply, ne_eq, neg_eq_zero]
   exact_mod_cast root_apply_coroot (H.isNonZero_coe_root α) ▸ two_ne_zero
 
+lemma sl2_le_iSup_of_mem_rootSet (I : LieIdeal K L) {β : H.root}
+    (hβ : β ∈ I.rootSet (H := H)) (N : LieSubmodule K H L)
+    (hN : N ≤ sl2SubmoduleOfRoot (H.isNonZero_coe_root β)) :
+    N.toSubmodule ≤ ⨆ x : {α : Weight K H L //
+        Weight.toLinear K H L α ∈ I.rootSpan ∧ α.IsNonZero},
+      (sl2SubmoduleOfRoot x.2.2).toSubmodule :=
+  (show N.toSubmodule ≤ _ from hN).trans
+    (le_iSup_of_le ⟨↑β, Submodule.subset_span ⟨β, hβ, rfl⟩, H.isNonZero_coe_root β⟩ le_rfl)
+
 lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
     invtSubmoduleToLieIdeal (I.rootSpan (H := H))
       ((rootSystem H).mem_invtRootSubmodule_iff.mp
@@ -74,72 +83,39 @@ lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
   · rw [LieSubmodule.iSup_toSubmodule]
     have h_decomp := congr_arg LieSubmodule.toSubmodule
       (lieIdeal_eq_inf_cartan_sup_biSup_rootSpace (H := H) I)
-    simp only [LieSubmodule.restr_toSubmodule, LieSubmodule.sup_toSubmodule,
-      LieSubmodule.iSup_toSubmodule, LieSubmodule.inf_toSubmodule,
-      LieSubalgebra.coe_toLieSubmodule] at h_decomp
     have h_cartan := congr_arg LieSubmodule.toSubmodule
       (I.restr_inf_cartan_eq_biSup_corootSubmodule (H := H))
-    simp only [LieSubmodule.inf_toSubmodule, LieSubmodule.restr_toSubmodule,
-      LieSubalgebra.coe_toLieSubmodule, LieSubmodule.iSup_toSubmodule] at h_cartan
+    simp only [LieSubmodule.restr_toSubmodule, LieSubmodule.sup_toSubmodule,
+      LieSubmodule.iSup_toSubmodule, LieSubmodule.inf_toSubmodule,
+      LieSubalgebra.coe_toLieSubmodule] at h_decomp h_cartan
     conv_lhs => rw [h_decomp, h_cartan]
     apply sup_le
-    · exact iSup₂_le fun β hβ ↦ by
-        have hβ_nz : (↑β : Weight K H L).IsNonZero := (Finset.mem_filter.mp β.property).2
-        exact le_iSup_of_le ⟨↑β, Submodule.subset_span ⟨β, hβ, rfl⟩, hβ_nz⟩
-          (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
-              exact le_sup_right)
-    · exact iSup₂_le fun α hα ↦ by
-        have hα_nz : (α.val : Weight K H L).IsNonZero := by
-          simpa [LieSubalgebra.root] using (Finset.mem_filter.mp α.property).2
-        exact le_iSup_of_le ⟨α.val, Submodule.subset_span ⟨α, hα, rfl⟩, hα_nz⟩
-          (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
-              exact le_sup_of_le_left le_sup_left)
+    · exact iSup₂_le fun β hβ ↦ sl2_le_iSup_of_mem_rootSet I hβ _
+        (by rw [sl2SubmoduleOfRoot_eq_sup]; exact le_sup_right)
+    · exact iSup₂_le fun α hα ↦ sl2_le_iSup_of_mem_rootSet I hα _
+        (by rw [sl2SubmoduleOfRoot_eq_sup]; exact le_sup_of_le_left le_sup_left)
 
-lemma invtSubmoduleToLieIdeal_mono {q₁ q₂ : Submodule K (Dual K H)}
-    (hq₁ : ∀ i, q₁ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
-    (hq₂ : ∀ i, q₂ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
-    (h : q₁ ≤ q₂) :
-    invtSubmoduleToLieIdeal q₁ hq₁ ≤ invtSubmoduleToLieIdeal q₂ hq₂ := by
-  rw [← LieSubmodule.toSubmodule_le_toSubmodule,
-      coe_invtSubmoduleToLieIdeal_eq_iSup, coe_invtSubmoduleToLieIdeal_eq_iSup,
-      LieSubmodule.iSup_toSubmodule, LieSubmodule.iSup_toSubmodule]
-  exact iSup_le fun ⟨α, hα_mem, hα_nz⟩ ↦ le_iSup_of_le ⟨α, h hα_mem, hα_nz⟩ le_rfl
-
-lemma lieIdealOrderIso_map_rel_iff {I J : LieIdeal K L} :
-    I.toInvtRootSubmodule (H := H) ≤ J.toInvtRootSubmodule ↔ I ≤ J :=
-  ⟨fun h ↦ by rw [← lieIdealOrderIso_left_inv (H := H) I,
-      ← lieIdealOrderIso_left_inv (H := H) J]; exact invtSubmoduleToLieIdeal_mono _ _ h,
-   LieIdeal.toInvtRootSubmodule_mono⟩
-
-private lemma mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal
+lemma rootSpace_disjoint_invtSubmoduleToLieIdeal
     (q : (rootSystem H).invtRootSubmodule)
-    {α : H.root} (hα : (rootSpace H (↑α : Weight K H L)).toSubmodule ≤
-      (invtSubmoduleToLieIdeal q.1
-        ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)).toSubmodule) :
-    (rootSystem H).root α ∈ (q : Submodule K (Dual K H)) := by
-  by_contra hα_not
-  set I := invtSubmoduleToLieIdeal q.1 ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)
+    {α : H.root} (hα_not : (rootSystem H).root α ∉ (q : Submodule K (Dual K H))) :
+    (rootSpace H (↑α : Weight K H L)).toSubmodule ⊓
+      (invtSubmoduleToLieIdeal q.1 ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)).toSubmodule
+        = ⊥ := by
   have hα_nz : (↑α : Weight K H L).IsNonZero := (Finset.mem_filter.mp α.property).2
-  have h_inter_bot : (rootSpace H (↑α : Weight K H L)).toSubmodule ⊓ I.toSubmodule = ⊥ := by
-    rw [coe_invtSubmoduleToLieIdeal_eq_iSup, ← disjoint_iff, LieSubmodule.disjoint_toSubmodule]
-    apply Disjoint.mono_right _ (iSupIndep_genWeightSpace K H L (↑(↑α : Weight K H L)))
-    apply iSup_le; intro ⟨β, hβ_mem, hβ_nz⟩
-    have hβ_ne : (β : H → K) ≠ ((↑α : Weight K H L) : H → K) := fun heq ↦ by
-      exact hα_not (by simpa [rootSystem_root_apply] using DFunLike.coe_injective heq ▸ hβ_mem)
-    have hnβ_ne : ((-β : Weight K H L) : H → K) ≠ ((↑α : Weight K H L) : H → K) := by
-      intro heq; apply hα_not; rw [rootSystem_root_apply]
-      have h_neg : Weight.toLinear K H L (-β) ∈ q.1 := by
-        rw [Weight.toLinear_neg]; exact q.1.neg_mem hβ_mem
-      rwa [show (-β : Weight K H L) = (↑α : Weight K H L) from DFunLike.coe_injective heq]
-        at h_neg
-    rw [sl2SubmoduleOfRoot_eq_sup]
-    exact sup_le (sup_le (le_iSup₂_of_le (↑β : H → K) hβ_ne le_rfl)
-      (le_iSup₂_of_le (↑(-β : Weight K H L) : H → K) hnβ_ne le_rfl))
-      ((LieSubmodule.map_incl_le.trans (rootSpace_zero_eq K L H).symm.le).trans
-        (le_iSup₂_of_le (0 : H → K) (fun h => hα_nz h.symm) le_rfl))
-  rw [inf_eq_left.mpr hα] at h_inter_bot
-  exact Weight.genWeightSpace_ne_bot L (↑α : Weight K H L)
-    ((LieSubmodule.toSubmodule_eq_bot _).mp h_inter_bot)
+  rw [coe_invtSubmoduleToLieIdeal_eq_iSup, ← disjoint_iff, LieSubmodule.disjoint_toSubmodule]
+  apply Disjoint.mono_right _ (iSupIndep_genWeightSpace K H L (↑(↑α : Weight K H L)))
+  apply iSup_le; intro ⟨β, hβ_mem, hβ_nz⟩
+  have hβ_ne : (β : H → K) ≠ ((↑α : Weight K H L) : H → K) := fun heq ↦
+    hα_not (by simpa [rootSystem_root_apply] using DFunLike.coe_injective heq ▸ hβ_mem)
+  have hnβ_ne : ((-β : Weight K H L) : H → K) ≠ ((↑α : Weight K H L) : H → K) := by
+    intro heq; apply hα_not; rw [rootSystem_root_apply]
+    have : Weight.toLinear K H L (-β) ∈ q.1 := by rw [Weight.toLinear_neg]; exact q.1.neg_mem hβ_mem
+    rwa [show (-β : Weight K H L) = (↑α : Weight K H L) from DFunLike.coe_injective heq] at this
+  rw [sl2SubmoduleOfRoot_eq_sup]
+  exact sup_le (sup_le (le_iSup₂_of_le (↑β : H → K) hβ_ne le_rfl)
+    (le_iSup₂_of_le (↑(-β : Weight K H L) : H → K) hnβ_ne le_rfl))
+    ((LieSubmodule.map_incl_le.trans (rootSpace_zero_eq K L H).symm.le).trans
+      (le_iSup₂_of_le (0 : H → K) (fun h => hα_nz h.symm) le_rfl))
 
 def lieIdealOrderIso :
     LieIdeal K L ≃o (rootSystem H).invtRootSubmodule where
@@ -147,14 +123,17 @@ def lieIdealOrderIso :
   invFun q := invtSubmoduleToLieIdeal q.1
     ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)
   left_inv I := lieIdealOrderIso_left_inv I
-  right_inv := by
-    intro q
+  right_inv q := by
     apply Subtype.ext
     simp only [LieIdeal.toInvtRootSubmodule, LieIdeal.rootSpan, LieIdeal.rootSet]
     apply le_antisymm
     · apply Submodule.span_le.mpr
       rintro _ ⟨α, hα, rfl⟩
-      exact mem_invtSubmodule_of_rootSpace_le_invtSubmoduleToLieIdeal q hα
+      by_contra hα_not
+      have h_bot := rootSpace_disjoint_invtSubmoduleToLieIdeal q hα_not
+      rw [inf_eq_left.mpr hα] at h_bot
+      exact (↑α : Weight K H L).genWeightSpace_ne_bot L
+        ((LieSubmodule.toSubmodule_eq_bot _).mp h_bot)
     · apply (RootPairing.invtRootSubmodule.eq_span_root q).le.trans
       apply Submodule.span_mono; apply Set.image_mono
       intro i hi
@@ -164,10 +143,17 @@ def lieIdealOrderIso :
         (invtSubmoduleToLieIdeal q.1
           ((rootSystem H).mem_invtRootSubmodule_iff.mp q.2)).toSubmodule
       rw [coe_invtSubmoduleToLieIdeal_eq_iSup, LieSubmodule.iSup_toSubmodule]
-      apply le_iSup_of_le ⟨(↑i : Weight K H L), hi, hi_nz⟩
-      rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
-      exact le_sup_of_le_left le_sup_left
-  map_rel_iff' := lieIdealOrderIso_map_rel_iff
+      exact le_iSup_of_le ⟨(↑i : Weight K H L), hi, hi_nz⟩
+        (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
+            exact le_sup_of_le_left le_sup_left)
+  map_rel_iff' {I J} :=
+    ⟨fun h ↦ by rw [← lieIdealOrderIso_left_inv (H := H) I,
+        ← lieIdealOrderIso_left_inv (H := H) J]
+                rw [← LieSubmodule.toSubmodule_le_toSubmodule,
+                    coe_invtSubmoduleToLieIdeal_eq_iSup, coe_invtSubmoduleToLieIdeal_eq_iSup,
+                    LieSubmodule.iSup_toSubmodule, LieSubmodule.iSup_toSubmodule]
+                exact iSup_le fun ⟨α, hα_mem, hα_nz⟩ ↦ le_iSup_of_le ⟨α, h hα_mem, hα_nz⟩ le_rfl,
+     LieIdeal.toInvtRootSubmodule_mono⟩
 
 end
 
