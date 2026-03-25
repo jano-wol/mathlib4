@@ -91,8 +91,8 @@ theorem humphreys_lemma
     (A B : Submodule K (End K V))
     (hAB : A ≤ B)
     (x : End K V)
-    (hxM : x ∈ HumphreysLemma.M A B)
-    (htr : ∀ z ∈ HumphreysLemma.M A B, trace K V (x * z) = 0) :
+    (hxM : x ∈ NilpotentOfTrace.M A B)
+    (htr : ∀ z ∈ NilpotentOfTrace.M A B, trace K V (x * z) = 0) :
     IsNilpotent x := by
   let Kbar := AlgebraicClosure K
   let bc : End K V → End Kbar (Kbar ⊗[K] V) := fun f => f.baseChange Kbar
@@ -110,7 +110,7 @@ theorem humphreys_lemma
     (IsNilpotent.map_iff (End.baseChangeHom_injective (Kbar := Kbar))).symm]
   let A' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑A)
   let B' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑B)
-  apply humphreys_lemma_algClosed A' B'
+  apply isNilpotent_of_trace_orthogonal_algClosed A' B'
   · exact Submodule.span_mono (Set.image_mono hAB)
   · intro b' hb'
     induction hb' using Submodule.span_induction with
