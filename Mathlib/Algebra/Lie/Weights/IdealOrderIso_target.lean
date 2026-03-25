@@ -37,38 +37,19 @@ noncomputable section
 
 /-! ### Order isomorphism -/
 
-omit [CharZero K] [IsTriangularizable K H L] in
-lemma cartanEquivDual_symm_comm (f g : Dual K H) :
-    f ((cartanEquivDual H).symm g) = g ((cartanEquivDual H).symm f) := by
-  conv_lhs => rw [← LinearEquiv.apply_symm_apply (cartanEquivDual H) f]
-  conv_rhs => rw [← LinearEquiv.apply_symm_apply (cartanEquivDual H) g]
-  simp only [cartanEquivDual_apply_apply]
-  exact LieModule.traceForm_comm K H L _ _
-
 lemma mem_rootSet_of_mem_rootSpan (I : LieIdeal K L)
     {α : H.root} (hα_span : (↑α : Dual K H) ∈ I.rootSpan (H := H)) :
     α ∈ I.rootSet (H := H) := by
   by_contra hα_not
   have hα_nz : (↑α : Weight K H L).IsNonZero := (Finset.mem_filter.mp α.property).2
-  have h_vanish : ∀ γ ∈ I.rootSet (H := H),
-      (↑α : Weight K H L) (coroot (↑γ : Weight K H L)) = 0 := fun γ hγ ↦
-    I.root_apply_eq_zero_of_notMem_rootSet
-      (I.corootSubmodule_le hγ (coe_coroot_mem_corootSubmodule (↑γ : Weight K H L))) hα_not
-  have h_span_le : I.rootSpan (H := H) ≤
-      LinearMap.ker (Module.Dual.eval K H ((cartanEquivDual H).symm (↑α : Dual K H))) := by
-    rw [LieIdeal.rootSpan]
-    apply Submodule.span_le.mpr
+  have h_le : I.rootSpan (H := H) ≤ LinearMap.ker (Dual.eval K H (coroot (↑α : Weight K H L))) := by
+    rw [LieIdeal.rootSpan]; apply Submodule.span_le.mpr
     rintro _ ⟨γ, hγ, rfl⟩
-    simp only [SetLike.mem_coe, LinearMap.mem_ker, Module.Dual.eval_apply]
-    rw [cartanEquivDual_symm_comm]
-    have h_mem := cartanEquivDual_symm_apply_mem_corootSpace (↑γ : Weight K H L)
-    rw [← LieSubmodule.mem_toSubmodule, coe_corootSpace_eq_span_singleton] at h_mem
-    obtain ⟨c, hc⟩ := Submodule.mem_span_singleton.mp h_mem
-    simp only [rootSystem_root_apply]; rw [← hc]
-    change (↑(↑α : Weight K H L) : H →ₗ[K] K) (c • coroot (↑γ : Weight K H L)) = 0
-    simp [h_vanish γ hγ]
-  exact root_apply_cartanEquivDual_symm_ne_zero hα_nz
-    (by simpa [Module.Dual.eval_apply] using LinearMap.mem_ker.mp (h_span_le hα_span))
+    simp only [SetLike.mem_coe, LinearMap.mem_ker, Dual.eval_apply, rootSystem_root_apply]
+    exact I.rootSet_apply_coroot_eq_zero_of_notMem_rootSet hγ hα_not
+  have := LinearMap.mem_ker.mp (h_le hα_span)
+  simp only [Dual.eval_apply, Weight.toLinear_apply, root_apply_coroot hα_nz] at this
+  exact absurd this two_ne_zero
 
 lemma sl2SubmoduleOfRoot_le_ideal (I : LieIdeal K L) {α : H.root}
     (hα : α ∈ I.rootSet (H := H)) :
@@ -104,17 +85,15 @@ lemma lieIdealOrderIso_left_inv (I : LieIdeal K L) :
     apply sup_le
     · exact iSup₂_le fun β hβ ↦ by
         have hβ_nz : (↑β : Weight K H L).IsNonZero := (Finset.mem_filter.mp β.property).2
-        exact (le_iSup_of_le
-          ⟨(↑β : Weight K H L), Submodule.subset_span ⟨β, hβ, rfl⟩, hβ_nz⟩
+        exact le_iSup_of_le ⟨↑β, Submodule.subset_span ⟨β, hβ, rfl⟩, hβ_nz⟩
           (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
-              exact le_sup_right))
-    · exact iSup₂_le fun α hα_le ↦ by
+              exact le_sup_right)
+    · exact iSup₂_le fun α hα ↦ by
         have hα_nz : (α.val : Weight K H L).IsNonZero := by
           simpa [LieSubalgebra.root] using (Finset.mem_filter.mp α.property).2
-        exact (le_iSup_of_le ⟨α.val, Submodule.subset_span
-            ⟨α, hα_le, rfl⟩, hα_nz⟩
-            (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
-                exact le_sup_of_le_left le_sup_left))
+        exact le_iSup_of_le ⟨α.val, Submodule.subset_span ⟨α, hα, rfl⟩, hα_nz⟩
+          (by rw [LieSubmodule.toSubmodule_le_toSubmodule, sl2SubmoduleOfRoot_eq_sup]
+              exact le_sup_of_le_left le_sup_left)
 
 lemma invtSubmoduleToLieIdeal_mono {q₁ q₂ : Submodule K (Dual K H)}
     (hq₁ : ∀ i, q₁ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
