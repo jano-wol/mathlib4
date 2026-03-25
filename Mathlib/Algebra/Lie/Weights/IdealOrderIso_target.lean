@@ -117,6 +117,17 @@ lemma rootSpace_disjoint_invtSubmoduleToLieIdeal
     ((LieSubmodule.map_incl_le.trans (rootSpace_zero_eq K L H).symm.le).trans
       (le_iSup₂_of_le (0 : H → K) (fun h => hα_nz h.symm) le_rfl))
 
+@[gcongr]
+lemma invtSubmoduleToLieIdeal_mono {q₁ q₂ : Submodule K (Dual K H)}
+    (hq₁ : ∀ i, q₁ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
+    (hq₂ : ∀ i, q₂ ∈ End.invtSubmodule ((rootSystem H).reflection i).toLinearMap)
+    (h : q₁ ≤ q₂) :
+    invtSubmoduleToLieIdeal q₁ hq₁ ≤ invtSubmoduleToLieIdeal q₂ hq₂ := by
+  rw [← LieSubmodule.toSubmodule_le_toSubmodule,
+    coe_invtSubmoduleToLieIdeal_eq_iSup, coe_invtSubmoduleToLieIdeal_eq_iSup,
+    LieSubmodule.iSup_toSubmodule, LieSubmodule.iSup_toSubmodule]
+  exact iSup_le fun ⟨α, hα_mem, hα_nz⟩ ↦ le_iSup_of_le ⟨α, h hα_mem, hα_nz⟩ le_rfl
+
 def lieIdealOrderIso :
     LieIdeal K L ≃o (rootSystem H).invtRootSubmodule where
   toFun := LieIdeal.toInvtRootSubmodule
@@ -148,11 +159,8 @@ def lieIdealOrderIso :
             exact le_sup_of_le_left le_sup_left)
   map_rel_iff' {I J} :=
     ⟨fun h ↦ by rw [← lieIdealOrderIso_left_inv (H := H) I,
-        ← lieIdealOrderIso_left_inv (H := H) J]
-                rw [← LieSubmodule.toSubmodule_le_toSubmodule,
-                    coe_invtSubmoduleToLieIdeal_eq_iSup, coe_invtSubmoduleToLieIdeal_eq_iSup,
-                    LieSubmodule.iSup_toSubmodule, LieSubmodule.iSup_toSubmodule]
-                exact iSup_le fun ⟨α, hα_mem, hα_nz⟩ ↦ le_iSup_of_le ⟨α, h hα_mem, hα_nz⟩ le_rfl,
+                    ← lieIdealOrderIso_left_inv (H := H) J]
+                exact invtSubmoduleToLieIdeal_mono _ _ h,
      LieIdeal.toInvtRootSubmodule_mono⟩
 
 end
