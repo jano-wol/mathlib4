@@ -204,7 +204,7 @@ theorem humphreys_lemma
       intro a g
       have : a ⊗ₜ[K] g = a • ((1 : Kbar) ⊗ₜ[K] g) := by
         simp [TensorProduct.smul_tmul']
-      erw [this, map_smul, isBaseChange_end_equiv_tmul_one]; rfl
+      erw [this, map_smul, isBaseChange_end_equiv_tmul_one]
     let ew (w : Kbar ⊗[K] End K V) : End Kbar (Kbar ⊗[K] V) := e w
     have hew_zero : ew 0 = 0 := map_zero e
     have hew_add : ∀ a b, ew (a + b) = ew a + ew b := fun a b => map_add e a b
