@@ -122,37 +122,29 @@ theorem humphreys_lemma
     | add _ _ _ _ ha hb => rw [lie_add]; exact A'.add_mem ha hb
     | smul c _ _ hb => rw [lie_smul]; exact A'.smul_mem c hb
   · intro z hz
-    let M_sub : Submodule K (End K V) :=
-      { carrier := {w | ∀ b ∈ B, ⁅w, b⁆ ∈ A}
-        zero_mem' := fun _ _ => by simp
-        add_mem' := fun ha hb c hc => by rw [add_lie]; exact A.add_mem (ha c hc) (hb c hc)
-        smul_mem' := fun c _ ha b hb => by rw [smul_lie]; exact A.smul_mem c (ha b hb) }
-    suffices hz_mem : z ∈ Submodule.span Kbar (bc '' (M_sub : Set _)) by
-      refine (?_ : Submodule.span Kbar (bc '' (M_sub : Set _)) ≤
-        LinearMap.ker ((trace Kbar _).comp (LinearMap.mulLeft Kbar (bc x)))) hz_mem
-      rw [Submodule.span_le]
-      rintro _ ⟨z₀, hz₀, rfl⟩
-      change trace Kbar _ (bc x * bc z₀) = 0
-      rw [← map_mul bc, show bc (x * z₀) = (x * z₀).baseChange Kbar from rfl,
-        LinearMap.trace_baseChange, htr z₀ hz₀, map_zero]
-    rw [hspan_bc M_sub, Submodule.mem_map_equiv]
-    set s := finrank K ↥B
     let bB := finBasis K ↥B
-    let φ : Fin s → (End K V →ₗ[K] End K V ⧸ A) := fun i =>
+    let φ : Fin _ → (End K V →ₗ[K] End K V ⧸ A) := fun i =>
       (Submodule.mkQ A).comp (mulRight K (bB i).1 - mulLeft K (bB i).1)
     let Φ := LinearMap.pi φ
-    have hkerΦ : ker Φ = M_sub := by
-      ext w
-      simp only [mem_ker, Φ, pi_apply, φ, LinearMap.comp_apply, Submodule.mkQ_apply,
-        Submodule.Quotient.mk_eq_zero, funext_iff, Pi.zero_apply]
-      refine ⟨fun h b hb ↦ ?_, fun h i ↦ h (bB i).1 (bB i).2⟩
+    -- Elements of `ker Φ` satisfy `[w, b] ∈ A` for every `b ∈ B`.
+    have hker_le : ∀ w ∈ ker Φ, ∀ b ∈ B, ⁅w, b⁆ ∈ A := fun w hw b hb ↦ by
+      simp only [Φ, mem_ker, pi_apply, φ, LinearMap.comp_apply, Submodule.mkQ_apply,
+        Submodule.Quotient.mk_eq_zero, funext_iff, Pi.zero_apply] at hw
       obtain ⟨c, rfl⟩ := bB.mem_submodule_iff'.mp hb
       change w * _ - _ * w ∈ A
       rw [Finset.mul_sum, Finset.sum_mul, ← Finset.sum_sub_distrib]
       exact A.sum_mem fun i _ ↦ by
         rw [mul_smul_comm, smul_mul_assoc, ← smul_sub]
-        exact A.smul_mem _ (h i)
-    rw [← hkerΦ, ← ker_baseChange_eq, mem_ker]
+        exact A.smul_mem _ (hw i)
+    suffices hz_mem : z ∈ Submodule.span Kbar (bc '' (ker Φ : Set _)) by
+      refine (?_ : Submodule.span Kbar (bc '' (ker Φ : Set _)) ≤
+        LinearMap.ker ((trace Kbar _).comp (LinearMap.mulLeft Kbar (bc x)))) hz_mem
+      rw [Submodule.span_le]
+      rintro _ ⟨z₀, hz₀, rfl⟩
+      change trace Kbar _ (bc x * bc z₀) = 0
+      rw [← map_mul bc, show bc (x * z₀) = (x * z₀).baseChange Kbar from rfl,
+        LinearMap.trace_baseChange, htr z₀ (hker_le z₀ hz₀), map_zero]
+    rw [hspan_bc (ker Φ), Submodule.mem_map_equiv, ← ker_baseChange_eq, mem_ker]
     refine baseChange_pi_eq_zero Φ _ fun i ↦ ?_
     -- Let `L := mulRight - mulLeft` for `(bB i).1`; the `i`-th component of `Φ` is `mkQ A ∘ L`.
     set L : End K V →ₗ[K] End K V := mulRight K (bB i).1 - mulLeft K (bB i).1
