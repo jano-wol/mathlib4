@@ -43,39 +43,10 @@ lemma End.baseChangeHom_injective :
   simpa using FaithfullyFlat.tensorProduct_mk_injective (A := K) (B := Kbar) V
     (LinearMap.congr_fun hfg ((1 : Kbar) ⊗ₜ[K] v))
 
-private lemma isBaseChange_end_equiv_tmul (a : Kbar) (f : End K V) :
-    ((TensorProduct.isBaseChange K V Kbar).end).equiv (a ⊗ₜ f) = a • f.baseChange Kbar := by
-  rw [IsBaseChange.equiv_tmul]
-  apply (TensorProduct.isBaseChange K V Kbar).algHom_ext; intro v
-  rw [LinearMap.smul_apply, IsBaseChange.endHom_comp_apply]
-  simp [baseChange_tmul]
-
 private lemma ker_baseChange_eq {N P : Type*} [AddCommGroup N] [AddCommGroup P]
     [Module K N] [Module K P] (f : N →ₗ[K] P) :
     LinearMap.ker (f.baseChange Kbar) = (LinearMap.ker f).baseChange Kbar :=
   Flat.ker_lTensor_eq (M := Kbar) (S := Kbar) f
-
-private lemma piRight_baseChange_component {N Q : Type*} [AddCommGroup N] [Module K N]
-    [AddCommGroup Q] [Module K Q] {ι : Type*} [Fintype ι] [DecidableEq ι]
-    (Φ : N →ₗ[K] (ι → Q)) (w : Kbar ⊗[K] N) (i : ι) :
-    TensorProduct.piRight K Kbar Kbar (fun _ : ι => Q) (Φ.baseChange Kbar w) i =
-      ((proj i).comp Φ).baseChange Kbar w := by
-  induction w using TensorProduct.induction_on with
-  | zero => simp
-  | tmul a n => simp [baseChange_tmul, TensorProduct.piRight]
-  | add x y hx hy => simp only [map_add, Pi.add_apply, hx, hy]
-
-/-- If a base-changed `LinearMap.pi` has every component acting by zero on `w`, then it
-acts by zero on `w`. -/
-private lemma baseChange_pi_eq_zero {N Q : Type*} [AddCommGroup N] [Module K N]
-    [AddCommGroup Q] [Module K Q] {ι : Type*} [Finite ι]
-    (Φ : N →ₗ[K] (ι → Q)) (w : Kbar ⊗[K] N)
-    (h : ∀ i, ((proj i).comp Φ).baseChange Kbar w = 0) :
-    Φ.baseChange Kbar w = 0 := by
-  have := Fintype.ofFinite ι; classical
-  let pR := TensorProduct.piRight K Kbar Kbar (fun _ : ι => Q)
-  suffices pR (Φ.baseChange Kbar w) = 0 from pR.injective (this.trans pR.map_zero.symm)
-  ext i; rw [piRight_baseChange_component, h i, Pi.zero_apply]
 
 end BaseChange
 
@@ -96,8 +67,11 @@ theorem humphreys_lemma
   haveI : FiniteDimensional Kbar (Kbar ⊗[K] V) := Module.Finite.base_change K Kbar V
   let bc : End K V →ₐ[K] End Kbar (Kbar ⊗[K] V) := End.baseChangeHom K Kbar V
   let e := (TensorProduct.isBaseChange K V Kbar).end.equiv
-  have he_tmul : ∀ (a : Kbar) (f : End K V), e (a ⊗ₜ f) = a • bc f :=
-    isBaseChange_end_equiv_tmul
+  have he_tmul : ∀ (a : Kbar) (f : End K V), e (a ⊗ₜ f) = a • bc f := fun a f ↦ by
+    rw [IsBaseChange.equiv_tmul]
+    apply (TensorProduct.isBaseChange K V Kbar).algHom_ext; intro v
+    rw [LinearMap.smul_apply, IsBaseChange.endHom_comp_apply]
+    rfl
   have he_one : ∀ f : End K V, e (1 ⊗ₜ f) = bc f := fun f => by rw [he_tmul, one_smul]
   -- Bridge: `span Kbar (bc '' S) = (S.baseChange Kbar).map e.toLinearMap` for any K-submodule S.
   have hspan_bc : ∀ S : Submodule K (End K V),
@@ -138,7 +112,17 @@ theorem humphreys_lemma
       rw [← map_mul bc, show bc (x * z₀) = (x * z₀).baseChange Kbar from rfl,
         LinearMap.trace_baseChange, htr z₀ (hker_le z₀ hz₀), map_zero]
     rw [hspan_bc (ker Φ), Submodule.mem_map_equiv, ← ker_baseChange_eq, mem_ker]
-    refine baseChange_pi_eq_zero Φ _ fun i ↦ ?_
+    -- Check `(pi φ).baseChange Kbar (e.symm z) = 0` component-wise via `piRight` injectivity.
+    refine (TensorProduct.piRight K Kbar Kbar _).injective ?_
+    rw [map_zero]
+    funext i
+    have hpiR : ∀ w, TensorProduct.piRight K Kbar Kbar _ (Φ.baseChange Kbar w) i =
+        ((proj i).comp Φ).baseChange Kbar w := fun w ↦ by
+      induction w using TensorProduct.induction_on with
+      | zero => simp
+      | tmul a n => simp [baseChange_tmul, TensorProduct.piRight]
+      | add x y hx hy => simp only [map_add, Pi.add_apply, hx, hy]
+    rw [hpiR, Pi.zero_apply]
     -- Let `L := mulRight - mulLeft` for `(bB i).1`; the `i`-th component of `Φ` is `mkQ A ∘ L`.
     set L : End K V →ₗ[K] End K V := mulRight K (bB i).1 - mulLeft K (bB i).1
     rw [show (proj i).comp Φ = (Submodule.mkQ A).comp L from by ext; simp [Φ, φ, L],
