@@ -102,25 +102,19 @@ theorem humphreys_lemma
   -- Bridge: `span Kbar (bc '' S) = (S.baseChange Kbar).map e.toLinearMap` for any K-submodule S.
   have hspan_bc : ∀ S : Submodule K (End K V),
       Submodule.span Kbar (bc '' (S : Set _)) = (S.baseChange Kbar).map e.toLinearMap := fun S ↦ by
-    rw [Submodule.baseChange_eq_span, Submodule.map_span, Submodule.map_coe,
-      ← Set.image_comp]
-    congr 1
-    exact Set.image_congr fun f _ ↦ (he_one f).symm
+    rw [Submodule.baseChange_eq_span, Submodule.map_span, Submodule.map_coe, ← Set.image_comp]
+    exact congr_arg _ (Set.image_congr fun f _ ↦ (he_one f).symm)
   rw [← IsNilpotent.map_iff (f := End.baseChangeHom K Kbar V) End.baseChangeHom_injective]
   let A' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑A)
   let B' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑B)
   apply isNilpotent_of_trace_orthogonal_algClosed A' B'
   · exact Submodule.span_mono (Set.image_mono hAB)
-  · intro b' hb'
-    induction hb' using Submodule.span_induction with
-    | mem _ h =>
-      obtain ⟨b, hb, rfl⟩ := h
-      change bc x * bc b - bc b * bc x ∈ A'
-      rw [← map_mul bc, ← map_mul bc, ← map_sub bc]
-      exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
-    | zero => rw [lie_zero]; exact A'.zero_mem
-    | add _ _ _ _ ha hb => rw [lie_add]; exact A'.add_mem ha hb
-    | smul c _ _ hb => rw [lie_smul]; exact A'.smul_mem c hb
+  · refine fun b' hb' ↦ (?_ : B' ≤ A'.comap (LieAlgebra.ad Kbar _ (bc x))) hb'
+    rw [Submodule.span_le]
+    rintro _ ⟨b, hb, rfl⟩
+    change bc x * bc b - bc b * bc x ∈ A'
+    rw [← map_mul bc, ← map_mul bc, ← map_sub bc]
+    exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
   · intro z hz
     let bB := finBasis K ↥B
     let φ : Fin _ → (End K V →ₗ[K] End K V ⧸ A) := fun i =>
@@ -132,10 +126,9 @@ theorem humphreys_lemma
         Submodule.Quotient.mk_eq_zero, funext_iff, Pi.zero_apply] at hw
       obtain ⟨c, rfl⟩ := bB.mem_submodule_iff'.mp hb
       change w * _ - _ * w ∈ A
-      rw [Finset.mul_sum, Finset.sum_mul, ← Finset.sum_sub_distrib]
-      exact A.sum_mem fun i _ ↦ by
-        rw [mul_smul_comm, smul_mul_assoc, ← smul_sub]
-        exact A.smul_mem _ (hw i)
+      simp only [Finset.mul_sum, Finset.sum_mul, ← Finset.sum_sub_distrib,
+        mul_smul_comm, smul_mul_assoc, ← smul_sub]
+      exact A.sum_mem fun i _ ↦ A.smul_mem _ (hw i)
     suffices hz_mem : z ∈ Submodule.span Kbar (bc '' (ker Φ : Set _)) by
       refine (?_ : Submodule.span Kbar (bc '' (ker Φ : Set _)) ≤
         LinearMap.ker ((trace Kbar _).comp (LinearMap.mulLeft Kbar (bc x)))) hz_mem
