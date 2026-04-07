@@ -49,53 +49,40 @@ lemma killingCompl_top_le_radical :
   have ad_nil : ∀ x ∈ (SS : LieSubmodule K L L).toSubmodule, IsNilpotent (ad_lin x) := by
     intro x hx
     apply humphreys_lemma A B hAB
-    · intro b hb
-      obtain ⟨s, hs, rfl⟩ := hb
-      change ⁅ad_lin x, ad_lin s⁆ ∈ A
-      have h_lie : ad_lin ⁅x, s⁆ = ⁅ad_lin x, ad_lin s⁆ := LieHom.map_lie (ad K L) x s
-      rw [← h_lie]
+    · rintro _ ⟨s, hs, rfl⟩
+      rw [show ⁅ad_lin x, ad_lin s⁆ = ad_lin ⁅x, s⁆ from (LieHom.map_lie (ad K L) x s).symm]
       exact Submodule.mem_map_of_mem
         (LieSubmodule.lie_le_left SS S (LieSubmodule.lie_mem_lie hx hs))
     · intro z hz
-      have hx' : x ∈ Submodule.span K {⁅a, b⁆ | (a ∈ (S : LieSubmodule K L L))
-          (b ∈ (S : LieSubmodule K L L))} := by
-        rw [← LieSubmodule.lieIdeal_oper_eq_linear_span']; exact hx
-      refine Submodule.span_induction (p := fun x _ =>
-          trace K L (ad_lin x * z) = 0) ?_ ?_ ?_ ?_ hx'
-      · rintro _ ⟨a, ha, b, hb, rfl⟩
-        have h_lie : ad_lin ⁅a, b⁆ = ad_lin a * ad_lin b - ad_lin b * ad_lin a :=
-          LieHom.map_lie (ad K L) a b
-        rw [h_lie, sub_mul, map_sub,
-          ← trace_mul_cycle (R := K) (M := L) (ad_lin a) z (ad_lin b), ← map_sub,
-          show ad_lin a * ad_lin b * z - ad_lin a * z * ad_lin b =
-            ad_lin a * (ad_lin b * z - z * ad_lin b) from by simp only [mul_sub, mul_assoc]]
-        have hz_comm : ad_lin b * z - z * ad_lin b ∈ A := by
-          have h := A.neg_mem (hz (ad_lin b) (Submodule.mem_map_of_mem hb))
-          rw [show -⁅z, ad_lin b⁆ = -(z * ad_lin b - ad_lin b * z) from rfl,
-            neg_sub] at h
-          exact h
-        obtain ⟨w, hw, hwz⟩ := hz_comm
-        rw [← hwz]
-        change (trace K L) ((ad K L) a ∘ₗ (ad K L) w) = 0
-        rw [← killingForm_apply_apply, LieModule.traceForm_comm]
-        exact (LieIdeal.mem_killingCompl K L ⊤).mp ha w (LieSubmodule.mem_top w)
-      · simp
-      · intro x₁ x₂ _ _ h1 h2; rw [map_add, add_mul, map_add, h1, h2, add_zero]
-      · intro c x₁ _ h1; rw [map_smul, smul_mul_assoc, LinearMap.map_smul, h1, smul_zero]
+      -- View `{y | trace (ad_lin y * z) = 0}` as the kernel of a linear form, a submodule.
+      change x ∈ LinearMap.ker ((trace K L).comp ((LinearMap.mulRight K z).comp ad_lin))
+      refine Submodule.span_le.mpr ?_ ((LieSubmodule.lieIdeal_oper_eq_linear_span'
+        (I := S) (N := S)) ▸ hx)
+      rintro _ ⟨a, ha, b, hb, rfl⟩
+      change trace K L (ad_lin ⁅a, b⁆ * z) = 0
+      rw [show ad_lin ⁅a, b⁆ = ad_lin a * ad_lin b - ad_lin b * ad_lin a from
+            LieHom.map_lie (ad K L) a b,
+        sub_mul, map_sub,
+        ← trace_mul_cycle (R := K) (M := L) (ad_lin a) z (ad_lin b), ← map_sub,
+        show ad_lin a * ad_lin b * z - ad_lin a * z * ad_lin b =
+          ad_lin a * (ad_lin b * z - z * ad_lin b) from by simp only [mul_sub, mul_assoc]]
+      have hz_comm : ad_lin b * z - z * ad_lin b ∈ A := by
+        have := A.neg_mem (hz (ad_lin b) (Submodule.mem_map_of_mem hb))
+        rwa [show -⁅z, ad_lin b⁆ = ad_lin b * z - z * ad_lin b from
+          neg_sub (z * ad_lin b) (ad_lin b * z)] at this
+      obtain ⟨w, hw, hwz⟩ := hz_comm
+      rw [← hwz]
+      change (trace K L) ((ad K L) a ∘ₗ (ad K L) w) = 0
+      rw [← killingForm_apply_apply, LieModule.traceForm_comm]
+      exact (LieIdeal.mem_killingCompl K L ⊤).mp ha w (LieSubmodule.mem_top w)
   have ss_nilpotent : LieRing.IsNilpotent ↥SS := by
     haveI : IsNoetherian K ↥SS :=
       isNoetherian_submodule' (SS : LieSubmodule K L L).toSubmodule
     rw [LieAlgebra.isNilpotent_iff_forall (R := K)]
-    intro ⟨x, hx⟩
-    obtain ⟨n, hn⟩ := ad_nil x hx
-    have h_inv : ∀ y ∈ (SS : LieSubmodule K L L).toSubmodule,
-        ad_lin x y ∈ (SS : LieSubmodule K L L).toSubmodule := fun _ hy => SS.lie_mem hy
-    have h_eq : ad K ↥SS ⟨x, hx⟩ = (ad_lin x).restrict h_inv := by ext ⟨_, _⟩; rfl
-    refine ⟨n, ?_⟩
-    rw [h_eq]; erw [Module.End.pow_restrict n h_inv]
-    ext ⟨y, hy⟩
-    simp only [LinearMap.restrict_apply]
-    exact LinearMap.congr_fun hn y
+    rintro ⟨x, hx⟩
+    rw [show ad K ↥SS ⟨x, hx⟩ = (ad_lin x).restrict (fun _ hy ↦ SS.lie_mem hy) from
+      by ext ⟨_, _⟩; rfl]
+    exact Module.End.isNilpotent.restrict _ (ad_nil x hx)
   obtain ⟨k, hk⟩ := (isSolvable_iff K ↥SS).mp inferInstance
   rw [LieIdeal.derivedSeries_eq_bot_iff] at hk
   exact IsSolvable.mk (R := K) (k := k + 1) (by
