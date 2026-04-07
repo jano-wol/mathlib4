@@ -41,11 +41,10 @@ lemma killingCompl_top_le_radical :
   rw [← LieIdeal.solvable_iff_le_radical]
   set S := LieIdeal.killingCompl K L ⊤
   set SS : LieIdeal K L := ⁅S, S⁆
-  let ad_lin : L →ₗ[K] End K L := (ad K L : L →ₗ⁅K⁆ End K L)
+  let ad_lin : L →ₗ[K] End K L := ad K L
   set A : Submodule K (End K L) := (SS : LieSubmodule K L L).toSubmodule.map ad_lin
   set B : Submodule K (End K L) := (S : LieSubmodule K L L).toSubmodule.map ad_lin
-  have hAB : A ≤ B := Submodule.map_mono
-    ((LieSubmodule.toSubmodule_le_toSubmodule SS S).mpr (LieSubmodule.lie_le_left S S))
+  have hAB : A ≤ B := Submodule.map_mono (LieSubmodule.lie_le_left S S)
   have ad_nil : ∀ x ∈ (SS : LieSubmodule K L L).toSubmodule, IsNilpotent (ad_lin x) := by
     intro x hx
     apply humphreys_lemma A B hAB
@@ -56,8 +55,8 @@ lemma killingCompl_top_le_radical :
     · intro z hz
       -- View `{y | trace (ad_lin y * z) = 0}` as the kernel of a linear form, a submodule.
       change x ∈ LinearMap.ker ((trace K L).comp ((LinearMap.mulRight K z).comp ad_lin))
-      refine Submodule.span_le.mpr ?_ ((LieSubmodule.lieIdeal_oper_eq_linear_span'
-        (I := S) (N := S)) ▸ hx)
+      rw [LieSubmodule.lieIdeal_oper_eq_linear_span' (I := S) (N := S)] at hx
+      refine Submodule.span_le.mpr ?_ hx
       rintro _ ⟨a, ha, b, hb, rfl⟩
       change trace K L (ad_lin ⁅a, b⁆ * z) = 0
       rw [show ad_lin ⁅a, b⁆ = ad_lin a * ad_lin b - ad_lin b * ad_lin a from
@@ -76,18 +75,16 @@ lemma killingCompl_top_le_radical :
       rw [← killingForm_apply_apply, LieModule.traceForm_comm]
       exact (LieIdeal.mem_killingCompl K L ⊤).mp ha w (LieSubmodule.mem_top w)
   have ss_nilpotent : LieRing.IsNilpotent ↥SS := by
-    haveI : IsNoetherian K ↥SS :=
-      isNoetherian_submodule' (SS : LieSubmodule K L L).toSubmodule
+    have : IsNoetherian K ↥SS := isNoetherian_submodule' (SS : LieSubmodule K L L).toSubmodule
     rw [LieAlgebra.isNilpotent_iff_forall (R := K)]
     rintro ⟨x, hx⟩
-    rw [show ad K ↥SS ⟨x, hx⟩ = (ad_lin x).restrict (fun _ hy ↦ SS.lie_mem hy) from
+    rw [show ad K ↥SS ⟨x, hx⟩ = (ad_lin x).restrict fun _ hy ↦ SS.lie_mem hy from
       by ext ⟨_, _⟩; rfl]
     exact Module.End.isNilpotent.restrict _ (ad_nil x hx)
-  obtain ⟨k, hk⟩ := (isSolvable_iff K ↥SS).mp inferInstance
+  obtain ⟨k, hk⟩ := IsSolvable.solvable K ↥SS
   rw [LieIdeal.derivedSeries_eq_bot_iff] at hk
-  exact IsSolvable.mk (R := K) (k := k + 1) (by
-    rw [LieIdeal.derivedSeries_eq_bot_iff, derivedSeriesOfIdeal_add,
-      derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]; exact hk)
+  refine .mk (k := k + 1) ((LieIdeal.derivedSeries_eq_bot_iff S (k + 1)).mpr ?_)
+  rw [derivedSeriesOfIdeal_add, derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]; exact hk
 
 /-- In characteristic zero, any finite-dimensional Lie algebra with trivial radical has
 non-degenerate Killing form. -/
