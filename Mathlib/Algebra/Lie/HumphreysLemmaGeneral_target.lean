@@ -68,11 +68,9 @@ theorem humphreys_lemma
   let bc : End K V →ₐ[K] End Kbar (Kbar ⊗[K] V) := End.baseChangeHom K Kbar V
   let e := (TensorProduct.isBaseChange K V Kbar).end.equiv
   have he_tmul : ∀ (a : Kbar) (f : End K V), e (a ⊗ₜ f) = a • bc f := fun a f ↦ by
-    rw [IsBaseChange.equiv_tmul]
     apply (TensorProduct.isBaseChange K V Kbar).algHom_ext; intro v
-    rw [LinearMap.smul_apply, IsBaseChange.endHom_comp_apply]
-    rfl
-  have he_one : ∀ f : End K V, e (1 ⊗ₜ f) = bc f := fun f => by rw [he_tmul, one_smul]
+    rw [IsBaseChange.equiv_tmul, LinearMap.smul_apply, IsBaseChange.endHom_comp_apply]; rfl
+  have he_one : ∀ f : End K V, e (1 ⊗ₜ f) = bc f := fun f ↦ by rw [he_tmul, one_smul]
   -- Bridge: `span Kbar (bc '' S) = (S.baseChange Kbar).map e.toLinearMap` for any K-submodule S.
   have hspan_bc : ∀ S : Submodule K (End K V),
       Submodule.span Kbar (bc '' (S : Set _)) = (S.baseChange Kbar).map e.toLinearMap := fun S ↦ by
@@ -91,51 +89,38 @@ theorem humphreys_lemma
     exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
   · intro z hz
     let bB := finBasis K ↥B
-    let φ : Fin _ → (End K V →ₗ[K] End K V ⧸ A) := fun i =>
+    let Φ : End K V →ₗ[K] (Fin _ → End K V ⧸ A) := LinearMap.pi fun i ↦
       (Submodule.mkQ A).comp (mulRight K (bB i).1 - mulLeft K (bB i).1)
-    let Φ := LinearMap.pi φ
     -- Elements of `ker Φ` satisfy `[w, b] ∈ A` for every `b ∈ B`.
     have hker_le : ∀ w ∈ ker Φ, ∀ b ∈ B, ⁅w, b⁆ ∈ A := fun w hw b hb ↦ by
-      simp only [Φ, mem_ker, pi_apply, φ, LinearMap.comp_apply, Submodule.mkQ_apply,
+      simp only [Φ, mem_ker, pi_apply, LinearMap.comp_apply, Submodule.mkQ_apply,
         Submodule.Quotient.mk_eq_zero, funext_iff, Pi.zero_apply] at hw
       obtain ⟨c, rfl⟩ := bB.mem_submodule_iff'.mp hb
-      change w * _ - _ * w ∈ A
-      simp only [Finset.mul_sum, Finset.sum_mul, ← Finset.sum_sub_distrib,
-        mul_smul_comm, smul_mul_assoc, ← smul_sub]
-      exact A.sum_mem fun i _ ↦ A.smul_mem _ (hw i)
+      simpa [lie_sum, lie_smul] using A.sum_mem fun i _ ↦ A.smul_mem (c i) (hw i)
     suffices hz_mem : z ∈ Submodule.span Kbar (bc '' (ker Φ : Set _)) by
-      refine (?_ : Submodule.span Kbar (bc '' (ker Φ : Set _)) ≤
-        LinearMap.ker ((trace Kbar _).comp (LinearMap.mulLeft Kbar (bc x)))) hz_mem
-      rw [Submodule.span_le]
+      change z ∈ LinearMap.ker ((trace Kbar _).comp (LinearMap.mulLeft Kbar (bc x)))
+      refine Submodule.span_le.mpr ?_ hz_mem
       rintro _ ⟨z₀, hz₀, rfl⟩
       change trace Kbar _ (bc x * bc z₀) = 0
       rw [← map_mul bc, show bc (x * z₀) = (x * z₀).baseChange Kbar from rfl,
         LinearMap.trace_baseChange, htr z₀ (hker_le z₀ hz₀), map_zero]
     rw [hspan_bc (ker Φ), Submodule.mem_map_equiv, ← ker_baseChange_eq, mem_ker]
-    -- Check `(pi φ).baseChange Kbar (e.symm z) = 0` component-wise via `piRight` injectivity.
-    refine (TensorProduct.piRight K Kbar Kbar _).injective ?_
-    rw [map_zero]
-    funext i
-    have hpiR : ∀ w, TensorProduct.piRight K Kbar Kbar _ (Φ.baseChange Kbar w) i =
-        ((proj i).comp Φ).baseChange Kbar w := fun w ↦ by
-      induction w using TensorProduct.induction_on with
-      | zero => simp
-      | tmul a n => simp [baseChange_tmul, TensorProduct.piRight]
-      | add x y hx hy => simp only [map_add, Pi.add_apply, hx, hy]
-    rw [hpiR, Pi.zero_apply]
+    -- Check `Φ.baseChange Kbar (e.symm z) = 0` component-wise via `piRight` injectivity.
+    refine (TensorProduct.piRight K Kbar Kbar _).injective (funext fun i ↦ ?_)
+    rw [show (TensorProduct.piRight K Kbar Kbar _) (Φ.baseChange Kbar (e.symm z)) i =
+        ((proj i).comp Φ).baseChange Kbar (e.symm z) from (e.symm z).induction_on (by simp)
+      (fun a n ↦ by simp [baseChange_tmul, TensorProduct.piRight])
+      (fun u v hu hv ↦ by simp only [map_add, Pi.add_apply, hu, hv]), map_zero, Pi.zero_apply]
     -- Let `L := mulRight - mulLeft` for `(bB i).1`; the `i`-th component of `Φ` is `mkQ A ∘ L`.
     set L : End K V →ₗ[K] End K V := mulRight K (bB i).1 - mulLeft K (bB i).1
-    rw [show (proj i).comp Φ = (Submodule.mkQ A).comp L from by ext; simp [Φ, φ, L],
+    rw [show (proj i).comp Φ = (Submodule.mkQ A).comp L from LinearMap.proj_pi _ i,
       baseChange_comp, comp_apply, ← mem_ker, ker_baseChange_eq, Submodule.ker_mkQ]
     -- Through `e`, the base-changed `L` becomes the commutator with `bc (bB i).1`.
     have hcomm : ∀ w : Kbar ⊗[K] End K V,
-        e (L.baseChange Kbar w) = e w * bc (bB i).1 - bc (bB i).1 * e w := fun w ↦ by
-      induction w using TensorProduct.induction_on with
-      | zero => simp
-      | tmul a f =>
-        rw [show L.baseChange Kbar (a ⊗ₜ f) = a ⊗ₜ (f * (bB i).1 - (bB i).1 * f) from rfl,
-          he_tmul, he_tmul, map_sub, map_mul, map_mul, smul_sub, smul_mul_assoc, mul_smul_comm]
-      | add u v hu hv => rw [map_add, map_add, hu, hv, map_add, add_mul, mul_add]; abel
+        e (L.baseChange Kbar w) = e w * bc (bB i).1 - bc (bB i).1 * e w := fun w ↦
+      w.induction_on (by simp)
+        (fun a f ↦ by simp [L, baseChange_tmul, he_tmul, map_sub, map_mul])
+        (fun u v hu hv ↦ by simp [hu, hv, add_mul, mul_add]; abel)
     rw [← e.symm_apply_apply (L.baseChange Kbar (e.symm z)), ← Submodule.mem_map_equiv,
       ← hspan_bc A, hcomm, e.apply_symm_apply]
     exact hz _ (Submodule.subset_span ⟨(bB i).1, (bB i).2, rfl⟩)
