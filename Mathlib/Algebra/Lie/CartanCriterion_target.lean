@@ -42,38 +42,21 @@ lemma killingCompl_top_le_radical :
   set S := LieIdeal.killingCompl K L ⊤
   set SS : LieIdeal K L := ⁅S, S⁆
   let ad_lin : L →ₗ[K] End K L := ad K L
-  set A : Submodule K (End K L) := (SS : LieSubmodule K L L).toSubmodule.map ad_lin
-  set B : Submodule K (End K L) := (S : LieSubmodule K L L).toSubmodule.map ad_lin
-  have hAB : A ≤ B := Submodule.map_mono (LieSubmodule.lie_le_left S S)
+  have hS_tf : LieModule.traceForm K ↥S L = 0 := by
+    ext ⟨x, hxS⟩ ⟨y, hyS⟩
+    change trace K L ((ad K L) x ∘ₗ (ad K L) y) = 0
+    rw [← killingForm_apply_apply, LieModule.traceForm_comm]
+    exact (LieIdeal.mem_killingCompl K L ⊤).mp hxS y (LieSubmodule.mem_top y)
+  have key : LieModule.IsNilpotent (LieAlgebra.derivedSeries K ↥S 1) L :=
+    LieModule.isNilpotent_toEnd_of_traceForm_eq_zero hS_tf
+  rw [LieModule.isNilpotent_iff_forall' (R := K)] at key
   have ad_nil : ∀ x ∈ (SS : LieSubmodule K L L).toSubmodule, IsNilpotent (ad_lin x) := by
     intro x hx
-    apply humphreys_lemma A B hAB
-    · rintro _ ⟨s, hs, rfl⟩
-      rw [show ⁅ad_lin x, ad_lin s⁆ = ad_lin ⁅x, s⁆ from (LieHom.map_lie (ad K L) x s).symm]
-      exact Submodule.mem_map_of_mem
-        (LieSubmodule.lie_le_left SS S (LieSubmodule.lie_mem_lie hx hs))
-    · intro z hz
-      -- View `{y | trace (ad_lin y * z) = 0}` as the kernel of a linear form, a submodule.
-      change x ∈ LinearMap.ker ((trace K L).comp ((LinearMap.mulRight K z).comp ad_lin))
-      rw [LieSubmodule.lieIdeal_oper_eq_linear_span' (I := S) (N := S)] at hx
-      refine Submodule.span_le.mpr ?_ hx
-      rintro _ ⟨a, ha, b, hb, rfl⟩
-      change trace K L (ad_lin ⁅a, b⁆ * z) = 0
-      rw [show ad_lin ⁅a, b⁆ = ad_lin a * ad_lin b - ad_lin b * ad_lin a from
-            LieHom.map_lie (ad K L) a b,
-        sub_mul, map_sub,
-        ← trace_mul_cycle (R := K) (M := L) (ad_lin a) z (ad_lin b), ← map_sub,
-        show ad_lin a * ad_lin b * z - ad_lin a * z * ad_lin b =
-          ad_lin a * (ad_lin b * z - z * ad_lin b) from by simp only [mul_sub, mul_assoc]]
-      have hz_comm : ad_lin b * z - z * ad_lin b ∈ A := by
-        have := A.neg_mem (hz (ad_lin b) (Submodule.mem_map_of_mem hb))
-        rwa [show -⁅z, ad_lin b⁆ = ad_lin b * z - z * ad_lin b from
-          neg_sub (z * ad_lin b) (ad_lin b * z)] at this
-      obtain ⟨w, hw, hwz⟩ := hz_comm
-      rw [← hwz]
-      change (trace K L) ((ad K L) a ∘ₗ (ad K L) w) = 0
-      rw [← killingForm_apply_apply, LieModule.traceForm_comm]
-      exact (LieIdeal.mem_killingCompl K L ⊤).mp ha w (LieSubmodule.mem_top w)
+    have hxS : x ∈ S := LieSubmodule.lie_le_left S S hx
+    have hxDS : (⟨x, hxS⟩ : ↥S) ∈ LieAlgebra.derivedSeries K ↥S 1 := by
+      rw [LieIdeal.derivedSeries_eq_derivedSeriesOfIdeal_comap, LieIdeal.mem_comap]
+      exact hx
+    exact key ⟨⟨x, hxS⟩, hxDS⟩
   have ss_nilpotent : LieRing.IsNilpotent ↥SS := by
     have : IsNoetherian K ↥SS := isNoetherian_submodule' (SS : LieSubmodule K L L).toSubmodule
     rw [LieAlgebra.isNilpotent_iff_forall (R := K)]
