@@ -5,23 +5,23 @@ Authors: Janos Wolosz
 -/
 module
 
+public import Mathlib.Algebra.Lie.BaseChange
 public import Mathlib.Algebra.Lie.HumphreysLemma_target
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
-public import Mathlib.RingTheory.Flat.Equalizer
-public import Mathlib.RingTheory.TensorProduct.IsBaseChangeHom
-public import Mathlib.LinearAlgebra.TensorProduct.Pi
-public import Mathlib.LinearAlgebra.Basis.VectorSpace
 
 /-!
-# Humphreys' Lemma (general characteristic zero case)
+# Trace-nilpotency criterion over arbitrary characteristic-zero fields
 
-This file proves Humphreys' lemma over arbitrary fields of characteristic zero
-by scalar extension to the algebraic closure.
+This file removes the `IsAlgClosed` hypothesis from
+`LieModule.isNilpotent_toEnd_of_traceForm_eq_zero_algClosed` by scalar extension to the algebraic
+closure.
 
 ## Main results
 
-* `humphreys_lemma`: Humphreys' lemma over arbitrary fields of characteristic zero.
+* `LieModule.isNilpotent_toEnd_of_traceForm_eq_zero`: the derived ideal `⁅L, L⁆` acts nilpotently
+  on any finite-dimensional representation `M` of a Lie algebra `L` whose trace form vanishes,
+  over any field of characteristic zero.
 -/
 
 @[expose] public section
@@ -34,93 +34,78 @@ section BaseChange
 variable {K : Type*} [Field K] {Kbar : Type*} [Field Kbar] [Algebra K Kbar]
   {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
 
--- TODO: belongs in Mathlib/LinearAlgebra/TensorProduct/Tower.lean or similar
 omit [FiniteDimensional K V] in
-/-- Base change of endomorphisms is injective for field extensions. -/
 lemma End.baseChangeHom_injective :
     Function.Injective (End.baseChangeHom K Kbar V) := fun f g hfg ↦ by
   ext v
   simpa using FaithfullyFlat.tensorProduct_mk_injective (A := K) (B := Kbar) V
     (LinearMap.congr_fun hfg ((1 : Kbar) ⊗ₜ[K] v))
 
-private lemma ker_baseChange_eq {N P : Type*} [AddCommGroup N] [AddCommGroup P]
-    [Module K N] [Module K P] (f : N →ₗ[K] P) :
-    LinearMap.ker (f.baseChange Kbar) = (LinearMap.ker f).baseChange Kbar :=
-  Flat.ker_lTensor_eq (M := Kbar) (S := Kbar) f
-
 end BaseChange
 
-/-- **Humphreys' Lemma** over arbitrary fields of characteristic zero.
+namespace LieModule
+
+private lemma traceForm_baseChange_eq_zero
+    {K L M : Type*} [Field K]
+    [LieRing L] [LieAlgebra K L]
+    [AddCommGroup M] [Module K M] [LieRingModule L M] [LieModule K L M]
+    [FiniteDimensional K M]
+    {Kbar : Type*} [Field Kbar] [Algebra K Kbar]
+    (h : traceForm K L M = 0) :
+    traceForm Kbar (Kbar ⊗[K] L) (Kbar ⊗[K] M) = 0 := by
+  apply LinearMap.ext
+  refine fun u => TensorProduct.induction_on u ?_ ?_ ?_
+  · simp
+  · intro a x
+    apply LinearMap.ext
+    refine fun v => TensorProduct.induction_on v ?_ ?_ ?_
+    · simp
+    · intro b y
+      rw [LinearMap.zero_apply, LinearMap.zero_apply, traceForm_apply_apply]
+      have hx : toEnd Kbar (Kbar ⊗[K] L) (Kbar ⊗[K] M) (a ⊗ₜ[K] x) =
+          a • (toEnd K L M x).baseChange Kbar := by
+        rw [TensorProduct.tmul_eq_smul_one_tmul, map_smul, toEnd_baseChange]
+      have hy : toEnd Kbar (Kbar ⊗[K] L) (Kbar ⊗[K] M) (b ⊗ₜ[K] y) =
+          b • (toEnd K L M y).baseChange Kbar := by
+        rw [TensorProduct.tmul_eq_smul_one_tmul, map_smul, toEnd_baseChange]
+      rw [hx, hy, LinearMap.smul_comp, LinearMap.comp_smul, smul_smul,
+        ← LinearMap.baseChange_comp, map_smul, LinearMap.trace_baseChange]
+      have ht : trace K M (toEnd K L M x ∘ₗ toEnd K L M y) = 0 := by
+        have := LinearMap.congr_fun (LinearMap.congr_fun h x) y
+        rwa [traceForm_apply_apply, LinearMap.zero_apply, LinearMap.zero_apply] at this
+      simp [ht]
+    · intro v₁ v₂ hv₁ hv₂
+      rw [map_add, hv₁, hv₂, map_add]
+  · intro u₁ u₂ hu₁ hu₂
+    rw [map_add, hu₁, hu₂, map_add]
+
+/-- **Trace-nilpotency criterion** over arbitrary fields of characteristic zero.
 
 Proved by scalar extension to the algebraic closure.
-See `humphreys_lemma_algClosed` for the algebraically closed case. -/
-theorem humphreys_lemma
+See `isNilpotent_toEnd_of_traceForm_eq_zero_algClosed` for the algebraically closed case. -/
+theorem isNilpotent_toEnd_of_traceForm_eq_zero
     {K : Type*} [Field K] [CharZero K]
-    {V : Type*} [AddCommGroup V] [Module K V] [FiniteDimensional K V]
-    (A B : Submodule K (End K V))
-    (hAB : A ≤ B)
-    (x : End K V)
-    (hxM : x ∈ NilpotentOfTrace.M A B)
-    (htr : ∀ z ∈ NilpotentOfTrace.M A B, trace K V (x * z) = 0) :
-    IsNilpotent x := by
+    {L : Type*} [LieRing L] [LieAlgebra K L]
+    {M : Type*} [AddCommGroup M] [Module K M] [LieRingModule L M] [LieModule K L M]
+    [FiniteDimensional K M]
+    (h : traceForm K L M = 0) :
+    IsNilpotent (LieAlgebra.derivedSeries K L 1) M := by
   let Kbar := AlgebraicClosure K
-  haveI : FiniteDimensional Kbar (Kbar ⊗[K] V) := Module.Finite.base_change K Kbar V
-  let bc : End K V →ₐ[K] End Kbar (Kbar ⊗[K] V) := End.baseChangeHom K Kbar V
-  let e := (TensorProduct.isBaseChange K V Kbar).end.equiv
-  have he_tmul : ∀ (a : Kbar) (f : End K V), e (a ⊗ₜ f) = a • bc f := fun a f ↦ by
-    apply (TensorProduct.isBaseChange K V Kbar).algHom_ext; intro v
-    rw [IsBaseChange.equiv_tmul, LinearMap.smul_apply, IsBaseChange.endHom_comp_apply]; rfl
-  have he_one : ∀ f : End K V, e (1 ⊗ₜ f) = bc f := fun f ↦ by rw [he_tmul, one_smul]
-  -- Bridge: `span Kbar (bc '' S) = (S.baseChange Kbar).map e.toLinearMap` for any K-submodule S.
-  have hspan_bc : ∀ S : Submodule K (End K V),
-      Submodule.span Kbar (bc '' (S : Set _)) = (S.baseChange Kbar).map e.toLinearMap := fun S ↦ by
-    rw [Submodule.baseChange_eq_span, Submodule.map_span, Submodule.map_coe, ← Set.image_comp]
-    exact congr_arg _ (Set.image_congr fun f _ ↦ (he_one f).symm)
-  rw [← IsNilpotent.map_iff (f := End.baseChangeHom K Kbar V) End.baseChangeHom_injective]
-  let A' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑A)
-  let B' : Submodule Kbar (End Kbar (Kbar ⊗[K] V)) := Submodule.span Kbar (bc '' ↑B)
-  apply isNilpotent_of_trace_orthogonal_algClosed A' B'
-  · exact Submodule.span_mono (Set.image_mono hAB)
-  · refine fun b' hb' ↦ (?_ : B' ≤ A'.comap (LieAlgebra.ad Kbar _ (bc x))) hb'
-    rw [Submodule.span_le]
-    rintro _ ⟨b, hb, rfl⟩
-    change bc x * bc b - bc b * bc x ∈ A'
-    rw [← map_mul bc, ← map_mul bc, ← map_sub bc]
-    exact Submodule.subset_span ⟨⁅x, b⁆, hxM b hb, rfl⟩
-  · intro z hz
-    let bB := finBasis K ↥B
-    let Φ : End K V →ₗ[K] (Fin _ → End K V ⧸ A) := LinearMap.pi fun i ↦
-      (Submodule.mkQ A).comp (mulRight K (bB i).1 - mulLeft K (bB i).1)
-    -- Elements of `ker Φ` satisfy `[w, b] ∈ A` for every `b ∈ B`.
-    have hker_le : ∀ w ∈ ker Φ, ∀ b ∈ B, ⁅w, b⁆ ∈ A := fun w hw b hb ↦ by
-      simp only [Φ, mem_ker, pi_apply, LinearMap.comp_apply, Submodule.mkQ_apply,
-        Submodule.Quotient.mk_eq_zero, funext_iff, Pi.zero_apply] at hw
-      obtain ⟨c, rfl⟩ := bB.mem_submodule_iff'.mp hb
-      simpa [lie_sum, lie_smul] using A.sum_mem fun i _ ↦ A.smul_mem (c i) (hw i)
-    suffices hz_mem : z ∈ Submodule.span Kbar (bc '' (ker Φ : Set _)) by
-      change z ∈ LinearMap.ker ((trace Kbar _).comp (LinearMap.mulLeft Kbar (bc x)))
-      refine Submodule.span_le.mpr ?_ hz_mem
-      rintro _ ⟨z₀, hz₀, rfl⟩
-      change trace Kbar _ (bc x * bc z₀) = 0
-      rw [← map_mul bc, show bc (x * z₀) = (x * z₀).baseChange Kbar from rfl,
-        LinearMap.trace_baseChange, htr z₀ (hker_le z₀ hz₀), map_zero]
-    rw [hspan_bc (ker Φ), Submodule.mem_map_equiv, ← ker_baseChange_eq, mem_ker]
-    -- Check `Φ.baseChange Kbar (e.symm z) = 0` component-wise via `piRight` injectivity.
-    refine (TensorProduct.piRight K Kbar Kbar _).injective (funext fun i ↦ ?_)
-    rw [show (TensorProduct.piRight K Kbar Kbar _) (Φ.baseChange Kbar (e.symm z)) i =
-        ((proj i).comp Φ).baseChange Kbar (e.symm z) from (e.symm z).induction_on (by simp)
-      (fun a n ↦ by simp [baseChange_tmul, TensorProduct.piRight])
-      (fun u v hu hv ↦ by simp only [map_add, Pi.add_apply, hu, hv]), map_zero, Pi.zero_apply]
-    -- Let `L := mulRight - mulLeft` for `(bB i).1`; the `i`-th component of `Φ` is `mkQ A ∘ L`.
-    set L : End K V →ₗ[K] End K V := mulRight K (bB i).1 - mulLeft K (bB i).1
-    rw [show (proj i).comp Φ = (Submodule.mkQ A).comp L from LinearMap.proj_pi _ i,
-      baseChange_comp, comp_apply, ← mem_ker, ker_baseChange_eq, Submodule.ker_mkQ]
-    -- Through `e`, the base-changed `L` becomes the commutator with `bc (bB i).1`.
-    have hcomm : ∀ w : Kbar ⊗[K] End K V,
-        e (L.baseChange Kbar w) = e w * bc (bB i).1 - bc (bB i).1 * e w := fun w ↦
-      w.induction_on (by simp)
-        (fun a f ↦ by simp [L, baseChange_tmul, he_tmul, map_sub, map_mul])
-        (fun u v hu hv ↦ by simp [hu, hv, add_mul, mul_add]; abel)
-    rw [← e.symm_apply_apply (L.baseChange Kbar (e.symm z)), ← Submodule.mem_map_equiv,
-      ← hspan_bc A, hcomm, e.apply_symm_apply]
-    exact hz _ (Submodule.subset_span ⟨(bB i).1, (bB i).2, rfl⟩)
+  haveI : FiniteDimensional Kbar (Kbar ⊗[K] M) := Module.Finite.base_change K Kbar M
+  have key : IsNilpotent (LieAlgebra.derivedSeries Kbar (Kbar ⊗[K] L) 1) (Kbar ⊗[K] M) :=
+    isNilpotent_toEnd_of_traceForm_eq_zero_algClosed (traceForm_baseChange_eq_zero h)
+  rw [LieModule.isNilpotent_iff_forall' (R := K)]
+  rw [LieModule.isNilpotent_iff_forall' (R := Kbar)] at key
+  intro ⟨x, hx⟩
+  rw [show toEnd K (LieAlgebra.derivedSeries K L 1) M ⟨x, hx⟩ = toEnd K L M x from rfl]
+  rw [← IsNilpotent.map_iff (f := End.baseChangeHom K Kbar M) End.baseChangeHom_injective]
+  have hx_bar : (1 : Kbar) ⊗ₜ[K] x ∈ LieAlgebra.derivedSeries Kbar (Kbar ⊗[K] L) 1 := by
+    rw [LieAlgebra.derivedSeries_baseChange]
+    exact Submodule.tmul_mem_baseChange_of_mem 1 hx
+  have step := key ⟨(1 : Kbar) ⊗ₜ[K] x, hx_bar⟩
+  rw [show toEnd Kbar (LieAlgebra.derivedSeries Kbar (Kbar ⊗[K] L) 1) (Kbar ⊗[K] M) ⟨_, hx_bar⟩ =
+      toEnd Kbar (Kbar ⊗[K] L) (Kbar ⊗[K] M) ((1 : Kbar) ⊗ₜ[K] x) from rfl] at step
+  rw [toEnd_baseChange] at step
+  exact step
+
+end LieModule
