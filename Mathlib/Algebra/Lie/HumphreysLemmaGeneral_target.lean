@@ -6,7 +6,7 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.Algebra.Lie.BaseChange
-public import Mathlib.Algebra.Lie.HumphreysLemma_target
+public import Mathlib.Algebra.Lie.CartanCriterion
 public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
 
@@ -14,8 +14,8 @@ public import Mathlib.RingTheory.Flat.FaithfullyFlat.Algebra
 # Trace-nilpotency criterion over arbitrary characteristic-zero fields
 
 This file removes the `IsAlgClosed` hypothesis from
-`LieModule.isNilpotent_toEnd_of_traceForm_eq_zero_algClosed` by scalar extension to the algebraic
-closure.
+`LieModule.isNilpotent_derivedSeries_of_traceForm_eq_zero_algClosed` by scalar extension to the
+algebraic closure.
 
 ## Main results
 
@@ -82,7 +82,7 @@ private lemma traceForm_baseChange_eq_zero
 /-- **Trace-nilpotency criterion** over arbitrary fields of characteristic zero.
 
 Proved by scalar extension to the algebraic closure.
-See `isNilpotent_toEnd_of_traceForm_eq_zero_algClosed` for the algebraically closed case. -/
+See `isNilpotent_derivedSeries_of_traceForm_eq_zero_algClosed` for the algebraically closed case. -/
 theorem isNilpotent_toEnd_of_traceForm_eq_zero
     {K : Type*} [Field K] [CharZero K]
     {L : Type*} [LieRing L] [LieAlgebra K L]
@@ -93,7 +93,7 @@ theorem isNilpotent_toEnd_of_traceForm_eq_zero
   let Kbar := AlgebraicClosure K
   haveI : FiniteDimensional Kbar (Kbar ⊗[K] M) := Module.Finite.base_change K Kbar M
   have key : IsNilpotent (LieAlgebra.derivedSeries Kbar (Kbar ⊗[K] L) 1) (Kbar ⊗[K] M) :=
-    isNilpotent_toEnd_of_traceForm_eq_zero_algClosed (traceForm_baseChange_eq_zero h)
+    isNilpotent_derivedSeries_of_traceForm_eq_zero_algClosed (traceForm_baseChange_eq_zero h)
   rw [LieModule.isNilpotent_iff_forall' (R := K)]
   rw [LieModule.isNilpotent_iff_forall' (R := Kbar)] at key
   intro ⟨x, hx⟩
