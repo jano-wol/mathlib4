@@ -6,7 +6,7 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.Algebra.Lie.Killing
-public import Mathlib.Algebra.Lie.HumphreysLemmaGeneral_target
+public import Mathlib.Algebra.Lie.CartanCriterion
 public import Mathlib.Algebra.Lie.Engel
 
 /-!
@@ -48,7 +48,7 @@ lemma killingCompl_top_le_radical :
     rw [← killingForm_apply_apply, LieModule.traceForm_comm]
     exact (LieIdeal.mem_killingCompl K L ⊤).mp hxS y (LieSubmodule.mem_top y)
   have key : LieModule.IsNilpotent (LieAlgebra.derivedSeries K ↥S 1) L :=
-    LieModule.isNilpotent_toEnd_of_traceForm_eq_zero hS_tf
+    LieModule.isNilpotent_derivedSeries_of_traceForm_eq_zero hS_tf
   rw [LieModule.isNilpotent_iff_forall' (R := K)] at key
   have ad_nil : ∀ x ∈ (SS : LieSubmodule K L L).toSubmodule, IsNilpotent (ad_lin x) := by
     intro x hx
