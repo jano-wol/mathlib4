@@ -61,6 +61,10 @@ variable [Zero R]
 def BlockTriangular (M : Matrix m m R) (b : m → α) : Prop :=
   ∀ ⦃i j⦄, b j < b i → M i j = 0
 
+theorem really_upper_trinagular [LinearOrder m] (h : M.BlockTriangular id) (i : m) (j : m)
+    (h1 : j < i) : M i j = 0 := by
+  exact h h1
+
 @[simp]
 protected theorem BlockTriangular.submatrix {f : n → m} (h : M.BlockTriangular b) :
     (M.submatrix f f).BlockTriangular (b ∘ f) := fun _ _ hij => h hij
@@ -325,6 +329,7 @@ theorem det_of_upperTriangular [LinearOrder m] (h : M.BlockTriangular id) :
     M.det = ∏ i : m, M i i := by
   haveI : DecidableEq R := Classical.decEq _
   simp_rw [h.det, image_id, det_toSquareBlock_id]
+
 
 theorem det_of_lowerTriangular [LinearOrder m] (M : Matrix m m R) (h : M.BlockTriangular toDual) :
     M.det = ∏ i : m, M i i := by

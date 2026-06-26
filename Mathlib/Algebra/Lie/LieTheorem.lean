@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.Lie.Weights.Basic
 public import Mathlib.RingTheory.Finiteness.Nilpotent
+public import Mathlib.Algebra.Lie.Rank
 
 /-!
 # Lie's theorem for Solvable Lie algebras.
@@ -251,6 +252,44 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
     intro x
     apply hv (toEndo x)
   · simpa using hv0
+
+--theorem my_proof_this
+--    [IsSolvable L] [LieModule.IsTriangularizable k L V] :
+--    let r := Finset.range (Module.finrank k V + 1)
+--    ∃ f : r → LieSubmodule k L V, (∀ n : r, Module.finrank k (f n) = n) ∧
+--      (∀ m n : r, m < n → f m ≤ f n) := by
+--  induction (Module.finrank k V)
+--  let f : (Finset.range 1 → LieSubmodule k L V) := by
+--    exact ⊥
+--  use f
+--  --have t : f 0 = ⊥ := by
+--  --  sorry
+--  constructor
+--  simp
+--  intro a ha
+--  dsimp [f]
+--  refine Module.finrank_eq_of_rank_eq ?_
+--  refine Cardinal.lift_eq_nat_iff.mp ?_
+--  simp
+--  have m : (a : Cardinal) = 0 := by
+--    exact Nat.cast_eq_zero.mpr ha
+--  rw [m]
+--  sorry
+--  sorry
+--  sorry
+
+theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
+    [LieModule.IsTriangularizable k L V] :
+    ∃ (B : Module.Basis ι k V), ∀ (x : L),
+      (LinearMap.toMatrix B B (toEnd k L V x)).BlockTriangular id := by
+  sorry
+
+
+
+
+
+
+
 
 end
 

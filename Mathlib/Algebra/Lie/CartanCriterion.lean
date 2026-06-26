@@ -8,6 +8,7 @@ module
 public import Mathlib.Algebra.Algebra.Rat
 public import Mathlib.Algebra.Lie.AdjointAction.JordanChevalley
 public import Mathlib.Algebra.Lie.Killing
+public import Mathlib.Algebra.Lie.LieTheorem
 public import Mathlib.Algebra.Lie.TraceForm
 public import Mathlib.LinearAlgebra.Eigenspace.Matrix
 public import Mathlib.LinearAlgebra.Eigenspace.Minpoly
@@ -172,6 +173,32 @@ theorem isNilpotent_derivedSeries_of_traceForm_eq_zero_aux {K : Type*}
     exact Finset.sum_congr rfl <| by simp [toMatrix_apply, hyv, hsv]
   rw [hX_ns, add_mul, map_add, htr_n, htr_s, zero_add]
 
+public lemma killingForm_apply_lie_eq_zero_of_IsSolvable {K : Type*}
+    [IsSolvable L] [Field K] [CharZero K] [IsAlgClosed K]
+    [LieAlgebra K L] [FiniteDimensional K L] [Nontrivial L] :
+    ∀ x, ∀ y ∈ derivedSeries K L 1, killingForm K L x y = 0 := by
+  intro x y hy
+  have m := LieModule.lie_class (ι := Fin (Module.finrank K L)) K L L
+  rcases m with ⟨B, hB⟩
+  have m0 := ((toMatrix B B) ((toEnd K L L) x))
+  have m1 := hB x
+  have m2 := hB y
+  have a1 := trace K L (ad K L x)
+  have a2 := m0.trace
+  have s1 : trace K L (ad K L x) = ((toMatrix B B) (ad K L x)).trace := by
+    exact trace_eq_matrix_trace K B ((ad K L) x)
+  have s2 : trace K L (ad K L y) = ((toMatrix B B) (ad K L y)).trace := by
+    exact trace_eq_matrix_trace K B ((ad K L) y)
+  have s6 :  (toMatrix B B) ((ad K L x) * (ad K L y)) = (toMatrix B B) ((ad K L x)) *
+      (toMatrix B B) ((ad K L y)) := by
+    exact toMatrix_mul B ((ad K L) x) ((ad K L) y)
+  have s77 : trace K L (ad K L x * ad K L y) = ((toMatrix B B) ((ad K L x) * (ad K L y))).trace :=
+    by exact trace_eq_matrix_trace K B ((ad K L) x * (ad K L) y)
+  have s_needed : ((toMatrix B B) ((ad K L x)) * (toMatrix B B) ((ad K L y))).trace = 0 := by sorry
+  have s5 : killingForm K L x y = trace K L (ad K L x * ad K L y) := by
+    exact Eq.symm (LinearMap.congr_fun rfl ((ad K L) x * (ad K L) y))
+  rw [s5, s77, s6, s_needed]
+
 /-- If the trace form of `M` is zero, then the `⁅L, L⁆`-module `M` is nilpotent. -/
 public theorem isNilpotent_derivedSeries_of_traceForm_eq_zero
     [Module R M] [LieModule R L M] [IsNoetherian R M] [Module.Free R M]
@@ -239,6 +266,11 @@ public lemma isSolvable_of_killingForm_apply_lie_eq_zero
     rwa [← solvable_iff_equiv_solvable LieSubalgebra.topEquiv (R := R)]
   apply LieIdeal.isSolvable_of_killingForm_apply_lie_eq_zero
   aesop
+
+public lemma killingForm_apply_lie_eq_zero_of_IsSolvable
+    [IsSolvable L] : ∀ x, ∀ y ∈ derivedSeries R L 1, killingForm R L x y = 0 := by
+  sorry
+
 
 variable (R L)
 
