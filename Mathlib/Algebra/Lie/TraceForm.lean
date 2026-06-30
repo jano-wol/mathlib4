@@ -483,4 +483,20 @@ lemma range_traceForm_le_span_weight :
 
 end LieModule
 
+variable (A : Type*)
+
+variable [CommRing A] [Algebra R A]
+
+open Function
+open Algebra Function LieAlgebra LinearMap Module Module.End Polynomial
+open scoped TensorProduct
+
+lemma jjj (x : L) (y : L) (h : (killingForm A (A ⊗[R] L)) (1 ⊗ₜ[R] x) (1 ⊗ₜ[R] y) = 0) :
+    (killingForm R L) x y = 0 := by
+  dsimp [killingForm] at *
+  --have _i : FaithfulSMul R A := FaithfulSMul.trans R A
+  have hbc_inj : Injective (End.baseChangeHom R A L) := by sorry
+
+
+
 end LieAlgebra

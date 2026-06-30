@@ -7,7 +7,6 @@ module
 
 public import Mathlib.Algebra.Algebra.RestrictScalars
 public import Mathlib.Algebra.Lie.TensorProduct
-
 /-!
 # Extension and restriction of scalars for Lie algebras and Lie modules
 
@@ -247,6 +246,7 @@ lemma lie_baseChange {I : LieIdeal R L} {N : LieSubmodule R L M} :
       ?_ (by simp) (by simp) ?_ ?_ ?_ ?_ hx hm
     · rintro - - ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩; exact Submodule.subset_span ⟨x, hx, y, hy, by simp⟩
     all_goals { intros; simp [add_mem, Submodule.smul_mem, *] }
+
 
 end LieSubmodule
 

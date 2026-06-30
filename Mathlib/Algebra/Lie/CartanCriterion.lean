@@ -206,51 +206,65 @@ public theorem isNilpotent_derivedSeries_of_traceForm_eq_zero
   rw [← IsNilpotent.map_iff hbc_inj, aux, ← toEnd_baseChange]
   exact nilp_ext ⟨_, hx_ext⟩
 
+lemma helpme (h : ¬Nontrivial L) (x : L) : x = 0 := by
+  have : Subsingleton L := by
+    exact not_nontrivial_iff_subsingleton.mp h
+  (expose_names; refine Subsingleton.eq_zero x)
+
 public lemma killingForm_apply_lie_eq_zero_of_IsSolvable {K : Type*}
     [IsSolvable L] [Field K] [CharZero K] [IsAlgClosed K]
-    [LieAlgebra K L] [FiniteDimensional K L] [Nontrivial L] :
+    [LieAlgebra K L] [FiniteDimensional K L] :
     ∀ x, ∀ y ∈ derivedSeries K L 1, killingForm K L x y = 0 := by
+  have z0 : Nontrivial L ∨ ¬Nontrivial L := by
+    exact Classical.em (Nontrivial L)
+  rcases z0 with (h | h)
+  · intro x y hy
+    have m := LieModule.lie_class (ι := Fin (Module.finrank K L)) K L L
+    rcases m with ⟨B, hB⟩
+    have m0 := ((toMatrix B B) ((toEnd K L L) x))
+    have m1 := hB x
+    have m2 := hB y
+    have a1 := trace K L (ad K L x)
+    have a2 := m0.trace
+    have s1 : trace K L (ad K L x) = ((toMatrix B B) (ad K L x)).trace := by
+      exact trace_eq_matrix_trace K B ((ad K L) x)
+    have s2 : trace K L (ad K L y) = ((toMatrix B B) (ad K L y)).trace := by
+      exact trace_eq_matrix_trace K B ((ad K L) y)
+    have s6 :  (toMatrix B B) ((ad K L x) * (ad K L y)) = (toMatrix B B) ((ad K L x)) *
+        (toMatrix B B) ((ad K L y)) := by
+      exact toMatrix_mul B ((ad K L) x) ((ad K L) y)
+    have s77 : trace K L (ad K L x * ad K L y) = ((toMatrix B B) ((ad K L x) * (ad K L y))).trace :=
+      by exact trace_eq_matrix_trace K B ((ad K L) x * (ad K L) y)
+    have s_needed : ((toMatrix B B) ((ad K L x)) * (toMatrix B B) ((ad K L y))).trace = 0 := by
+      sorry
+    have s5 : killingForm K L x y = trace K L (ad K L x * ad K L y) := by
+      exact Eq.symm (LinearMap.congr_fun rfl ((ad K L) x * (ad K L) y))
+    rw [s5, s77, s6, s_needed]
   intro x y hy
-  have m := LieModule.lie_class (ι := Fin (Module.finrank K L)) K L L
-  rcases m with ⟨B, hB⟩
-  have m0 := ((toMatrix B B) ((toEnd K L L) x))
-  have m1 := hB x
-  have m2 := hB y
-  have a1 := trace K L (ad K L x)
-  have a2 := m0.trace
-  have s1 : trace K L (ad K L x) = ((toMatrix B B) (ad K L x)).trace := by
-    exact trace_eq_matrix_trace K B ((ad K L) x)
-  have s2 : trace K L (ad K L y) = ((toMatrix B B) (ad K L y)).trace := by
-    exact trace_eq_matrix_trace K B ((ad K L) y)
-  have s6 :  (toMatrix B B) ((ad K L x) * (ad K L y)) = (toMatrix B B) ((ad K L x)) *
-      (toMatrix B B) ((ad K L y)) := by
-    exact toMatrix_mul B ((ad K L) x) ((ad K L) y)
-  have s77 : trace K L (ad K L x * ad K L y) = ((toMatrix B B) ((ad K L x) * (ad K L y))).trace :=
-    by exact trace_eq_matrix_trace K B ((ad K L) x * (ad K L) y)
-  have s_needed : ((toMatrix B B) ((ad K L x)) * (toMatrix B B) ((ad K L y))).trace = 0 := by sorry
-  have s5 : killingForm K L x y = trace K L (ad K L x * ad K L y) := by
-    exact Eq.symm (LinearMap.congr_fun rfl ((ad K L) x * (ad K L) y))
-  rw [s5, s77, s6, s_needed]
+  have tt1 : x = 0 := by exact helpme h x
+  have tt2 : y = 0 := by exact helpme h y
+  rw [tt1, tt2]
+  simp
+
+
+
+
+
 
 public lemma killingForm_apply_lie_eq_zero_of_IsSolvable_general
-    [IsSolvable L] [Nontrivial L] [IsNoetherian R L] :
+    [IsSolvable L] [IsNoetherian R L] :
     ∀ x, ∀ y ∈ derivedSeries R L 1, killingForm R L x y = 0 := by
   set A := AlgebraicClosure (FractionRing R)
-  have _z : Nontrivial (A ⊗[R] L) := by sorry
   have goal_ext : ∀ x, ∀ y ∈ derivedSeries A (A ⊗[R] L) 1, killingForm A (A ⊗[R] L) x y = 0 := by
     apply killingForm_apply_lie_eq_zero_of_IsSolvable (K := A)
+  intro x y hy
+  have hy_ext : 1 ⊗ₜ[R] y ∈ derivedSeries A (A ⊗[R] L) 1 := by
+    rw [derivedSeries_baseChange]
+    exact Submodule.tmul_mem_baseChange_of_mem 1 hy
+  have := goal_ext (1 ⊗ₜ[R] x) (1 ⊗ₜ[R] y) hy_ext
   sorry
-  --rw [isNilpotent_iff_forall' (R := R)]
-  --rw [isNilpotent_iff_forall' (R := A)] at nilp_ext
-  --intro ⟨x, hx⟩
-  --have hx_ext : 1 ⊗ₜ[R] x ∈ derivedSeries A (A ⊗[R] L) 1 := by
-  --  rw [derivedSeries_baseChange]
-  --  exact Submodule.tmul_mem_baseChange_of_mem 1 hx
-  --have hbc_inj : Injective (End.baseChangeHom R A M) := LinearMap.baseChangeHom_injective R M A
-  --have aux : (toEnd R (derivedSeries R L 1) M ⟨x, hx⟩).baseChangeHom R A M =
-  --    (toEnd R L M x).baseChange A := rfl
-  --rw [← IsNilpotent.map_iff hbc_inj, aux, ← toEnd_baseChange]
-  --exact nilp_ext ⟨_, hx_ext⟩
+  --dsimp [killingForm, traceForm, toEnd] at this
+  --apply?
 
 
 end LieModule
