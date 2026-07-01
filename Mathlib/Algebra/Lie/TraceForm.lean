@@ -496,6 +496,7 @@ lemma jjj (x : L) (y : L) (h : (killingForm A (A ⊗[R] L)) (1 ⊗ₜ[R] x) (1 �
   dsimp [killingForm] at *
   --have _i : FaithfulSMul R A := FaithfulSMul.trans R A
   have hbc_inj : Injective (End.baseChangeHom R A L) := by sorry
+  sorry
 
 
 

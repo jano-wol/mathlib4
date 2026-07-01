@@ -247,25 +247,21 @@ public lemma killingForm_apply_lie_eq_zero_of_IsSolvable {K : Type*}
   simp
 
 
-
-
-
-
 public lemma killingForm_apply_lie_eq_zero_of_IsSolvable_general
-    [IsSolvable L] [IsNoetherian R L] :
+    [IsSolvable L] [IsNoetherian R L] [Module.Free R L] :
     ∀ x, ∀ y ∈ derivedSeries R L 1, killingForm R L x y = 0 := by
   set A := AlgebraicClosure (FractionRing R)
-  have goal_ext : ∀ x, ∀ y ∈ derivedSeries A (A ⊗[R] L) 1, killingForm A (A ⊗[R] L) x y = 0 := by
-    apply killingForm_apply_lie_eq_zero_of_IsSolvable (K := A)
+  have _i : FaithfulSMul R A := FaithfulSMul.trans R (FractionRing R) A
+  have goal_ext : ∀ x, ∀ y ∈ derivedSeries A (A ⊗[R] L) 1, killingForm A (A ⊗[R] L) x y = 0 :=
+    killingForm_apply_lie_eq_zero_of_IsSolvable (K := A)
   intro x y hy
   have hy_ext : 1 ⊗ₜ[R] y ∈ derivedSeries A (A ⊗[R] L) 1 := by
     rw [derivedSeries_baseChange]
     exact Submodule.tmul_mem_baseChange_of_mem 1 hy
-  have := goal_ext (1 ⊗ₜ[R] x) (1 ⊗ₜ[R] y) hy_ext
-  sorry
-  --dsimp [killingForm, traceForm, toEnd] at this
-  --apply?
-
+  have key := goal_ext (1 ⊗ₜ[R] x) (1 ⊗ₜ[R] y) hy_ext
+  simp only [killingForm, traceForm_baseChange, LinearMap.BilinForm.baseChange_tmul, mul_one,
+    ← Algebra.algebraMap_eq_smul_one] at key
+  exact FaithfulSMul.algebraMap_injective R A (by rwa [map_zero])
 
 end LieModule
 
@@ -316,7 +312,8 @@ public lemma isSolvable_of_killingForm_apply_lie_eq_zero
 
 public lemma killingForm_apply_lie_eq_zero_of_IsSolvable
     [IsSolvable L] : ∀ x, ∀ y ∈ derivedSeries R L 1, killingForm R L x y = 0 := by
-  sorry
+  intro x y
+  exact LieModule.killingForm_apply_lie_eq_zero_of_IsSolvable_general x y
 
 
 variable (R L)
