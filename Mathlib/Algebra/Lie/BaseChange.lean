@@ -7,7 +7,7 @@ module
 
 public import Mathlib.Algebra.Algebra.RestrictScalars
 public import Mathlib.Algebra.Lie.TensorProduct
-public import Mathlib.LinearAlgebra.Trace
+
 /-!
 # Extension and restriction of scalars for Lie algebras and Lie modules
 
@@ -176,11 +176,6 @@ lemma LieModule.toEnd_baseChange (x : L) :
     toEnd A (A ⊗[R] L) (A ⊗[R] M) (1 ⊗ₜ x) = (toEnd R L M x).baseChange A := by
   ext; simp
 
-
---lemma jjj [CommSemiring (A ⊗[R] L)] (x : L) : LinearMap.trace A (A ⊗[R] L)
---    ((LieModule.toEnd R L L x).baseChange A) = LinearMap.trace R L (LieModule.toEnd R L L x) := by
---  sorry
-
 namespace LieSubmodule
 
 variable (N : LieSubmodule R L M)
@@ -252,7 +247,6 @@ lemma lie_baseChange {I : LieIdeal R L} {N : LieSubmodule R L M} :
       ?_ (by simp) (by simp) ?_ ?_ ?_ ?_ hx hm
     · rintro - - ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩; exact Submodule.subset_span ⟨x, hx, y, hy, by simp⟩
     all_goals { intros; simp [add_mem, Submodule.smul_mem, *] }
-
 
 end LieSubmodule
 
