@@ -219,7 +219,7 @@ public lemma killingForm_apply_lie_eq_zero_of_IsSolvable {K : Type*}
     exact Classical.em (Nontrivial L)
   rcases z0 with (h | h)
   · intro x y hy
-    have m := LieModule.lie_class (ι := Fin (Module.finrank K L)) K L L
+    have m := LieModule.lie_class2 (ι := Fin (Module.finrank K L)) K L
     rcases m with ⟨B, hB⟩
     have m0 := ((toMatrix B B) ((toEnd K L L) x))
     have m1 := hB x
@@ -236,7 +236,9 @@ public lemma killingForm_apply_lie_eq_zero_of_IsSolvable {K : Type*}
     have s77 : trace K L (ad K L x * ad K L y) = ((toMatrix B B) ((ad K L x) * (ad K L y))).trace :=
       by exact trace_eq_matrix_trace K B ((ad K L) x * (ad K L) y)
     have s_needed : ((toMatrix B B) ((ad K L x)) * (toMatrix B B) ((ad K L y))).trace = 0 := by
-      sorry
+      have m1 := hB x
+      have m2 := hB y
+      exact LieModule.tracce K m1 m2
     have s5 : killingForm K L x y = trace K L (ad K L x * ad K L y) := by
       exact Eq.symm (LinearMap.congr_fun rfl ((ad K L) x * (ad K L) y))
     rw [s5, s77, s6, s_needed]

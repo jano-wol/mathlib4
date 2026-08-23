@@ -284,8 +284,19 @@ theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [I
       (LinearMap.toMatrix B B (toEnd k L V x)).BlockTriangular id := by
   sorry
 
+def StrictTriangular {ι : Type*} [LE ι] (M : Matrix ι ι k) : Prop :=
+  ∀ ⦃i j⦄, j <= i → M i j = 0
 
+theorem tracce {ι : Type*}  [Fintype ι] [DecidableEq ι] [LinearOrder ι] {M : Matrix ι ι k}
+    {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
+    (M * N).trace = 0 := by
+  sorry
 
+theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
+    [LieModule.IsTriangularizable k L L] :
+    ∃ (B : Module.Basis ι k L), ∀ (x : L),
+      StrictTriangular k (LinearMap.toMatrix B B (ad k L x)) := by
+  sorry
 
 
 
