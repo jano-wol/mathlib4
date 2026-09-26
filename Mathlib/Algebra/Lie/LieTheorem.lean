@@ -306,6 +306,12 @@ theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   rw [this]
   simp only [zero_mul]
 
+theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
+    [LieModule.IsTriangularizable k L V] :
+    ∃ (B : Module.Basis ι k V), ∀ (x : L),
+      (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
+  sorry
+
 theorem mulUp {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
     (M * N).IsUpperTriangular := by
@@ -321,10 +327,14 @@ theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     StrictTriangular k (M * N - N * M) := by
   sorry
 
-theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
-    [LieModule.IsTriangularizable k L V] :
-    ∃ (B : Module.Basis ι k V), ∀ (x : L),
-      (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
+theorem addStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+    {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
+    StrictTriangular k (M + N) := by
+  sorry
+
+theorem smulStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+    {N : Matrix ι ι k} (h1 : StrictTriangular k M) (u : k) :
+    StrictTriangular  k (u • M) := by
   sorry
 
 theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
@@ -387,7 +397,9 @@ theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [
        exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp s
     have w3 := hu w1
     have w4 := hv w2
-    sorry
+    have pen := addStri k w3 w4
+    simp only [map_add]
+    exact pen
   | smul t u v hu =>
     have w1 : u ∈ derivedSeries k L 1 := by
      have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
