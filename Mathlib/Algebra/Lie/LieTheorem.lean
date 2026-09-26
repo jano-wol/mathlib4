@@ -318,17 +318,55 @@ theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [
     (h : ∀ (x : L), (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular)
     :
     ∀ (y : derivedSeries k L 1), StrictTriangular k (LinearMap.toMatrix B B (toEnd k L V y)) := by
-  sorry
-  --have m := lie_class (ι := ι) k L L
-  --obtain ⟨B, hB⟩ := m
-  --use B
-  --intro x
-  --have hBx := hB x
-  --dsimp [ad]
-  --sorry
-
-
-
+  rintro ⟨y, hy⟩
+  simp only
+  replace hx : y ∈ Submodule.span k {⁅u, v⁆ | (u : L) (v : L)} := by
+    rw [← LieAlgebra.coe_derivedSeries_one_eq]
+    exact
+      (LieSubalgebra.mem_toSubmodule (LieIdeal.toLieSubalgebra k L (derivedSeries k L 1))).mpr hy
+  induction hx using Submodule.span_induction with
+  | mem u h =>
+    simp only [Set.mem_ofPred_eq] at h
+    obtain ⟨r, ⟨s,  hr⟩⟩ := h
+    rw [← hr]
+    rw [LieHom.map_lie (toEnd k L V) r s]
+    have help : ⁅(toEnd k L V) r, (toEnd k L V) s⁆ = (toEnd k L V) r * (toEnd k L V) s - (toEnd k L V) s * (toEnd k L V) r := by
+      exact Ring.lie_def ((toEnd k L V) r) ((toEnd k L V) s)
+    rw [help]
+    have h11 := h r
+    have h12 := h s
+    sorry
+  | zero => simp only [map_zero]
+            intro i j h
+            exact Matrix.zero_apply i j
+  | add u v p s hu hv =>
+    have w1 : u ∈ derivedSeries k L 1 := by
+       have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
+         exact coe_derivedSeries_one_eq k L
+       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero] at this
+       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]
+       rw [← this] at p
+       exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp p
+    have w2 : v ∈ derivedSeries k L 1 := by
+       have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
+         exact coe_derivedSeries_one_eq k L
+       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero] at this
+       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]
+       rw [← this] at s
+       exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp s
+    have w3 := hu w1
+    have w4 := hv w2
+    sorry
+  | smul t u v hu =>
+    have w1 : u ∈ derivedSeries k L 1 := by
+     have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
+       exact coe_derivedSeries_one_eq k L
+     simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero] at this
+     simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]
+     rw [← this] at v
+     exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp v
+    have w3 := hu w1
+    sorry
 end
 
 end LieModule
