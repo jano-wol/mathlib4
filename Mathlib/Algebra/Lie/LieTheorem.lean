@@ -278,10 +278,25 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
 def StrictTriangular {ι : Type*} [LE ι] (M : Matrix ι ι k) : Prop :=
   ∀ ⦃i j⦄, j <= i → M i j = 0
 
-theorem tracce {ι : Type*}  [Fintype ι] [DecidableEq ι] [LinearOrder ι] {M : Matrix ι ι k}
+omit [CharZero k] in
+theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
     (M * N).trace = 0 := by
-  sorry
+  dsimp [Matrix.trace]
+  rw [Finset.sum_eq_zero]
+  intro x hx
+  rw [Matrix.mul_apply]
+  rw [Finset.sum_eq_zero]
+  intro i hi
+  have : x <= i ∨ i <= x := by
+    exact LinearOrder.le_total x i
+  rcases this with h | h
+  · have := h2 h
+    rw [this]
+    simp only [mul_zero]
+  have := h1 h
+  rw [this]
+  simp only [zero_mul]
 
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V] :
