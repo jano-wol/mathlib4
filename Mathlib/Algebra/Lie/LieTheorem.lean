@@ -280,7 +280,7 @@ def StrictTriangular {ι : Type*} [LE ι] (M : Matrix ι ι k) : Prop :=
 
 omit [CharZero k] in
 theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
+    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : StrictTriangular k N) :
     (M * N).trace = 0 := by
   dsimp [Matrix.trace]
   rw [Finset.sum_eq_zero]
@@ -294,6 +294,14 @@ theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   · have := h2 h
     rw [this]
     simp only [mul_zero]
+  have : x = i ∨ i < x := by
+    exact Or.symm (Decidable.lt_or_eq_of_le' h)
+  rcases this with h | h
+  · rw [h]
+    have m : i <= i := by
+      (expose_names; exact le_of_le_of_eq h_1 h)
+    rw [h2 m]
+    exact mul_zero (M i i)
   have := h1 h
   rw [this]
   simp only [zero_mul]
@@ -305,16 +313,20 @@ theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [I
   sorry
 
 theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
-    [Module.Finite k L] [Nontrivial L] [LieModule.IsTriangularizable k L L] :
-    ∃ (B : Module.Basis ι k L), ∀ (y : derivedSeries k L 1),
-      StrictTriangular k (LinearMap.toMatrix B B (ad k L y)) := by
-  have m := lie_class (ι := ι) k L L
-  obtain ⟨B, hB⟩ := m
-  use B
-  intro x
-  have hBx := hB x
-  dsimp [ad]
+    [LieModule.IsTriangularizable k L V]
+    (B : Module.Basis ι k V)
+    (h : ∀ (x : L), (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular)
+    :
+    ∀ (y : derivedSeries k L 1), StrictTriangular k (LinearMap.toMatrix B B (toEnd k L V y)) := by
   sorry
+  --have m := lie_class (ι := ι) k L L
+  --obtain ⟨B, hB⟩ := m
+  --use B
+  --intro x
+  --have hBx := hB x
+  --dsimp [ad]
+  --sorry
+
 
 
 end
