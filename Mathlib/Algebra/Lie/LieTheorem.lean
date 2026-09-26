@@ -306,6 +306,21 @@ theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   rw [this]
   simp only [zero_mul]
 
+theorem mulUp {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
+    (M * N).IsUpperTriangular := by
+  sorry
+
+theorem mulUpDiag {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) (i : ι) :
+    (M * N) i i = M i i  * N i i := by
+  sorry
+
+theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
+    StrictTriangular k (M * N - N * M) := by
+  sorry
+
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V] :
     ∃ (B : Module.Basis ι k V), ∀ (x : L),
@@ -330,12 +345,28 @@ theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [
     obtain ⟨r, ⟨s,  hr⟩⟩ := h
     rw [← hr]
     rw [LieHom.map_lie (toEnd k L V) r s]
-    have help : ⁅(toEnd k L V) r, (toEnd k L V) s⁆ = (toEnd k L V) r * (toEnd k L V) s - (toEnd k L V) s * (toEnd k L V) r := by
+    have help : ⁅(toEnd k L V) r, (toEnd k L V) s⁆ = (toEnd k L V) r * (toEnd k L V) s -
+      (toEnd k L V) s * (toEnd k L V) r := by
       exact Ring.lie_def ((toEnd k L V) r) ((toEnd k L V) s)
     rw [help]
     have h11 := h r
     have h12 := h s
-    sorry
+    have pen := mulBrac k h11 h12
+    have rr : ((LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s -
+        (toEnd k L V) s * (toEnd k L V) r)) =
+        (LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s) - (LinearMap.toMatrix B B)
+        ((toEnd k L V) s * (toEnd k L V) r) := by
+      exact
+        map_sub (LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s)
+          ((toEnd k L V) s * (toEnd k L V) r)
+    rw [rr]
+    have ss : (LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s) =
+        (LinearMap.toMatrix B B) ((toEnd k L V) r) *
+        (LinearMap.toMatrix B B) ((toEnd k L V) s) := by
+      exact LinearMap.toMatrix_mul B ((toEnd k L V) r) ((toEnd k L V) s)
+    rw [ss]
+    rw [LinearMap.toMatrix_mul B ((toEnd k L V) s) ((toEnd k L V) r)]
+    exact pen
   | zero => simp only [map_zero]
             intro i j h
             exact Matrix.zero_apply i j
