@@ -333,10 +333,11 @@ theorem addStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   sorry
 
 theorem smulStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : StrictTriangular k M) (u : k) :
+    (h1 : StrictTriangular k M) (u : k) :
     StrictTriangular  k (u • M) := by
   sorry
 
+omit [Nontrivial V] [Module.Finite k V] in
 theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V]
     (B : Module.Basis ι k V)
@@ -409,7 +410,9 @@ theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [
      rw [← this] at v
      exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp v
     have w3 := hu w1
-    sorry
+    have pen := smulStri k w3 t
+    simp only [map_smul]
+    exact pen
 end
 
 end LieModule
