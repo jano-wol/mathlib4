@@ -63,10 +63,6 @@ variable [Zero R]
 def BlockTriangular (M : Matrix m m R) (b : m → α) : Prop :=
   ∀ ⦃i j⦄, b j < b i → M i j = 0
 
-theorem really_upper_trinagular [LinearOrder m] (h : M.BlockTriangular id) (i : m) (j : m)
-    (h1 : j < i) : M i j = 0 := by
-  exact h h1
-
 /-- `M` is upper triangular: entries below the diagonal vanish. -/
 abbrev IsUpperTriangular [LT m] (M : Matrix m m R) : Prop :=
   M.BlockTriangular id
@@ -395,7 +391,6 @@ theorem det_of_isUpperTriangular [LinearOrder m] (h : M.IsUpperTriangular) :
     M.det = ∏ i : m, M i i := by
   have : DecidableEq R := Classical.decEq _
   simp_rw [h.det, image_id, det_toSquareBlock_id]
-
 
 @[deprecated (since := "2026-07-30")] alias det_of_upperTriangular := det_of_isUpperTriangular
 
