@@ -306,9 +306,14 @@ theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [I
 
 theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [Module.Finite k L] [Nontrivial L] [LieModule.IsTriangularizable k L L] :
-    ∃ (B : Module.Basis ι k L), ∀ (x : L),
-      StrictTriangular k (LinearMap.toMatrix B B (ad k L x)) := by
-  have := lie_class (ι := ι) k L L
+    ∃ (B : Module.Basis ι k L), ∀ (y : derivedSeries k L 1),
+      StrictTriangular k (LinearMap.toMatrix B B (ad k L y)) := by
+  have m := lie_class (ι := ι) k L L
+  obtain ⟨B, hB⟩ := m
+  use B
+  intro x
+  have hBx := hB x
+  dsimp [ad]
   sorry
 
 
