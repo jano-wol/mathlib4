@@ -275,6 +275,12 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
 --  sorry
 --  sorry
 
+theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
+    [LieModule.IsTriangularizable k L V] :
+    ∃ (B : Module.Basis ι k V), ∀ (x : L),
+      (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
+  sorry
+
 def StrictTriangular {ι : Type*} [LE ι] (M : Matrix ι ι k) : Prop :=
   ∀ ⦃i j⦄, j <= i → M i j = 0
 
@@ -305,12 +311,6 @@ theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   have := h1 h
   rw [this]
   simp only [zero_mul]
-
-theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
-    [LieModule.IsTriangularizable k L V] :
-    ∃ (B : Module.Basis ι k V), ∀ (x : L),
-      (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
-  sorry
 
 theorem mulUp {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
