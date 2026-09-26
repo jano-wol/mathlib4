@@ -301,17 +301,15 @@ theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V] :
     ∃ (B : Module.Basis ι k V), ∀ (x : L),
-      (LinearMap.toMatrix B B (toEnd k L V x)).BlockTriangular id := by
+      (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
   sorry
 
 theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
-    [LieModule.IsTriangularizable k L L] :
+    [Module.Finite k L] [Nontrivial L] [LieModule.IsTriangularizable k L L] :
     ∃ (B : Module.Basis ι k L), ∀ (x : L),
       StrictTriangular k (LinearMap.toMatrix B B (ad k L x)) := by
+  have := lie_class (ι := ι) k L L
   sorry
-
-
-
 
 
 end
