@@ -250,11 +250,10 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
     apply hv (toEndo x)
   · simpa using hv0
 
-set_option linter.tacticCheckInstances true
 theorem my_proof_this
     [IsSolvable L] [LieModule.IsTriangularizable k L V] :
     ∃ f : Fin (Module.finrank k V + 1) → LieSubmodule k L V, (∀ n, Module.finrank k (f n) = n.1) ∧
-      (∀ m n : Fin (Module.finrank k V + 1), m < n → f m ≤ f n) := by
+      StrictMono f := by
   induction (Module.finrank k V)
   · let f : Fin 1 → LieSubmodule k L V
     |  0 => ⊥
@@ -263,6 +262,7 @@ theorem my_proof_this
     use f
     constructor
     · intro n
+      let qq := Set.range f
       have mm2 (s : Fin 1) : s = 0 := by exact Fin.fin_one_eq_zero s
       have mm1 (s : Fin 1) : f s = ⊥ := by
         have := mm2 s
@@ -277,7 +277,9 @@ theorem my_proof_this
     have p0 := Fin.fin_one_eq_zero p
     have q0 := Fin.fin_one_eq_zero q
     intro c
-    rw [p0, q0]
+    rw [p0, q0] at c
+    have := Nat.not_succ_le_zero 0 c
+    contradiction
   sorry
   --simp
   --constructor
