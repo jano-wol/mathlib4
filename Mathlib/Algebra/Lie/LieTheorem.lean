@@ -250,16 +250,44 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
     apply hv (toEndo x)
   · simpa using hv0
 
---theorem my_proof_this
---    [IsSolvable L] [LieModule.IsTriangularizable k L V] :
---    let r := Finset.range (Module.finrank k V + 1)
---    ∃ f : r → LieSubmodule k L V, (∀ n : r, Module.finrank k (f n) = n) ∧
---      (∀ m n : r, m < n → f m ≤ f n) := by
---  induction (Module.finrank k V)
---  let f : (Finset.range 1 → LieSubmodule k L V) := by
---    exact ⊥
---  use f
---  --have t : f 0 = ⊥ := by
+set_option linter.tacticCheckInstances true
+theorem my_proof_this
+    [IsSolvable L] [LieModule.IsTriangularizable k L V] :
+    ∃ f : Fin (Module.finrank k V + 1) → LieSubmodule k L V, (∀ n, Module.finrank k (f n) = n.1) ∧
+      (∀ m n : Fin (Module.finrank k V + 1), m < n → f m ≤ f n) := by
+  induction (Module.finrank k V)
+  · let f : Fin 1 → LieSubmodule k L V
+    |  0 => ⊥
+    have m : f 0 = ⊥ := by
+      exact (LieSubmodule.toSubmodule_eq_bot (f 0)).mp rfl
+    use f
+    constructor
+    · intro n
+      have mm2 (s : Fin 1) : s = 0 := by exact Fin.fin_one_eq_zero s
+      have mm1 (s : Fin 1) : f s = ⊥ := by
+        have := mm2 s
+        rw [this]
+      rw [mm1]
+      have tt : Module.finrank k (⊥ : LieSubmodule k L V) = 0 := by
+        exact Module.finrank_eq_zero_of_subsingleton k (⊥ : LieSubmodule k L V)
+      rw [tt]
+      rw [mm2 n]
+      exact Nat.eq_of_beq_eq_true rfl
+    intro p q
+    have p0 := Fin.fin_one_eq_zero p
+    have q0 := Fin.fin_one_eq_zero q
+    intro c
+    rw [p0, q0]
+  sorry
+  --simp
+  --constructor
+  --intro x y
+  --dsimp [f]
+  --· rw [b]
+
+
+
+  --have t : f 0 = ⊥ := by
 --  --  sorry
 --  constructor
 --  simp
