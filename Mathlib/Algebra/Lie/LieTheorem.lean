@@ -395,17 +395,25 @@ theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   rw [this, p1, p2]
   simp only [sub_self]
 
-theorem addStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+omit [CharZero k] in
+theorem addStri {ι : Type*} [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
     StrictTriangular k (M + N) := by
-  sorry
+  intro i j hij
+  simp only [Matrix.add_apply]
+  rw [h1 hij, h2 hij]
+  simp only [add_zero]
 
-theorem smulStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
+omit [CharZero k] in
+theorem smulStri {ι : Type*} [LinearOrder ι] {M : Matrix ι ι k}
     (h1 : StrictTriangular k M) (u : k) :
-    StrictTriangular  k (u • M) := by
-  sorry
+    StrictTriangular k (u • M) := by
+  intro i j hij
+  simp only [Matrix.smul_apply]
+  rw [h1 hij]
+  simp only [smul_eq_mul, mul_zero]
 
-omit [Nontrivial V] [Module.Finite k V] in
+omit [Nontrivial V] [Module.Finite k V] [CharZero k] in
 theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V]
     (B : Module.Basis ι k V)
