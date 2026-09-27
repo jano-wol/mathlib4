@@ -282,7 +282,9 @@ theorem my_proof_this
     have := Nat.not_succ_le_zero 0 c
     contradiction
   | succ n ih =>
-    obtain ⟨r, hr⟩ := exists_nontrivial_weightSpace_of_isSolvable k L V
+    obtain ⟨r, h⟩ := exists_nontrivial_weightSpace_of_isSolvable k L V
+    obtain ⟨⟨v, hv⟩, hv0⟩ := exists_ne (0 : weightSpace V r)
+    --have LieSubmodule.mk
     sorry
   --Qutient.mk
   --simp
