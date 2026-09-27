@@ -312,14 +312,27 @@ theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   rw [this]
   simp only [zero_mul]
 
+omit [CharZero k] in
 theorem mulUp {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
     (M * N).IsUpperTriangular := by
-  sorry
+  intro i j hij
+  rw [Matrix.mul_apply]
+  rw [Finset.sum_eq_zero]
+  intro x hx
+  have : x < i ∨ i <= x := by
+    exact lt_or_ge x i
+  rcases this with h | h
+  · rw[h1 h]
+    simp only [zero_mul]
+  have mm : j < x := by
+    exact Std.lt_of_lt_of_le hij h
+  rw[h2 mm]
+  simp only [mul_zero]
 
 theorem mulUpDiag {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) (i : ι) :
-    (M * N) i i = M i i  * N i i := by
+    (M * N) i i = M i i * N i i := by
   sorry
 
 theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
