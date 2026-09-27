@@ -254,7 +254,8 @@ theorem my_proof_this
     [IsSolvable L] [LieModule.IsTriangularizable k L V] :
     ∃ f : Fin (Module.finrank k V + 1) → LieSubmodule k L V, (∀ n, Module.finrank k (f n) = n.1) ∧
       StrictMono f := by
-  induction (Module.finrank k V)
+  induction hn : Module.finrank k V generalizing V with
+  | zero =>
   · let f : Fin 1 → LieSubmodule k L V
     |  0 => ⊥
     have m : f 0 = ⊥ := by
@@ -280,7 +281,10 @@ theorem my_proof_this
     rw [p0, q0] at c
     have := Nat.not_succ_le_zero 0 c
     contradiction
-  sorry
+  | succ n ih =>
+    obtain ⟨r, hr⟩ := exists_nontrivial_weightSpace_of_isSolvable k L V
+    sorry
+  --Qutient.mk
   --simp
   --constructor
   --intro x y
