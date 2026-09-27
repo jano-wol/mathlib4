@@ -370,10 +370,30 @@ theorem mulUpDiag {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k
   rw [p1, p2]
   simp only [add_zero]
 
+omit [CharZero k] in
 theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
     StrictTriangular k (M * N - N * M) := by
-  sorry
+  have m1 := mulUp k h1 h2
+  have m2 := mulUp k h2 h1
+  intro i j hij
+  have : i = j ∨ i ≠ j := by
+      exact Decidable.eq_or_ne i j
+  rcases this with h | h
+  · simp only [Matrix.sub_apply]
+    rw [h]
+    have p1 := mulUpDiag k h1 h2 j
+    have p2 := mulUpDiag k h2 h1 j
+    rw [p1, p2]
+    ring
+  have himp : j < i := by
+    exact Std.lt_of_le_of_ne hij (id (Ne.symm h))
+  have p1 := m1 himp
+  have p2 := m2 himp
+  have : (M * N - N * M) i j  = (M * N) i j - (N * M) i j := by
+    exact Matrix.sub_apply (M * N) (N * M) i j
+  rw [this, p1, p2]
+  simp only [sub_self]
 
 theorem addStri {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
