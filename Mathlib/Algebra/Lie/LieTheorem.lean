@@ -330,10 +330,45 @@ theorem mulUp {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
   rw[h2 mm]
   simp only [mul_zero]
 
+omit [CharZero k] in
 theorem mulUpDiag {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) (i : ι) :
     (M * N) i i = M i i * N i i := by
-  sorry
+  rw [Matrix.mul_apply]
+  let I : Finset ι := {r : ι | true}
+  let J : Finset ι := {r : ι | r = i}
+  have mm : ∑ s ∈ I, M i s * N s i = ∑ j, M i j * N j i := by
+    exact Finset.sum_filter (fun a ↦ true = true) fun a ↦ M i a * N a i
+  rw [← mm]
+  have split₁ := Finset.sum_filter_add_sum_filter_not I
+    (fun j ↦ i = j)
+    (fun j ↦ M i j * N j i)
+  rw [← split₁]
+  have p1 : ∑ x ∈ I with i = x, M i x * N x i = M i i * N i i := by
+    refine Finset.sum_eq_single_of_mem i ?_ ?_
+    · simp only [Finset.mem_filter, and_true]
+      exact (Finset.mem_filter_univ i).mpr rfl
+    simp only [Finset.mem_filter, ne_eq, mul_eq_zero, and_imp]
+    exact fun b a a_1 a_2 ↦ (fun {a b} ↦ or_iff_not_and_not.mpr) fun a ↦ a_2 (id (Eq.symm a_1))
+  have p2 : ∑ x ∈ I with i ≠ x, M i x * N x i = 0 := by
+    rw [Finset.sum_eq_zero]
+    simp only [ne_eq, Finset.mem_filter, and_imp]
+    intro j hj himp
+    have : j < i ∨ i <= j := by
+      exact lt_or_ge j i
+    rcases this with h | h
+    · have := h1 h
+      rw [this]
+      simp only [zero_mul]
+    have : j = i ∨ i < j := by
+      exact Or.symm (Decidable.lt_or_eq_of_le' h)
+    rcases this with h | h
+    · have := himp h.symm
+      contradiction
+    rw [h2 h]
+    simp
+  rw [p1, p2]
+  simp only [add_zero]
 
 theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
     {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
