@@ -257,7 +257,7 @@ theorem my_proof_this
   induction hn : Module.finrank k V generalizing V with
   | zero =>
   · let f : Fin 1 → LieSubmodule k L V
-    |  0 => ⊥
+    | 0 => ⊥
     have m : f 0 = ⊥ := by
       exact (LieSubmodule.toSubmodule_eq_bot (f 0)).mp rfl
     use f
@@ -282,6 +282,32 @@ theorem my_proof_this
     have := Nat.not_succ_le_zero 0 c
     contradiction
   | succ n ih =>
+    rcases Nat.eq_zero_or_pos n with h | hpos
+    · rw [h]
+      let f : Fin 2 → LieSubmodule k L V
+      | 0 => ⊥
+      | 1 => ⊤
+      use f
+      constructor
+      · intro i
+        have mm : i = 0 ∨ i = 1 := by
+          grind
+        rcases mm with hz | hz1
+        · rw [hz]
+          apply finrank_bot
+        rw [hz1]
+        simp only [Fin.isValue, Nat.reduceAdd, Fin.coe_ofNat_eq_mod, Nat.mod_succ]
+        dsimp [f]
+        rw [h] at hn
+        simp only [zero_add] at hn
+        have := finrank_top k V
+        rw [hn] at this
+        exact this
+      intro p q hpq
+      have : p = 0 ∧ q = 1 := by
+        grind
+      rw [this.1, this.2]
+      simp_all only [Nat.reduceAdd, Fin.isValue, zero_add, zero_lt_one, bot_lt_top, f]
     obtain ⟨r, h⟩ := exists_nontrivial_weightSpace_of_isSolvable k L V
     obtain ⟨⟨v, hv⟩, hv0⟩ := exists_ne (0 : weightSpace V r)
     have : v ≠ 0 := by
@@ -348,7 +374,10 @@ theorem my_proof_this
     simp only [Nat.add_right_cancel_iff] at this
     have goal : Module.finrank k (V ⧸ g) = n := this
     have _i : Nontrivial (V ⧸ g) := by
-      sorry
+      have k : Module.finrank k (V ⧸ g) > 0 := by
+        rw [goal]
+        exact hpos
+      exact Module.nontrivial_of_finrank_pos k
     have _j : IsTriangularizable k L (V ⧸ g) := by
       sorry
     have ihh := ih (V ⧸ g) goal
