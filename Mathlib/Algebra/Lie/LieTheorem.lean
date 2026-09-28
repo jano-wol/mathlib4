@@ -284,32 +284,75 @@ theorem my_proof_this
   | succ n ih =>
     obtain ⟨r, h⟩ := exists_nontrivial_weightSpace_of_isSolvable k L V
     obtain ⟨⟨v, hv⟩, hv0⟩ := exists_ne (0 : weightSpace V r)
-    --have LieSubmodule.mk
+    have : v ≠ 0 := by
+      simp_all only [ne_eq, LieSubmodule.mk_eq_zero, not_false_eq_true]
+    let g : LieSubmodule k L V := {
+      carrier := {s • v | s : k}
+      add_mem' := by
+        intro x y c d
+        simp only [Set.mem_ofPred_eq] at c
+        simp only [Set.mem_ofPred_eq] at d
+        simp only [Set.mem_ofPred_eq]
+        obtain ⟨p, pp⟩ := c
+        obtain ⟨q, qq⟩ := d
+        use p + q
+        rw [add_smul, pp, qq]
+      zero_mem' := by
+        simp
+      smul_mem' := by
+        intro x y c
+        simp only [Set.mem_ofPred_eq] at c
+        simp only [Set.mem_ofPred_eq]
+        obtain ⟨p, pp⟩ := c
+        use p • x
+        rw [← pp, smul_comm]
+        exact smul_assoc p x v
+      lie_mem := by
+        intro x y hx
+        simp only [Set.mem_ofPred_eq] at hx
+        simp only [Set.mem_ofPred_eq]
+        obtain ⟨p, pp⟩ := hx
+        rw [← pp]
+        simp only [lie_smul]
+        have : ⁅x, v⁆ = (r x) • v := by
+          exact (mem_weightSpace r v).1 hv x
+        rw [this]
+        use p • r x
+        exact smul_assoc p (r x) v
+    }
+    have tt : Module.finrank k g.toSubmodule = 1 := by
+      refine Module.rank_eq_one_iff_finrank_eq_one.mp ?_
+      refine rank_eq_one_iff.mpr ?_
+      let vg : g := {
+        val := by
+          exact v
+        property := by
+          use 1
+          exact one_smul k v
+      }
+      use vg
+      constructor
+      · exact Subtype.coe_ne_coe.mp this
+      intro w
+      obtain ⟨h1, ⟨h2, h3⟩⟩ := w
+      use h2
+      exact SetLike.coe_eq_coe.mp h3
+    let f : V →ₗ⁅k,L⁆ V ⧸ g := by
+      exact LieSubmodule.Quotient.mk' g
+    have cc : f.ker = g := by
+      exact LieSubmodule.Quotient.mk'_ker g
+    have cc2 := LieSubmodule.Quotient.range_mk' g
+    have := Submodule.finrank_quotient_add_finrank g.toSubmodule
+    rw [hn] at this
+    rw [tt] at this
+    simp only [Nat.add_right_cancel_iff] at this
+    have goal : Module.finrank k (V ⧸ g) = n := this
+    have _i : Nontrivial (V ⧸ g) := by
+      sorry
+    have _j : IsTriangularizable k L (V ⧸ g) := by
+      sorry
+    have ihh := ih (V ⧸ g) goal
     sorry
-  --Qutient.mk
-  --simp
-  --constructor
-  --intro x y
-  --dsimp [f]
-  --· rw [b]
-
-
-
-  --have t : f 0 = ⊥ := by
---  --  sorry
---  constructor
---  simp
---  intro a ha
---  dsimp [f]
---  refine Module.finrank_eq_of_rank_eq ?_
---  refine Cardinal.lift_eq_nat_iff.mp ?_
---  simp
---  have m : (a : Cardinal) = 0 := by
---    exact Nat.cast_eq_zero.mpr ha
---  rw [m]
---  sorry
---  sorry
---  sorry
 
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V] :
