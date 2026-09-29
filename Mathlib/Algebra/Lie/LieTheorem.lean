@@ -250,6 +250,10 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
     apply hv (toEndo x)
   · simpa using hv0
 
+
+theorem jj (a : ℕ) (n : ℕ) (han : a < n + 2) : a - 1 < n + 1 := by
+  grind
+
 theorem my_proof_this
     [IsSolvable L] [LieModule.IsTriangularizable k L V] :
     ∃ f : Fin (Module.finrank k V + 1) → LieSubmodule k L V, (∀ n, Module.finrank k (f n) = n.1) ∧
@@ -365,6 +369,7 @@ theorem my_proof_this
       exact SetLike.coe_eq_coe.mp h3
     let f : V →ₗ⁅k,L⁆ V ⧸ g := by
       exact LieSubmodule.Quotient.mk' g
+    have hqf : Function.Surjective f := LieSubmodule.Quotient.surjective_mk' g
     have cc : f.ker = g := by
       exact LieSubmodule.Quotient.mk'_ker g
     have cc2 := LieSubmodule.Quotient.range_mk' g
@@ -379,8 +384,45 @@ theorem my_proof_this
         exact hpos
       exact Module.nontrivial_of_finrank_pos k
     have _j : IsTriangularizable k L (V ⧸ g) := by
-      sorry
+      let q : V →ₗ[k] V ⧸ g := (LieSubmodule.Quotient.mk' g).toLinearMap
+      have hq : Function.Surjective q := LieSubmodule.Quotient.surjective_mk' g
+      constructor
+      intro x
+      have rr : IsTriangularizable k L V := by
+        infer_instance
+      have tt : ∀ x, ⨆ φ, (toEnd k L V x).maxGenEigenspace φ = ⊤ := by
+        exact rr.maxGenEigenspace_eq_top
+      have m : ⨆ φ, (toEnd k L V x).maxGenEigenspace φ = ⊤ := by
+        exact tt x
+      apply top_unique
+      calc
+        ⊤ = Submodule.map q ⊤ := by
+          simp only [Submodule.map_top]
+          have := (LinearMap.range_eq_top_of_surjective q hq)
+          exact this.symm
+        _ = Submodule.map q (⨆ φ, (toEnd k L V x).maxGenEigenspace φ) := by
+          rw [tt]
+        _ = ⨆ φ, Submodule.map q ((toEnd k L V x).maxGenEigenspace φ) := by
+          simp only [Submodule.map_iSup]
+        _ ≤ ⨆ φ, ((toEnd k L (V ⧸ g)) x).maxGenEigenspace φ := by
+          apply iSup_mono
+          intro μ
+          apply Module.End.map_genEigenspace_le q
+          exact LieSubmodule.Quotient.toEnd_comp_mk' g x
     have ihh := ih (V ⧸ g) goal
+    obtain ⟨e, ⟨a1, a2⟩⟩ := ihh
+    let F : Fin (n + 1) → LieSubmodule k L V := by
+      intro a
+      exact LieSubmodule.comap f (e a)
+    let ff : Fin (n + 2) → LieSubmodule k L V := by
+      intro a
+      have bb : a - 1 < n + 1 := by
+        have mm : a < n + 2 := by exact a.isLt
+        exact jj a n mm
+      by_cases tt : a = 0
+      · exact ⊥
+      · exact F ⟨(a.toNat - 1), bb⟩
+    use ff
     sorry
 
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
