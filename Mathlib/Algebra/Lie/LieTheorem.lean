@@ -414,7 +414,27 @@ theorem my_proof_this
     have Fh0 (m : Fin (n + 1)) : Module.finrank k (F m) = m + 1 := by
       sorry
     have Fh1 : StrictMono F := by
-      sorry
+      intro x y hxy
+      have k : E x ≤ E y := by
+        have := a2 hxy
+        exact Std.le_of_lt (a2 hxy)
+      have := Submodule.comap_mono (f := f.toLinearMap) k
+      dsimp [F]
+      have s1 : LieSubmodule.comap f (E x) ≤ LieSubmodule.comap f (E y) := by
+        exact
+          (LieSubmodule.toSubmodule_le_toSubmodule (LieSubmodule.comap f (E x))
+                (LieSubmodule.comap f (E y))).mp
+            this
+      have s15 : F x ≠ F y := by
+        intro hc
+        have s1 := Fh0 x
+        have s2 := Fh0 y
+        rw [hc] at s1
+        rw [s1] at s2
+        grind
+      have s2 : LieSubmodule.comap f (E x) ≠ LieSubmodule.comap f (E y) := by
+        apply s15
+      exact Std.lt_of_le_of_ne this s2
     let ff : Fin (n + 2) → LieSubmodule k L V := Fin.cons ⊥ F
     have ff0 : ff 0 = ⊥ := by
           exact (LieSubmodule.toSubmodule_eq_bot (ff 0)).mp rfl
