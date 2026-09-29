@@ -406,10 +406,10 @@ theorem my_proof_this
           apply Module.End.map_genEigenspace_le q
           exact LieSubmodule.Quotient.toEnd_comp_mk' g x
     have ihh := ih (V ⧸ g) goal
-    obtain ⟨e, ⟨a1, a2⟩⟩ := ihh
+    obtain ⟨E, ⟨a1, a2⟩⟩ := ihh
     let F : Fin (n + 1) → LieSubmodule k L V := by
       intro a
-      exact LieSubmodule.comap f (e a)
+      exact LieSubmodule.comap f (E a)
 
     have Fh0 (m : Fin (n + 1)) : Module.finrank k (F m) = m + 1 := by
       sorry
