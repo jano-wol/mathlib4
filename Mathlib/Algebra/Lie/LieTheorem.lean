@@ -250,10 +250,6 @@ theorem exists_nontrivial_weightSpace_of_isSolvable
     apply hv (toEndo x)
   · simpa using hv0
 
-
-theorem jj (a : ℕ) (n : ℕ) (han : a < n + 2) : a - 1 < n + 1 := by
-  grind
-
 theorem my_proof_this
     [IsSolvable L] [LieModule.IsTriangularizable k L V] :
     ∃ f : Fin (Module.finrank k V + 1) → LieSubmodule k L V, (∀ n, Module.finrank k (f n) = n.1) ∧
@@ -414,16 +410,68 @@ theorem my_proof_this
     let F : Fin (n + 1) → LieSubmodule k L V := by
       intro a
       exact LieSubmodule.comap f (e a)
-    let ff : Fin (n + 2) → LieSubmodule k L V := by
-      intro a
-      have bb : a - 1 < n + 1 := by
-        have mm : a < n + 2 := by exact a.isLt
-        exact jj a n mm
-      by_cases tt : a = 0
-      · exact ⊥
-      · exact F ⟨(a.toNat - 1), bb⟩
+
+    have Fh0 (m : Fin (n + 1)) : Module.finrank k (F m) = m + 1 := by
+      sorry
+    have Fh1 : StrictMono F := by
+      sorry
+    let ff : Fin (n + 2) → LieSubmodule k L V := Fin.cons ⊥ F
+    have ff0 : ff 0 = ⊥ := by
+          exact (LieSubmodule.toSubmodule_eq_bot (ff 0)).mp rfl
+    have ffpos (m : Fin (n + 2)) (h1 : m ≠ 0) : ∃(p : Fin (n + 1)), ff m = F p ∧ m = p.succ := by
+      have keyvvv : ∃(i : Fin (n + 1)), i.succ = m := by
+        exact Fin.exists_succ_eq_of_ne_zero h1
+      obtain ⟨p, q⟩ := keyvvv
+      use p
+      constructor
+      · rw [← q]
+        dsimp [ff]
+        simp only [Fin.cons_succ]
+      exact q.symm
     use ff
-    sorry
+    constructor
+    · intro nn
+      have mr1 : nn = 0 ∨ nn ≠ 0 := by exact Decidable.eq_or_ne nn 0
+      rcases mr1 with hz | hnz
+      · rw [hz]
+        apply finrank_bot
+      obtain ⟨d1, ⟨d2, d3⟩⟩ := ffpos nn hnz
+      rw [d2]
+      rw [d3]
+      exact Nat.succ_inj.mp (congrArg Nat.succ (Fh0 d1))
+    intro x y hxy
+    have pmp : x = 0 ∨ 0 < x := by exact eq_zero_or_pos x
+    rcases pmp with pmp1 | pmp2
+    · rw [pmp1]
+      rw [ff0]
+      have t1 : Nontrivial (ff y) := by
+        have hny : y ≠ 0 := by exact Fin.ne_zero_of_lt hxy
+        obtain ⟨d1, ⟨d2, d3⟩⟩ := ffpos y hny
+        rw [d2]
+        have help := Fh0 d1
+        have help2 : Module.finrank k (F d1) > 0 := by
+          rw [help]
+          exact Nat.zero_lt_succ ↑d1
+        have help3 := Module.finrank_pos_iff (R := k) (M := F d1)
+        apply help3.1
+        exact help2
+      have t2 : ff y ≠ ⊥ := by
+        exact (LieSubmodule.nontrivial_iff_ne_bot k L V).mp t1
+      exact bot_lt_iff_ne_bot.mpr t2
+    have in1 : x ≠ 0 := by
+      exact Fin.pos_iff_ne_zero.mp pmp2
+    have in2 : y ≠ 0 := by
+      have tr: 0 < y := by
+        calc
+         0 < x := by exact pmp2
+         _ < y := by exact hxy
+      exact Fin.pos_iff_ne_zero.mp tr
+    obtain ⟨d1, ⟨d2, d3⟩⟩ := ffpos x in1
+    obtain ⟨e1, ⟨e2, e3⟩⟩ := ffpos y in2
+    rw [d2, e2]
+    have in3 : d1 < e1 := by
+      grind
+    exact Fh1 in3
 
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
     [LieModule.IsTriangularizable k L V] :
