@@ -8,8 +8,10 @@ module
 public import Mathlib.Algebra.Lie.Weights.Basic
 public import Mathlib.RingTheory.Finiteness.Nilpotent
 public import Mathlib.Algebra.Lie.Rank
+public import Mathlib.Algebra.Lie.Engel
+public import Mathlib.LinearAlgebra.Eigenspace.Zero
 public import Mathlib.LinearAlgebra.Basis.Flag
-public import Mathlib.LinearAlgebra.Matrix.Block
+public import Mathlib.LinearAlgebra.Matrix.Triangular
 public import Mathlib.LinearAlgebra.Matrix.ToLin
 
 /-!
@@ -18,6 +20,11 @@ public import Mathlib.LinearAlgebra.Matrix.ToLin
 Lie's theorem asserts that Lie modules of solvable Lie algebras over fields of characteristic 0
 have a common eigenvector for the action of all elements of the Lie algebra.
 This result is named `LieModule.exists_forall_lie_eq_smul_of_isSolvable`.
+
+This file also provides complete flag and basis forms of Lie's and Engel's theorems.
+For Engel's theorem, `LieModule.exists_flag_of_isNilpotent` constructs a flag that every action
+lowers by one step, and `LieModule.isNilpotent_iff_exists_basis_isStrictlyUpperTriangular`
+characterizes nilpotent representations by simultaneous strictly upper triangular matrices.
 -/
 
 @[expose] public section
@@ -629,214 +636,219 @@ theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [I
   simpa [LinearMap.toMatrix_apply] using
     htri x ((e.symm.lt_iff_lt).mpr hij)
 
-def StrictTriangular {ι : Type*} [LE ι] (M : Matrix ι ι k) : Prop :=
-  ∀ ⦃i j⦄, j <= i → M i j = 0
-
-omit [CharZero k] in
-theorem tracce {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : StrictTriangular k N) :
-    (M * N).trace = 0 := by
-  dsimp [Matrix.trace]
-  rw [Finset.sum_eq_zero]
-  intro x hx
-  rw [Matrix.mul_apply]
-  rw [Finset.sum_eq_zero]
-  intro i hi
-  have : x <= i ∨ i <= x := by
-    exact LinearOrder.le_total x i
-  rcases this with h | h
-  · have := h2 h
-    rw [this]
-    simp only [mul_zero]
-  have : x = i ∨ i < x := by
-    exact Or.symm (Decidable.lt_or_eq_of_le' h)
-  rcases this with h | h
-  · rw [h]
-    have m : i <= i := by
-      (expose_names; exact le_of_le_of_eq h_1 h)
-    rw [h2 m]
-    exact mul_zero (M i i)
-  have := h1 h
-  rw [this]
-  simp only [zero_mul]
-
-omit [CharZero k] in
-theorem mulUp {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
-    (M * N).IsUpperTriangular := by
-  intro i j hij
-  rw [Matrix.mul_apply]
-  rw [Finset.sum_eq_zero]
-  intro x hx
-  have : x < i ∨ i <= x := by
-    exact lt_or_ge x i
-  rcases this with h | h
-  · rw[h1 h]
-    simp only [zero_mul]
-  have mm : j < x := by
-    exact Std.lt_of_lt_of_le hij h
-  rw[h2 mm]
-  simp only [mul_zero]
-
-omit [CharZero k] in
-theorem mulUpDiag {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) (i : ι) :
-    (M * N) i i = M i i * N i i := by
-  rw [Matrix.mul_apply]
-  let I : Finset ι := {r : ι | true}
-  let J : Finset ι := {r : ι | r = i}
-  have mm : ∑ s ∈ I, M i s * N s i = ∑ j, M i j * N j i := by
-    exact Finset.sum_filter (fun a ↦ true = true) fun a ↦ M i a * N a i
-  rw [← mm]
-  have split₁ := Finset.sum_filter_add_sum_filter_not I
-    (fun j ↦ i = j)
-    (fun j ↦ M i j * N j i)
-  rw [← split₁]
-  have p1 : ∑ x ∈ I with i = x, M i x * N x i = M i i * N i i := by
-    refine Finset.sum_eq_single_of_mem i ?_ ?_
-    · simp only [Finset.mem_filter, and_true]
-      exact (Finset.mem_filter_univ i).mpr rfl
-    simp only [Finset.mem_filter, ne_eq, mul_eq_zero, and_imp]
-    exact fun b a a_1 a_2 ↦ (fun {a b} ↦ or_iff_not_and_not.mpr) fun a ↦ a_2 (id (Eq.symm a_1))
-  have p2 : ∑ x ∈ I with i ≠ x, M i x * N x i = 0 := by
-    rw [Finset.sum_eq_zero]
-    simp only [ne_eq, Finset.mem_filter, and_imp]
-    intro j hj himp
-    have : j < i ∨ i <= j := by
-      exact lt_or_ge j i
-    rcases this with h | h
-    · have := h1 h
-      rw [this]
-      simp only [zero_mul]
-    have : j = i ∨ i < j := by
-      exact Or.symm (Decidable.lt_or_eq_of_le' h)
-    rcases this with h | h
-    · have := himp h.symm
-      contradiction
-    rw [h2 h]
-    simp
-  rw [p1, p2]
-  simp only [add_zero]
-
-omit [CharZero k] in
-theorem mulBrac {ι : Type*} [Fintype ι] [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : M.IsUpperTriangular) (h2 : N.IsUpperTriangular) :
-    StrictTriangular k (M * N - N * M) := by
-  have m1 := mulUp k h1 h2
-  have m2 := mulUp k h2 h1
-  intro i j hij
-  have : i = j ∨ i ≠ j := by
-      exact Decidable.eq_or_ne i j
-  rcases this with h | h
-  · simp only [Matrix.sub_apply]
-    rw [h]
-    have p1 := mulUpDiag k h1 h2 j
-    have p2 := mulUpDiag k h2 h1 j
-    rw [p1, p2]
-    ring
-  have himp : j < i := by
-    exact Std.lt_of_le_of_ne hij (id (Ne.symm h))
-  have p1 := m1 himp
-  have p2 := m2 himp
-  have : (M * N - N * M) i j  = (M * N) i j - (N * M) i j := by
-    exact Matrix.sub_apply (M * N) (N * M) i j
-  rw [this, p1, p2]
-  simp only [sub_self]
-
-omit [CharZero k] in
-theorem addStri {ι : Type*} [LinearOrder ι] {M : Matrix ι ι k}
-    {N : Matrix ι ι k} (h1 : StrictTriangular k M) (h2 : StrictTriangular k N) :
-    StrictTriangular k (M + N) := by
-  intro i j hij
-  simp only [Matrix.add_apply]
-  rw [h1 hij, h2 hij]
-  simp only [add_zero]
-
-omit [CharZero k] in
-theorem smulStri {ι : Type*} [LinearOrder ι] {M : Matrix ι ι k}
-    (h1 : StrictTriangular k M) (u : k) :
-    StrictTriangular k (u • M) := by
-  intro i j hij
-  simp only [Matrix.smul_apply]
-  rw [h1 hij]
-  simp only [smul_eq_mul, mul_zero]
-
 omit [Nontrivial V] [Module.Finite k V] [CharZero k] in
-theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
-    [LieModule.IsTriangularizable k L V]
+/-- In a simultaneous upper triangular basis, the derived algebra acts by strictly upper
+triangular matrices. -/
+theorem lie_class2 {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι]
     (B : Module.Basis ι k V)
-    (h : ∀ (x : L), (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular)
-    :
-    ∀ (y : derivedSeries k L 1), StrictTriangular k (LinearMap.toMatrix B B (toEnd k L V y)) := by
+    (h : ∀ x : L, (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular) :
+    ∀ y : derivedSeries k L 1,
+      (LinearMap.toMatrix B B (toEnd k L V y)).IsStrictlyUpperTriangular := by
   rintro ⟨y, hy⟩
-  simp only
-  replace hx : y ∈ Submodule.span k {⁅u, v⁆ | (u : L) (v : L)} := by
-    rw [← LieAlgebra.coe_derivedSeries_one_eq]
-    exact
-      (LieSubalgebra.mem_toSubmodule (LieIdeal.toLieSubalgebra k L (derivedSeries k L 1))).mpr hy
-  induction hx using Submodule.span_induction with
-  | mem u h =>
-    simp only [Set.mem_ofPred_eq] at h
-    obtain ⟨r, ⟨s,  hr⟩⟩ := h
-    rw [← hr]
-    rw [LieHom.map_lie (toEnd k L V) r s]
-    have help : ⁅(toEnd k L V) r, (toEnd k L V) s⁆ = (toEnd k L V) r * (toEnd k L V) s -
-      (toEnd k L V) s * (toEnd k L V) r := by
-      exact Ring.lie_def ((toEnd k L V) r) ((toEnd k L V) s)
-    rw [help]
-    have h11 := h r
-    have h12 := h s
-    have pen := mulBrac k h11 h12
-    have rr : ((LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s -
-        (toEnd k L V) s * (toEnd k L V) r)) =
-        (LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s) - (LinearMap.toMatrix B B)
-        ((toEnd k L V) s * (toEnd k L V) r) := by
-      exact
-        map_sub (LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s)
-          ((toEnd k L V) s * (toEnd k L V) r)
-    rw [rr]
-    have ss : (LinearMap.toMatrix B B) ((toEnd k L V) r * (toEnd k L V) s) =
-        (LinearMap.toMatrix B B) ((toEnd k L V) r) *
-        (LinearMap.toMatrix B B) ((toEnd k L V) s) := by
-      exact LinearMap.toMatrix_mul B ((toEnd k L V) r) ((toEnd k L V) s)
-    rw [ss]
-    rw [LinearMap.toMatrix_mul B ((toEnd k L V) s) ((toEnd k L V) r)]
-    exact pen
-  | zero => simp only [map_zero]
-            intro i j h
-            exact Matrix.zero_apply i j
-  | add u v p s hu hv =>
-    have w1 : u ∈ derivedSeries k L 1 := by
-       have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
-         exact coe_derivedSeries_one_eq k L
-       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero] at this
-       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]
-       rw [← this] at p
-       exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp p
-    have w2 : v ∈ derivedSeries k L 1 := by
-       have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
-         exact coe_derivedSeries_one_eq k L
-       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero] at this
-       simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]
-       rw [← this] at s
-       exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp s
-    have w3 := hu w1
-    have w4 := hv w2
-    have pen := addStri k w3 w4
+  change (LinearMap.toMatrix B B (toEnd k L V y)).IsStrictlyUpperTriangular
+  change y ∈ (derivedSeries k L 1 : LieSubalgebra k L).toSubmodule at hy
+  rw [coe_derivedSeries_one_eq] at hy
+  induction hy using Submodule.span_induction with
+  | mem z hz =>
+    obtain ⟨x, y, rfl⟩ := hz
+    rw [LieHom.map_lie, Ring.lie_def, map_sub,
+      LinearMap.toMatrix_mul B, LinearMap.toMatrix_mul B]
+    exact (h x).commutator (h y)
+  | zero =>
+    simp only [map_zero]
+    exact Matrix.isStrictlyUpperTriangular_zero
+  | add x y hx hy ihx ihy =>
     simp only [map_add]
-    exact pen
-  | smul t u v hu =>
-    have w1 : u ∈ derivedSeries k L 1 := by
-     have : derivedSeries k L 1 = Submodule.span k {⁅x, y⁆ | (x : L) (y : L)} := by
-       exact coe_derivedSeries_one_eq k L
-     simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero] at this
-     simp only [derivedSeriesOfIdeal_succ, derivedSeriesOfIdeal_zero]
-     rw [← this] at v
-     exact (LieSubmodule.mem_toSubmodule ⁅⊤, ⊤⁆).mp v
-    have w3 := hu w1
-    have pen := smulStri k w3 t
+    exact ihx.add ihy
+  | smul c x hx ih =>
     simp only [map_smul]
-    exact pen
+    exact ih.smul c
+
 end
 
 end LieModule
+
+section Engel
+
+namespace LieModule
+
+variable {k L V : Type*} [Field k] [LieRing L] [LieAlgebra k L]
+    [AddCommGroup V] [Module k V] [LieRingModule L V] [LieModule k L V]
+    [FiniteDimensional k V]
+
+/-- A nilpotent representation admits a complete flag that every action lowers by one step. -/
+theorem exists_flag_of_isNilpotent [IsNilpotent L V] :
+    ∃ F : Fin (finrank k V + 1) → LieSubmodule k L V,
+      (∀ i, finrank k (F i) = i.val) ∧ Monotone F ∧
+      ∀ (i : Fin (finrank k V)) (x : L) (v : V), v ∈ F i.succ → ⁅x,v⁆ ∈ F i.castSucc := by
+  classical
+  induction hn : finrank k V generalizing V with
+  | zero =>
+    refine ⟨fun _ => ⊥, ?_, ?_, ?_⟩
+    · intro i
+      have hi : i = 0 := Fin.fin_one_eq_zero i
+      subst i
+      exact Module.finrank_eq_zero_of_subsingleton k (⊥ : LieSubmodule k L V)
+    · exact monotone_const
+    · intro i
+      exact Fin.elim0 i
+  | succ n ih =>
+    have : Nontrivial V := Module.nontrivial_of_finrank_pos (by rw [hn]; omega)
+    have : Nontrivial (maxTrivSubmodule k L V) := nontrivial_max_triv_of_isNilpotent k L V
+    obtain ⟨v, hv⟩ := exists_ne (0 : maxTrivSubmodule k L V)
+    have hv0 : (v : V) ≠ 0 := by simpa using hv
+    have hvlie (x : L) : ⁅x,(v : V)⁆ = 0 :=
+      (mem_maxTrivSubmodule k L V v).mp v.property x
+    let g : LieSubmodule k L V :=
+      { toSubmodule := k ∙ (v : V)
+        lie_mem := by
+          intro x w hw
+          obtain ⟨c,rfl⟩ := Submodule.mem_span_singleton.mp hw
+          simp [lie_smul, hvlie] }
+    have hg : finrank k g.toSubmodule = 1 := finrank_span_singleton hv0
+    have hgzero (x : L) (w : V) (hw : w ∈ g) : ⁅x,w⁆ = 0 := by
+      obtain ⟨c,rfl⟩ := Submodule.mem_span_singleton.mp hw
+      simp [lie_smul, hvlie]
+    have : IsNilpotent L (V ⧸ g) := by
+      apply (isNilpotent_quotient_iff k L V g).mpr
+      obtain ⟨m,hm⟩ := IsNilpotent.nilpotent k L V
+      exact ⟨m, by rw [hm]; exact bot_le⟩
+    have hq : finrank k (V ⧸ g) = n := by
+      have h := Submodule.finrank_quotient_add_finrank g.toSubmodule
+      change finrank k (V ⧸ g) + finrank k g.toSubmodule = finrank k V at h
+      rw [hg, hn] at h
+      omega
+    obtain ⟨E, hdim, hmono, hlower⟩ := ih (V := V ⧸ g) hq
+    let q := LieSubmodule.Quotient.mk' g
+    have hsurj : Function.Surjective q := LieSubmodule.Quotient.surjective_mk' g
+    have hk : LinearMap.ker q.toLinearMap = g.toSubmodule :=
+      congrArg LieSubmodule.toSubmodule (LieSubmodule.Quotient.mk'_ker g)
+    have hE0 : E 0 = ⊥ := by
+      apply LieSubmodule.toSubmodule_injective
+      apply Submodule.finrank_eq_zero.mp
+      exact hdim 0
+    let F : Fin (n + 2) → LieSubmodule k L V :=
+      Fin.cases ⊥ (fun i => LieSubmodule.comap q (E i))
+    refine ⟨F, ?_, ?_, ?_⟩
+    · intro i
+      refine Fin.cases ?_ (fun j => ?_) i
+      · exact Module.finrank_eq_zero_of_subsingleton k (⊥ : LieSubmodule k L V)
+      · change finrank k ((E j).toSubmodule.comap q.toLinearMap) = j.val + 1
+        rw [LinearMap.finrank_comap_of_surjective q.toLinearMap hsurj, hk, hg]
+        exact congrArg (· + 1) (hdim j)
+    · intro i
+      induction i using Fin.cases with
+      | zero => intro j hij; exact bot_le
+      | succ i =>
+        intro j
+        induction j using Fin.cases with
+        | zero => intro hij; simp at hij
+        | succ j =>
+          intro hij w hw
+          exact hmono (Fin.succ_le_succ_iff.mp hij) hw
+    · intro i
+      induction i using Fin.cases with
+      | zero =>
+        intro x w hw
+        change ⁅x,w⁆ ∈ (⊥ : LieSubmodule k L V)
+        have hwg : w ∈ g := by
+          change q w ∈ E 0 at hw
+          rw [hE0] at hw
+          change w ∈ LinearMap.ker q.toLinearMap at hw
+          rwa [hk] at hw
+        simp [hgzero x w hwg]
+      | succ j =>
+        intro x w hw
+        change q ⁅x,w⁆ ∈ E j.castSucc
+        rw [q.map_lie]
+        apply hlower j x (q w)
+        exact hw
+
+omit [FiniteDimensional k V] in
+/-- An endomorphism lowering each initial span has a strictly upper triangular matrix. -/
+theorem strictTriangular_of_lowers_flag {n : ℕ}
+    (B : Basis (Fin n) k V) (f : V →ₗ[k] V)
+    (h : ∀ (i : Fin n) (v : V), v ∈ B.flag i.succ → f v ∈ B.flag i.castSucc) :
+    Matrix.IsStrictlyUpperTriangular (LinearMap.toMatrix B B f) := by
+  intro i j hij
+  rw [LinearMap.toMatrix_apply]
+  exact (B.mem_flag_iff_repr_eq_zero.mp
+    (h j (B j) (B.self_mem_flag (by simp)))) i hij
+
+/-- Engel's theorem in basis form: nilpotent action operators admit a simultaneous
+strictly upper triangular basis, with the same ordered index as the supplied basis. -/
+theorem exists_basis_isStrictlyUpperTriangular
+    {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι]
+    (b : Basis ι k V) (h : ∀ x : L, _root_.IsNilpotent (toEnd k L V x)) :
+    ∃ B : Basis ι k V, ∀ x : L,
+      Matrix.IsStrictlyUpperTriangular (LinearMap.toMatrix B B (toEnd k L V x)) := by
+  classical
+  have : IsNilpotent L V := (isNilpotent_iff_forall' (R := k)).mpr h
+  obtain ⟨F, hdim, hmono, hlower⟩ := exists_flag_of_isNilpotent (k := k) (L := L) (V := V)
+  obtain ⟨B, hB⟩ := exists_basis_adapted_to_flag
+    (fun i => (F i).toSubmodule) (fun i j hij => hmono hij) hdim
+  have hstrict (x : L) :
+      Matrix.IsStrictlyUpperTriangular (LinearMap.toMatrix B B (toEnd k L V x)) := by
+    apply strictTriangular_of_lowers_flag B (toEnd k L V x)
+    intro j v hv
+    rw [hB] at hv ⊢
+    exact hlower j x v hv
+  let e := Fintype.orderIsoFinOfCardEq ι (Module.finrank_eq_card_basis b).symm
+  refine ⟨B.reindex e.toEquiv, ?_⟩
+  intro x i j hij
+  simpa [LinearMap.toMatrix_apply] using hstrict x ((e.symm.le_iff_le).mpr hij)
+
+omit [FiniteDimensional k V] in
+/-- A strictly upper triangular matrix represents a nilpotent endomorphism. -/
+theorem isNilpotent_of_toMatrix_strictTriangular
+    {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι]
+    (B : Basis ι k V) (f : V →ₗ[k] V)
+    (h : Matrix.IsStrictlyUpperTriangular (LinearMap.toMatrix B B f)) : _root_.IsNilpotent f := by
+  exact (IsNilpotent.map_iff (LinearMap.toMatrixAlgEquiv B).injective).mp h.isNilpotent
+
+/-- Engel's theorem expressed as the existence of a simultaneous strictly upper triangular basis. -/
+theorem isNilpotent_iff_exists_basis_isStrictlyUpperTriangular
+    {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] (b : Basis ι k V) :
+    IsNilpotent L V ↔ ∃ B : Basis ι k V, ∀ x : L,
+      Matrix.IsStrictlyUpperTriangular (LinearMap.toMatrix B B (toEnd k L V x)) := by
+  constructor
+  · intro h
+    exact exists_basis_isStrictlyUpperTriangular b (isNilpotent_toEnd_of_isNilpotent k L V)
+  · rintro ⟨B, hB⟩
+    apply (isNilpotent_iff_forall' (R := k)).mpr
+    intro x
+    exact isNilpotent_of_toMatrix_strictTriangular B (toEnd k L V x) (hB x)
+
+/-- Nilpotency of a finite-dimensional representation is equivalent to a complete flag
+that every action lowers by one step. -/
+theorem isNilpotent_iff_exists_flag :
+    IsNilpotent L V ↔
+      ∃ F : Fin (finrank k V + 1) → LieSubmodule k L V,
+        (∀ i, finrank k (F i) = i.val) ∧ Monotone F ∧
+        ∀ (i : Fin (finrank k V)) (x : L) (v : V), v ∈ F i.succ → ⁅x,v⁆ ∈ F i.castSucc := by
+  constructor
+  · intro h
+    exact exists_flag_of_isNilpotent
+  · rintro ⟨F, hdim, hmono, hlower⟩
+    obtain ⟨B, hB⟩ := exists_basis_adapted_to_flag
+      (fun i => (F i).toSubmodule) (fun i j hij => hmono hij) hdim
+    apply (isNilpotent_iff_forall' (R := k)).mpr
+    intro x
+    apply isNilpotent_of_toMatrix_strictTriangular B (toEnd k L V x)
+    apply strictTriangular_of_lowers_flag B (toEnd k L V x)
+    intro i v hv
+    rw [hB] at hv ⊢
+    exact hlower i x v hv
+
+end LieModule
+
+/-- Engel's theorem for the adjoint representation in simultaneous strictly upper triangular
+basis form. -/
+theorem LieAlgebra.isNilpotent_iff_exists_basis_isStrictlyUpperTriangular
+    {k L ι : Type*} [Field k] [LieRing L] [LieAlgebra k L] [FiniteDimensional k L]
+    [Fintype ι] [DecidableEq ι] [LinearOrder ι] (b : Module.Basis ι k L) :
+    LieRing.IsNilpotent L ↔ ∃ B : Module.Basis ι k L, ∀ x : L,
+      Matrix.IsStrictlyUpperTriangular (LinearMap.toMatrix B B (LieAlgebra.ad k L x)) :=
+  LieModule.isNilpotent_iff_exists_basis_isStrictlyUpperTriangular b
+
+end Engel
