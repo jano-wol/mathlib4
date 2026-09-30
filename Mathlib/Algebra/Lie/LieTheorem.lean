@@ -19,6 +19,35 @@ This result is named `LieModule.exists_forall_lie_eq_smul_of_isSolvable`.
 
 @[expose] public section
 
+/-- Rank-nullity for the restriction of a linear map to a subspace. -/
+theorem LinearMap.finrank_map_add_finrank_inf_ker
+    {k V W : Type*} [DivisionRing k] [AddCommGroup V] [AddCommGroup W]
+    [Module k V] [Module k W]
+    (f : V →ₗ[k] W) (p : Submodule k V) [FiniteDimensional k p] :
+    Module.finrank k (p.map f) + Module.finrank k (p ⊓ f.ker : Submodule k V) =
+      Module.finrank k p := by
+  have h := (f.domRestrict p).finrank_range_add_finrank_ker
+  rw [LinearMap.range_domRestrict, LinearMap.ker_domRestrict] at h
+  rw [← Submodule.finrank_map_subtype_eq p (f.ker.comap p.subtype),
+    Submodule.map_comap_subtype] at h
+  exact h
+
+/-- The preimage of a subspace under a surjective linear map has dimension equal to
+its dimension plus the dimension of the kernel. -/
+theorem LinearMap.finrank_comap_of_surjective
+    {k V W : Type*} [DivisionRing k] [AddCommGroup V] [AddCommGroup W]
+    [Module k V] [Module k W] [FiniteDimensional k V]
+    (f : V →ₗ[k] W) (hf : Function.Surjective f) (p : Submodule k W) :
+    Module.finrank k (p.comap f) =
+      Module.finrank k p + Module.finrank k f.ker := by
+  have hker : f.ker ≤ p.comap f := by
+    intro x hx
+    simp only [Submodule.mem_comap, LinearMap.mem_ker.mp hx]
+    exact p.zero_mem
+  have h := f.finrank_map_add_finrank_inf_ker (p.comap f)
+  rw [Submodule.map_comap_eq_of_surjective hf, inf_eq_right.mpr hker] at h
+  exact h.symm
+
 namespace LieModule
 
 section
@@ -410,53 +439,13 @@ theorem my_proof_this
     let F : Fin (n + 1) → LieSubmodule k L V := by
       intro a
       exact LieSubmodule.comap f (E a)
-
     have Fh0 (m : Fin (n + 1)) : Module.finrank k (F m) = m + 1 := by
-      have help : LieSubmodule.map f (F m) = E m := by
-        exact LieSubmodule.map_comap_eq (E m) f fun ⦃x⦄ a ↦ hqf x
-      let fr := LinearMap.domRestrict f.toLinearMap (F m)
-      have pt := LinearMap.finrank_range_add_finrank_ker fr
-      have pt1 : Module.finrank k fr.range = m := by
-        have : fr.range = E m := by
-          rw [← help]
-          dsimp [fr]
-          aesop
-        rw [this]
-        have tt := a1 m
-        exact tt
-      have pt2 : Module.finrank k fr.ker = 1 := by
-        have mke : g ≤ f.ker := by
-          aesop
-        have tttv : f.ker = g := by
-          exact LieSubmodule.Quotient.mk'_ker g
-        have mkee : g ≤ F m := by
-          dsimp [F]
-          have ttt : f.ker = g := by
-            exact LieSubmodule.Quotient.mk'_ker g
-          have mm := ttt.symm
-          have mmmm : f.ker ≤ LieSubmodule.comap f ⊥ := by
-            exact
-              (LieSubmodule.toSubmodule_le_toSubmodule f.ker (LieSubmodule.comap f ⊥)).mp
-                fun ⦃x⦄ a ↦ a
-          have mmmm2 : LieSubmodule.comap f ⊥ ≤ LieSubmodule.comap f (E m) := by
-            have mmmm3 : (LieSubmodule.comap f ⊥).toSubmodule ≤
-                (LieSubmodule.comap f (E m)).toSubmodule := by
-              aesop
-            exact
-              (LieSubmodule.toSubmodule_le_toSubmodule (LieSubmodule.comap f ⊥)
-                    (LieSubmodule.comap f (E m))).mp
-                mmmm3
-          exact
-            (LieSubmodule.toSubmodule_le_toSubmodule g (LieSubmodule.comap f (E m))).mp fun ⦃x⦄ a ↦
-              mmmm2 (mke a)
-        dsimp [fr]
-        have : (fr.ker) = g.toSubmodule := by sorry
-      rw [pt1, pt2] at pt
-      rw [pt]
-      subst this
-      simp_all only [ne_eq, LieSubmodule.mk_eq_zero, not_false_eq_true]
-      simp_all only [gt_iff_lt]
-      aesop
+      have hk : LinearMap.ker f.toLinearMap = g.toSubmodule := by
+        exact congrArg LieSubmodule.toSubmodule
+          (LieSubmodule.Quotient.mk'_ker g)
+      change Module.finrank k ((E m).toSubmodule.comap f.toLinearMap) = m + 1
+      rw [LinearMap.finrank_comap_of_surjective f.toLinearMap hqf, hk, tt]
+      exact congrArg (· + 1) (a1 m)
     have Fh1 : StrictMono F := by
       intro x y hxy
       have k : E x ≤ E y := by
