@@ -8,6 +8,9 @@ module
 public import Mathlib.Algebra.Lie.Weights.Basic
 public import Mathlib.RingTheory.Finiteness.Nilpotent
 public import Mathlib.Algebra.Lie.Rank
+public import Mathlib.LinearAlgebra.Basis.Flag
+public import Mathlib.LinearAlgebra.Matrix.Block
+public import Mathlib.LinearAlgebra.Matrix.ToLin
 
 /-!
 # Lie's theorem for Solvable Lie algebras.
@@ -47,6 +50,84 @@ theorem LinearMap.finrank_comap_of_surjective
   have h := f.finrank_map_add_finrank_inf_ker (p.comap f)
   rw [Submodule.map_comap_eq_of_surjective hf, inf_eq_right.mpr hker] at h
   exact h.symm
+
+open Module (Basis finrank)
+
+
+/-- A complete flag admits a basis whose initial spans are the prescribed subspaces. -/
+theorem exists_basis_adapted_to_flag
+    {k V : Type*} [Field k] [AddCommGroup V] [Module k V] [FiniteDimensional k V]
+    (F : Fin (finrank k V + 1) → Submodule k V)
+    (hmono : Monotone F) (hdim : ∀ i, finrank k (F i) = i.val) :
+    ∃ b : Basis (Fin (finrank k V)) k V, ∀ i, b.flag i = F i := by
+  classical
+  let n := finrank k V
+  have hex (i : Fin n) : ∃ v : V, v ∈ F i.succ ∧ v ∉ F i.castSucc := by
+    have hnot : ¬ F i.succ ≤ F i.castSucc := by
+      intro h
+      have hh := Submodule.finrank_mono h
+      rw [hdim, hdim] at hh
+      simp at hh
+    exact IsConcreteLE.not_le_iff_exists.mp hnot
+  choose v hv using hex
+  have hli : ∀ m (hm : m ≤ n), LinearIndependent k (fun i : Fin m => v (i.castLE hm)) := by
+    intro m
+    induction m with
+    | zero => intro hm; exact linearIndependent_empty_type
+    | succ m ih =>
+      intro hm
+      have hm' : m ≤ n := Nat.le_trans (Nat.le_succ m) hm
+      let j : Fin n := ⟨m, Nat.lt_of_lt_of_le (Nat.lt_succ_self m) hm⟩
+      have hspan : Submodule.span k (Set.range (fun i : Fin m => v (i.castLE hm'))) ≤
+          F j.castSucc := by
+        apply Submodule.span_le.mpr
+        rintro _ ⟨i, rfl⟩
+        exact hmono (by change i.val + 1 ≤ m; omega) (hv (i.castLE hm')).1
+      have hnew : v j ∉ Submodule.span k (Set.range (fun i : Fin m => v (i.castLE hm'))) :=
+        fun h => (hv j).2 (hspan h)
+      have hh := (ih hm').finSnoc hnew
+      convert hh using 1
+      funext i
+      refine Fin.lastCases ?_ (fun i => ?_) i
+      · simp only [Fin.snoc_last]
+        exact congrArg v (Fin.ext rfl)
+      · simp
+  have hi : LinearIndependent k v := by simpa using hli n le_rfl
+  have htop : Submodule.span k (Set.range v) = ⊤ := by
+    apply Submodule.eq_top_of_finrank_eq
+    simpa [n] using finrank_span_eq_card hi
+  let b : Basis (Fin n) k V := Basis.mk hi (by rw [htop])
+  refine ⟨b, ?_⟩
+  intro i
+  have hm : i.val ≤ n := Nat.le_of_lt_succ i.isLt
+  have heq : b.flag i = Submodule.span k (Set.range (fun j : Fin i.val => v (j.castLE hm))) := by
+    unfold Basis.flag
+    apply congrArg (Submodule.span k)
+    ext x
+    constructor
+    · rintro ⟨j, hj, rfl⟩
+      exact ⟨⟨j.val, hj⟩, by simp [b]⟩
+    · rintro ⟨j, rfl⟩
+      exact ⟨j.castLE hm, j.isLt, by simp [b]⟩
+  apply Submodule.eq_of_le_of_finrank_eq
+  · rw [heq]
+    apply Submodule.span_le.mpr
+    rintro _ ⟨j, rfl⟩
+    exact hmono (by change j.val + 1 ≤ i.val; omega) (hv (j.castLE hm)).1
+  · rw [heq, finrank_span_eq_card (hli i.val hm), Fintype.card_fin, hdim]
+
+/-- An endomorphism preserving every initial span has an upper triangular matrix. -/
+theorem upperTriangular_of_preserves_flag
+    {k V : Type*} [Field k] [AddCommGroup V] [Module k V] {n : ℕ}
+    (b : Basis (Fin n) k V) (f : V →ₗ[k] V)
+    (h : ∀ m, ∀ v ∈ b.flag m, f v ∈ b.flag m) :
+    (LinearMap.toMatrix b b f).IsUpperTriangular := by
+  intro i j hij
+  rw [LinearMap.toMatrix_apply]
+  have hv := h j.succ (b j) (b.self_mem_flag (by simp))
+  exact (b.mem_flag_iff_repr_eq_zero.mp hv) i (by
+    change j.val + 1 ≤ i.val
+    exact hij)
 
 namespace LieModule
 
@@ -526,11 +607,27 @@ theorem my_proof_this
       grind
     exact Fh1 in3
 
+/-- A finite ordered basis index admits a basis simultaneously upper triangularizing
+all actions of a solvable Lie algebra. The input basis supplies the dimension of the index. -/
 theorem lie_class {ι : Type*} [Fintype ι] [DecidableEq ι] [LinearOrder ι] [IsSolvable L]
-    [LieModule.IsTriangularizable k L V] :
-    ∃ (B : Module.Basis ι k V), ∀ (x : L),
+    [LieModule.IsTriangularizable k L V] (b : Basis ι k V) :
+    ∃ B : Basis ι k V, ∀ x : L,
       (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
-  sorry
+  classical
+  obtain ⟨F, hdim, hmono⟩ := my_proof_this (k := k) (L := L) (V := V)
+  obtain ⟨B, hB⟩ := exists_basis_adapted_to_flag
+    (fun i => (F i).toSubmodule) (fun i j hij => hmono.monotone hij) hdim
+  have htri : ∀ x : L, (LinearMap.toMatrix B B (toEnd k L V x)).IsUpperTriangular := by
+    intro x
+    apply upperTriangular_of_preserves_flag B (toEnd k L V x)
+    intro i v hv
+    rw [hB] at hv ⊢
+    exact (F i).lie_mem hv
+  let e := Fintype.orderIsoFinOfCardEq ι (Module.finrank_eq_card_basis b).symm
+  refine ⟨B.reindex e.toEquiv, ?_⟩
+  intro x i j hij
+  simpa [LinearMap.toMatrix_apply] using
+    htri x ((e.symm.lt_iff_lt).mpr hij)
 
 def StrictTriangular {ι : Type*} [LE ι] (M : Matrix ι ι k) : Prop :=
   ∀ ⦃i j⦄, j <= i → M i j = 0

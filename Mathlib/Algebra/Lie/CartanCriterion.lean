@@ -219,7 +219,7 @@ public lemma killingForm_apply_lie_eq_zero_of_IsSolvable {K : Type*}
     exact Classical.em (Nontrivial L)
   rcases z0 with (h | h)
   · intro x y hy
-    have m := LieModule.lie_class (ι := Fin (Module.finrank K L)) K L (V := L)
+    have m := LieModule.lie_class K L (V := L) (Module.finBasis K L)
     rcases m with ⟨B, hB⟩
     have hBB := LieModule.lie_class2 (ι := Fin (Module.finrank K L)) K L (V := L) B hB
     have m0 := ((toMatrix B B) ((toEnd K L L) x))
