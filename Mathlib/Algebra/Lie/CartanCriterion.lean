@@ -6,6 +6,8 @@ Authors: Janos Wolosz
 module
 
 public import Mathlib.Algebra.Lie.Killing
+public import Mathlib.Algebra.Lie.LieTheorem
+public import Mathlib.LinearAlgebra.Charpoly.ToMatrix
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.RingTheory.Flat.Localization
 public import Mathlib.RingTheory.Localization.FractionRing

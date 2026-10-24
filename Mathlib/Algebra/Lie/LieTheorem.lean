@@ -6,6 +6,8 @@ Authors: Lucas Whitfield, Johan Commelin
 module
 
 public import Mathlib.Algebra.Lie.Weights.Basic
+public import Mathlib.LinearAlgebra.Basis.Flag
+public import Mathlib.LinearAlgebra.Matrix.Triangular
 
 import Mathlib.RingTheory.Finiteness.Nilpotent
 
