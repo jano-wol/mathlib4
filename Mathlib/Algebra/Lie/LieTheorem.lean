@@ -6,13 +6,8 @@ Authors: Lucas Whitfield, Johan Commelin
 module
 
 public import Mathlib.Algebra.Lie.Weights.Basic
-public import Mathlib.RingTheory.Finiteness.Nilpotent
-public import Mathlib.Algebra.Lie.Rank
-public import Mathlib.Algebra.Lie.Engel
-public import Mathlib.LinearAlgebra.Eigenspace.Zero
-public import Mathlib.LinearAlgebra.Basis.Flag
-public import Mathlib.LinearAlgebra.Matrix.Triangular
-public import Mathlib.LinearAlgebra.Matrix.ToLin
+
+import Mathlib.RingTheory.Finiteness.Nilpotent
 
 /-!
 # Lie's theorem for Solvable Lie algebras.
